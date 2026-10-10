@@ -34,7 +34,7 @@ export default function App(){
   const {data:{subscription}}=client.auth.onAuthStateChange(()=>{void refresh()});
   return()=>{active=false;subscription.unsubscribe()};
  },[year]);
- const progress=chapters.length?Math.round(chapters.filter(ch=>done.includes(ch.id)).length/chapters.length*100):100;
+ const progress=chapters.length?Math.round(chapters.filter(ch=>done.includes(ch.id)).length/chapters.length*100):0;
  const toggle=async(id:string,checked:boolean)=>{
   if(!user){setMessage("Entre na sua conta para registrar a leitura.");return}
   setBusy(true);setMessage("");
@@ -45,7 +45,7 @@ export default function App(){
  const auth=async(mode:"in"|"up")=>{setBusy(true);setMessage("");try{if(mode==="in")await signIn(email,password);else{await signUp(email,password);setMessage("Cadastro solicitado. Verifique seu e-mail, se necessário.")}}catch(e){setMessage(e instanceof Error?e.message:"Falha de autenticação")}finally{setBusy(false)}};
  const sections=[{title:"Antigo Testamento",data:today.old},{title:"Salmos",data:today.psalms},{title:"Novo Testamento",data:today.newTestament}];
  const tabs=[{id:"today",label:"Hoje",icon:BookOpen},{id:"calendar",label:"Calendário",icon:CalendarDays},{id:"achievements",label:"Conquistas",icon:Trophy},{id:"groups",label:"Grupos",icon:Users},{id:"profile",label:"Perfil",icon:UserRound}] as const;
- const dayComplete=(day:number)=>chaptersForDay(plan[day-1]).every(ch=>completed.has(ch.id));
+ const dayComplete=(day:number)=>{const chapters=chaptersForDay(plan[day-1]);return chapters.length>0&&chapters.every(ch=>completed.has(ch.id))};
  const openDay=(day:number)=>{setSelectedDay(day);setTab("today")};
  return <main className="shell">
   <header><div className="brand"><BookOpen size={25}/><span>LAB <small>LEITURA ANUAL DA BÍBLIA</small></span></div><span className="year"><CalendarDays size={16}/>{year}</span></header>
