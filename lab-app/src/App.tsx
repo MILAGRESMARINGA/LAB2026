@@ -17,12 +17,12 @@ export default function App(){
  const [tab,setTab]=useState<"today"|"calendar"|"achievements"|"groups"|"profile">("today");
  const today=plan[selectedDay-1];
  const chapters=chaptersForDay(today);
+ const [done,setDone]=useState<string[]>([]);
  const completed=new Set(done);
  const planDays=plan.map(d=>({day:d.day,chapters:chaptersForDay(d)}));
  const annualProgress=Math.round(done.length/totalChapters*100);
  const streak=readingStreak(completed,planDays,currentDay);
  const finishedDays=completedDayCount(completed,planDays);
- const [done,setDone]=useState<string[]>([]);
  const [user,setUser]=useState<string|null>(null);
  const [email,setEmail]=useState(""),[password,setPassword]=useState("");
  const [message,setMessage]=useState(""),[busy,setBusy]=useState(false);
