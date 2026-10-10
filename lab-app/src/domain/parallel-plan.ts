@@ -1,6 +1,15 @@
 import {CHAPTERS, type Chapter} from "./canon";
 export type ParallelDay={day:number;old:Chapter[];psalms:Chapter[];newTestament:Chapter[]};
-const distribute=(chapters:Chapter[],days:number)=>Array.from({length:days},(_,i)=>chapters.slice(Math.floor(i*chapters.length/days),Math.floor((i+1)*chapters.length/days)));
+const distribute=(chapters:Chapter[],days:number)=>{
+ let offset=0;
+ return Array.from({length:days},(_,i)=>{
+  // Front-load the first reading, then spread remaining readings evenly.
+  const next=Math.ceil((i+1)*chapters.length/days);
+  const part=chapters.slice(offset,next);
+  offset=next;
+  return part;
+ });
+};
 export function createParallelPlan(year:number):ParallelDay[]{
  if(!Number.isInteger(year)||year<1||year>9999)throw Error("Ano inválido");
  const days=new Date(Date.UTC(year,1,29)).getUTCMonth()===1?366:365;
