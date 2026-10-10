@@ -17,11 +17,11 @@ export default function App(){
  const [email,setEmail]=useState(""),[password,setPassword]=useState("");
  const [message,setMessage]=useState(""),[busy,setBusy]=useState(false);
  useEffect(()=>{
-  if(!supabase)return;
+  const client=supabase;if(!client)return;
   let active=true;
-  const refresh=async()=>{const {data:{user}}=await supabase.auth.getUser();if(!active)return;setUser(user?.email??null);if(user){try{setDone(await getCompletedChapters(year))}catch(e){setMessage(String(e))}}else setDone([])};
+  const refresh=async()=>{const {data:{user}}=await client.auth.getUser();if(!active)return;setUser(user?.email??null);if(user){try{setDone(await getCompletedChapters(year))}catch(e){setMessage(String(e))}}else setDone([])};
   void refresh();
-  const {data:{subscription}}=supabase.auth.onAuthStateChange(()=>{void refresh()});
+  const {data:{subscription}}=client.auth.onAuthStateChange(()=>{void refresh()});
   return()=>{active=false;subscription.unsubscribe()};
  },[year]);
  const progress=chapters.length?Math.round(chapters.filter(ch=>done.includes(ch.id)).length/chapters.length*100):100;
