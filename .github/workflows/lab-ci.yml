@@ -1,0 +1,21 @@
+name: LAB CI
+on:
+  push:
+    branches: [lab-rebuild-2026]
+    paths: ["lab-app/**", ".github/workflows/lab-ci.yml"]
+  pull_request:
+    paths: ["lab-app/**"]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lab-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+      - run: npm run build
