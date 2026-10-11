@@ -52,3 +52,41 @@ export async function setGCCompetition(groupId:string,enabled:boolean):Promise<v
  const {error}=await supabase.rpc("lab_game_set_gc_competition",{p_group_id:groupId,p_enabled:enabled});
  if(error)throw error;
 }
+
+export type LabScorecard={
+ chapters_confirmed:number;
+ panoramas_confirmed:number;
+ reading_xp:number;
+ video_xp:number;
+ total_xp:number;
+ recorded_xp:number;
+ balanced:boolean;
+ current_streak:number;
+ best_streak:number;
+ total_completed_days:number;
+ chapter_rate:number;
+ video_rate:number;
+};
+export type GCGroupSummary={
+ group_id:string;
+ name:string;
+ owner_id:string;
+ members:number;
+ consenting_members:number;
+ completed_member_days_7:number;
+ compliance_pct:number;
+ window_start:string;
+ window_end:string;
+};
+export async function loadGameScorecard():Promise<LabScorecard>{
+ if(!supabase)throw Error("Serviço de pontuação indisponível");
+ const {data,error}=await supabase.rpc("lab_game_scorecard");
+ if(error)throw error;
+ return data as LabScorecard;
+}
+export async function loadGroupSummary(groupId:string):Promise<GCGroupSummary>{
+ if(!supabase)throw Error("Serviço de grupos indisponível");
+ const {data,error}=await supabase.rpc("lab_game_group_summary",{p_group_id:groupId});
+ if(error)throw error;
+ return data as GCGroupSummary;
+}
