@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useMemo,useState} from "react";
-import {ArrowLeft,ArrowRight,Award,BookOpen,CalendarDays,Check,CheckCircle2,Compass,Flame,Library,LockKeyhole,LogIn,LogOut,Play,ExternalLink,Sparkles,Target,Trophy,Users,UserRound,Video} from "lucide-react";
+import {ArrowLeft,ArrowRight,Award,BookOpen,CalendarDays,Check,CheckCircle2,Compass,Flame,Library,LockKeyhole,BookMarked,LogIn,LogOut,Play,ExternalLink,Sparkles,Target,Trophy,Users,UserRound,Video} from "lucide-react";
 import {createGamePlan,GAME_DAYS,verifyGamePlan} from "./domain/game-plan";
 import {categoryOfBook,STUDY_BLOCKS,BIBLEPROJECT_PLAYLISTS,BIBLEPROJECT_OFFICIAL_COLLECTIONS,getBibleProjectVideos,getBibleProjectVideoForChapter} from "./domain/studies";
 import {CANON,OLD_TESTAMENT,NEW_TESTAMENT,totalChapters} from "./domain/canon";
@@ -8,10 +8,11 @@ import {signIn,signOut,signUp} from "./features/auth";
 import {loadGameState,confirmGameChapter,saveGameProfile,getGameRanking,startNewGameCycle,type LabGameState,type LabRankingEntry} from "./features/lab-game";
 import {createReadingGroup,getGroupInvite,joinReadingGroup,listReadingGroups,type ReadingGroup} from "./features/groups";
 import {BibleReader} from "./components/BibleReader";
+import {BibleLibrary} from "./components/BibleLibrary";
 import {BibleProjectPlayer} from "./components/BibleProjectPlayer";
 import type {BibleProjectResource} from "./domain/bibleproject";
-type Tab="today"|"journey"|"studies"|"groups"|"profile";
-const tabs=[{id:"today",label:"Hoje",icon:BookOpen},{id:"journey",label:"Jornada",icon:Compass},{id:"studies",label:"Estudos",icon:Library},{id:"groups",label:"GCs",icon:Users},{id:"profile",label:"Perfil",icon:UserRound}] as const;
+type Tab="today"|"bible"|"journey"|"studies"|"groups"|"profile";
+const tabs=[{id:"today",label:"Hoje",icon:BookOpen},{id:"bible",label:"Bíblia",icon:BookMarked},{id:"journey",label:"Jornada",icon:Compass},{id:"studies",label:"Estudos",icon:Library},{id:"groups",label:"GCs",icon:Users},{id:"profile",label:"Perfil",icon:UserRound}] as const;
 const plan=createGamePlan();
 const validPlan=verifyGamePlan(plan);
 const describeError=(e:unknown)=>e instanceof Error?e.message:"Não foi possível concluir a operação.";
@@ -102,6 +103,7 @@ export default function App(){
        {loading&&<p className="small-caption">Atualizando sua etapa...</p>}
       </section><section className="connections-panel"><span className="eyebrow">CONEXÕES DA PALAVRA</span><h3>Estude além do capítulo</h3><p>Explore temas, contextos e conexões entre livros sem alterar a regra da leitura diária.</p><button className="secondary-cta" onClick={()=>goTab("studies")}>EXPLORAR ESTUDOS <ArrowRight size={17}/></button></section></>}
    </div>}
+   {tab==="bible"&&<BibleLibrary signedIn={Boolean(user)} onVideo={openVideo}/>}
    {tab==="journey"&&<section className="game-panel"><span className="eyebrow">MAPA DE PROGRESSO</span><h1>Sua <em>jornada</em></h1><p className="muted">Cada etapa representa um dia completo de leitura. Etapas futuras permanecem bloqueadas.</p><div className="journey-stats"><div><Flame/><strong>{activeDays}</strong><span>Sequência</span></div><div><Trophy/><strong>{bestDays}</strong><span>Melhor marca</span></div><div><Award/><strong>{game?.total_xp??0}</strong><span>XP</span></div></div><div className="stage-grid">{plan.slice(0,showStages).map(d=>{const done=game!==null&&d.day<=game.completed_days;const current=game!==null&&d.day===game.day&&!done;return <div className={"stage-node "+(done?"finished":current?"unlocked":"blocked")} key={d.day}>{done?<Check size={17}/>:current?<Play size={16}/>:<LockKeyhole size={15}/>}<strong>{d.day}</strong></div>})}</div>{showStages<GAME_DAYS&&<button className="secondary-cta" onClick={()=>setShowStages(n=>Math.min(GAME_DAYS,n+35))}>VER MAIS ETAPAS <ArrowRight size={16}/></button>}<p className="small-caption">Após um dia perdido, a nova tentativa recomeça na etapa 1. Seu recorde histórico permanece.</p>{user&&<button className="primary-cta" onClick={()=>goTab("today")}>IR À ETAPA ATUAL <ArrowRight size={16}/></button>}</section>}
    {tab==="studies"&&<section className="game-panel"><span className="eyebrow">BIBLIOTECA LAB</span><h1>Estudos e <em>conexões.</em></h1><p className="muted">Panoramas literários, históricos e teológicos para acompanhar a leitura, sem pontuação de capítulos.</p><div className="study-grid">{STUDY_BLOCKS.map(b=><button key={b.id} className={"study-tile "+(selectedStudy===b.id?"selected":"")} onClick={()=>setSelectedStudy(b.id)}><Library size={24}/><strong>{b.title}</strong><small>{b.type==="conexão"?"Conexão bíblica":"Tema de estudo"}</small></button>)}</div><article className="study-detail"><span className="eyebrow">APROFUNDAMENTO</span><h2>{selectedBlock.title}</h2><p>{selectedBlock.intro}</p><h3>Leia e compare</h3><div className="reference-list">{selectedBlock.references.map(ref=><span key={ref}><BookOpen size={15}/>{ref}</span>)}</div><p className="small-caption">Estas conexões são roteiros de estudo. A exegese capítulo a capítulo será publicada após revisão bíblica e teológica.</p></article><article className="study-detail bibleproject-section">
  <span className="eyebrow">66 LIVROS · VÍDEOS EM PORTUGUÊS</span>
