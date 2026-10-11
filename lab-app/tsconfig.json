@@ -14,7 +14,8 @@
     "allowImportingTsExtensions": true,
     "noEmit": true,
     "types": [
-      "vitest/globals"
+      "vitest/globals",
+      "node"
     ]
   },
   "include": [
