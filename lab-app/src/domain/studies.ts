@@ -28,5 +28,4 @@ export const STUDY_BLOCKS:StudyBlock[]=[
  {id:"espirito",title:"A promessa do Espírito",references:["Joel 2","João 14","Atos 2"],intro:"Acompanhe a promessa, o ensino de Jesus e o relato de Pentecostes.",type:"tema"},
  {id:"salvacao",title:"Salvação e nova vida",references:["João 3","Romanos 5","Efésios 2"],intro:"Explore a linguagem bíblica da graça, da fé e da regeneração.",type:"tema"}
 ];
-/** Await user-supplied BibleProject playlists. Do not guess book video URLs. */
-export const BIBLEPROJECT_VIDEO_LINKS:Partial<Record<string,string>>={};
+export {BIBLEPROJECT_VIDEO_LINKS,BIBLEPROJECT_PLAYLISTS,BIBLEPROJECT_OFFICIAL_COLLECTIONS,getBibleProjectVideos,getBibleProjectVideoForChapter,getBibleProjectPlaylist} from "./bibleproject";
