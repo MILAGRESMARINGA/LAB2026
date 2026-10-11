@@ -1,7 +1,7 @@
 import {useEffect,useRef,useState} from "react";
 import {BookOpen,CheckCircle2,ChevronDown,Minus,Plus,RefreshCw} from "lucide-react";
 import {readBibleChapter,type BibleChapter} from "../features/bible";
-export function BibleReader({chapterId,onConfirm,busy}:{chapterId:string;onConfirm:()=>void;busy:boolean}){
+export function BibleReader({chapterId,onConfirm,busy=false}:{chapterId:string;onConfirm?:()=>void;busy?:boolean}){
  const [chapter,setChapter]=useState<BibleChapter|null>(null);
  const [error,setError]=useState("");
  const [loading,setLoading]=useState(true);
@@ -32,8 +32,8 @@ export function BibleReader({chapterId,onConfirm,busy}:{chapterId:string;onConfi
    {chapter.verses.map((verse,index)=><p key={verse.number+"-"+index} className="bible-verse"><sup>{verse.number}</sup> {verse.text}</p>)}
    <p className="chapter-finish"><CheckCircle2 size={20}/> Fim do capítulo</p>
   </div>
-  {!readToEnd&&<p className="reader-scroll-hint"><ChevronDown size={16}/> Role a leitura até o final para liberar a confirmação.</p>}
-  <button className="primary-cta reader-confirm" type="button" onClick={onConfirm} disabled={busy||!readToEnd}><CheckCircle2 size={20}/>{busy?"REGISTRANDO...":"CONCLUÍ A LEITURA"} </button>
+  {onConfirm&&!readToEnd&&<p className="reader-scroll-hint"><ChevronDown size={16}/> Role a leitura até o final para liberar a confirmação.</p>}
+  {onConfirm&&<button className="primary-cta reader-confirm" type="button" onClick={onConfirm} disabled={busy||!readToEnd}><CheckCircle2 size={20}/>{busy?"REGISTRANDO...":"CONCLUÍ A LEITURA"} </button>}
   <p className="reader-attribution">Almeida 1911 · Ortografia histórica · Texto de domínio público. Fonte: Projeto Gutenberg nº 62383; transcrição estruturada do projeto biblias.</p>
   </>}
  </section>;
