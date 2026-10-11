@@ -60,7 +60,7 @@ export function AccountAccess({initialMode="login",preferredMode="individual",ti
   finally{setBusy(false)}
  };
  const confirmCode=async()=>{
-  if(busy||!/^\\d{6}$/.test(otpCode.trim()))return;
+  if(busy||!/^\d{6}$/.test(otpCode.trim()))return;
   setBusy(true);setError("");setMessage("");
   try{
    await verifyEmailCode(email,otpCode,mode==="reset"?"recovery":"email");
@@ -97,7 +97,7 @@ export function AccountAccess({initialMode="login",preferredMode="individual",ti
    <p>O e-mail pode incluir um código de seis dígitos. Digite-o aqui para continuar sem sair do aplicativo.</p>
    <form className="account-code-form" onSubmit={e=>{e.preventDefault();void confirmCode()}}>
     <label htmlFor={prefix+"otp"}>Código recebido por e-mail</label>
-    <input id={prefix+"otp"} type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} placeholder="000000" value={otpCode} onChange={e=>setOtpCode(e.target.value.replace(/\\D/g,"").slice(0,6))}/>
+    <input id={prefix+"otp"} type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} placeholder="000000" value={otpCode} onChange={e=>setOtpCode(e.target.value.replace(/\D/g,"").slice(0,6))}/>
     <button className="primary-cta" type="submit" disabled={busy||otpCode.length!==6}>{mode==="reset"?"VALIDAR CÓDIGO E TROCAR SENHA":"VALIDAR CÓDIGO DE CONFIRMAÇÃO"}</button>
    </form>
    <button type="button" className="secondary-cta" disabled={busy} onClick={()=>void resend()}><Mail size={17}/> REENVIAR E-MAIL</button>
