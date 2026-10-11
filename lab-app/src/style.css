@@ -219,3 +219,69 @@ body.video-modal-open{overflow:hidden}
 .password-recovery-modal label{font-size:12px;font-weight:800}
 .password-recovery-modal input{border:2px solid #617a81;background:#102127;color:#fff;border-radius:11px;padding:15px;font-size:16px;min-width:0;width:100%}
 @media(max-width:500px){.password-recovery-modal{padding:19px}}
+
+/* Validated account creation and activation */
+.account-access{max-width:620px;margin:12px auto 20px;padding:15px 0}
+.account-heading{text-align:center;margin:0 0 22px}
+.account-heading .lab-emblem{margin:4px auto 14px}
+.account-heading h2{font-size:27px;margin:9px 0}
+.account-heading p{font-size:14px;line-height:1.6}
+.account-mode-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:0 0 21px;background:#182c33;border:1px solid #475d68;padding:7px;border-radius:14px}
+.account-mode-tabs button{display:flex;align-items:center;justify-content:center;gap:8px;background:transparent;border:2px solid transparent;border-radius:10px;padding:12px 7px;font-weight:850;color:#a6b9c1;font-size:13px}
+.account-mode-tabs button.active{background:#304a39;border-color:#a8d83c;color:#daf5a2}
+.account-access .auth-card{max-width:100%}
+.account-access .auth-card label{font-size:13px}
+.account-access .auth-card input,.account-access .auth-card select{min-height:48px;border:2px solid #48606a;color:#e9f6f3;background:#112229;border-radius:11px;padding:12px;font-size:15px;width:100%}
+.account-access .auth-card input:focus-visible,.account-access .auth-card select:focus-visible{outline:3px solid #a7d84d;outline-offset:1px}
+.account-access .auth-card .primary-cta{margin-top:18px}
+.account-password-field{position:relative}
+.account-password-field input{padding-right:54px!important}
+.account-password-field>button{position:absolute;right:6px;top:6px;height:36px;width:42px;display:flex;justify-content:center;align-items:center;border:0;background:#314b54;color:#c9dfe1;border-radius:8px}
+.account-access .small-caption{display:flex;align-items:flex-start;gap:7px}
+.account-access .small-caption svg{flex-shrink:0}
+.account-access>.subtle-button{margin:9px auto}
+.signup-confirmation{padding:22px 18px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:15px;border:1px solid #567d4c;border-radius:18px;background:#233c31}
+.signup-confirmation>svg{color:#b5e851}
+.signup-confirmation h3{font-size:22px;margin:0;color:#d6f0a6}
+.signup-confirmation p{font-size:14px;line-height:1.7;color:#c0d8cd;margin:0}
+.signup-confirmation strong{overflow-wrap:anywhere}
+.signup-confirmation .secondary-cta{width:100%}
+.account-success-message{padding:15px;border-radius:12px;border:1px solid #5c8852;color:#d5edc2;background:#294035;font-size:14px;line-height:1.6}
+/* Individually auditable reading and video reward formulas */
+.personal-scorecard{margin:28px 0;padding:23px;border:1px solid #46615b;border-radius:17px;background:#1b3035}
+.personal-scorecard h2{margin-top:8px}
+.scorecard-breakdown{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:17px 0}
+.scorecard-breakdown>div{display:flex;flex-direction:column;gap:8px;align-items:flex-start;background:#263d40;border:1px solid #506665;border-radius:13px;padding:15px;min-width:0}
+.scorecard-breakdown svg{color:#badc70}
+.scorecard-breakdown strong{font-size:24px;color:#e1f5bb}
+.scorecard-breakdown span{font-size:12px;font-weight:850}
+.scorecard-breakdown small{color:#9cb9bd;font-size:11px;line-height:1.5}
+/* GC profile, private member leaderboard and aggregate weekly attendance */
+.group-entry .gc-select-active{background:#95be47;color:#20321e}
+.gc-profile{border:2px solid #547074;border-radius:19px;padding:22px;background:#1a2f37;margin:26px 0}
+.gc-profile-top{display:flex;gap:14px;align-items:flex-start}
+.gc-profile-symbol{display:flex;align-items:center;justify-content:center;width:58px;height:58px;background:#35523b;border:1px solid #7ca25e;color:#c1e383;border-radius:16px;flex-shrink:0}
+.gc-profile-identity{flex:1;min-width:0}
+.gc-profile-identity h2{font-size:26px;margin:6px 0 8px}
+.gc-profile-identity p{margin:0;color:#a9c0c0;line-height:1.5;font-size:13px}
+.gc-profile-actions{display:flex;flex-wrap:wrap;gap:9px;margin:19px 0}
+.gc-profile-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:16px 0}
+.gc-profile-stats>div{background:#2a403f;border:1px solid #557269;border-radius:13px;padding:15px 7px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+.gc-profile-stats svg{color:#c4e880}
+.gc-profile-stats strong{font-size:23px}
+.gc-profile-stats span{font-size:10px;color:#b1c7ca}
+.gc-profile-formula{border:1px dashed #668267;border-radius:13px;background:#253a36;padding:16px;line-height:1.6;margin:19px 0}
+.gc-profile-formula h3{font-size:16px;margin:0 0 7px}
+.gc-profile-formula p{color:#d8eed6;font-size:13px}
+.gc-profile-formula small{color:#aabfbc;font-size:11px}
+.gc-profile-ranking{margin-top:24px}
+.gc-profile-ranking h3{margin-top:7px;font-size:20px}
+.gc-profile-ranking .muted{font-size:12px}
+.gc-profile-people{display:grid;gap:9px;margin:17px 0}
+.gc-profile-person{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px;background:#243a40;border:1px solid #4a686e;border-radius:12px}
+.gc-profile-rank{color:#e7bd68;font-size:18px;width:36px}
+.gc-profile-reader{font-size:14px;font-weight:850;flex:1;min-width:100px}
+.gc-profile-person-stats{display:flex;flex-wrap:wrap;align-items:center;gap:13px}
+.gc-profile-person-stats span{display:flex;gap:4px;align-items:center;font-size:11px;color:#bad2ca}
+.gc-profile-person-stats svg{color:#b2dc68}
+@media(max-width:650px){.account-heading h2{font-size:24px}.account-mode-tabs button{font-size:11px}.scorecard-breakdown{grid-template-columns:1fr}.scorecard-breakdown>div{flex-direction:row;align-items:center;flex-wrap:wrap}.scorecard-breakdown>div strong{font-size:20px}.scorecard-breakdown>div small{width:100%}.personal-scorecard{padding:15px}.gc-profile{padding:14px}.gc-profile-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.gc-profile-person-stats{width:100%;justify-content:flex-start}.gc-profile-rank{width:30px}}
