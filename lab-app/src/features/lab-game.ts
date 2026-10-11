@@ -28,3 +28,10 @@ export async function getGameRanking(groupId:string):Promise<LabRankingEntry[]>{
  if(error)throw error;
  return (data??[]) as LabRankingEntry[];
 }
+
+export async function startNewGameCycle():Promise<LabGameState>{
+ if(!supabase)throw Error("Serviço de leitura indisponível.");
+ const {data,error}=await supabase.rpc("lab_game_restart_completed");
+ if(error)throw error;
+ return data as LabGameState;
+}
