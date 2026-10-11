@@ -42,9 +42,12 @@ export function AuthFlow({route}:{route:Exclude<AuthRoute,"none">}){
    }
    try{
     const query=new URLSearchParams(window.location.search);
-    const tokenHash=query.get("token_hash");
+    // Custom email templates can keep the one-time token in a URL fragment,
+    // so it never reaches Vercel access logs or an HTTP Referer header.
+    const fragment=new URLSearchParams(window.location.hash.replace(/^#/,""));
+    const tokenHash=query.get("token_hash")||fragment.get("token_hash");
     if(tokenHash){
-     const rawType=query.get("type");
+     const rawType=query.get("type")||fragment.get("type");
      const expected:VerifyType=route==="reset"?"recovery":"email";
      if(rawType!==expected&&!(route==="callback"&&rawType==="signup"))
       throw new Error("O link não corresponde a esta operação. Solicite um novo link.");
