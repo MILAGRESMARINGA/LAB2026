@@ -63,8 +63,8 @@ Atualização: 11/10/2026. Branch: `lab-rebuild-2026` do repositório `MILAGRESM
 - [x] Projeto LABGAME isolado de demais bancos de dados do usuário
 - [x] Repositório GitHub e Vercel conectados para deploy
 - [x] Pipeline exige `npm test && npm run build`
-- [x] Build da primeira versão gamificada aprovado (32 testes em sete arquivos)
-- [ ] Confirmar novo build com os testes adicionais de categorias bíblicas e fluxo de capítulos
+- [x] Build da primeira versão gamificada aprovado (32 testes em sete arquivos)\n- [x] Release de jornada por capítulo aprovado no deploy dpl_2mrMg7dYCz8gykjuD9FUz9ZKeaXW (36 testes em 8 arquivos, Vercel READY)
+- [x] Testes de categorias bíblicas e fluxo de capítulos aprovados (36/36 no Vercel)\n- [ ] Validar transições e responsividade com navegador real e duas contas autenticadas
 - [ ] Testes de RLS com credenciais autenticadas por HTTP e duas sessões distintas
 - [ ] Observabilidade de falhas, plano de backup/rollback, desempenho mobile
 - [ ] Publicação homologada e abertura gradual por GC
