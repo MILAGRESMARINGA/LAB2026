@@ -179,3 +179,20 @@ body.video-modal-open{overflow:hidden}
 .gc-league-period{display:flex;align-items:center;gap:8px;color:#a9c2c8;font-size:12px;margin-top:16px}
 .gc-league-footnote{font-size:12px;line-height:1.6;color:#acc0c3;margin:20px 0 5px}
 @media(max-width:600px){.gc-league{padding:17px 0 0}.gc-league-consent{padding:12px}.gc-league-heading{gap:10px}.gc-league-icon{height:46px;width:46px}.gc-league-row{gap:7px;padding:12px 8px}.gc-league-position{width:28px;font-size:17px}.gc-league-name>strong{font-size:13px}.gc-league-name>span,.gc-league-score>span{font-size:10px}.gc-league-score>strong{font-size:18px}}
+
+/* Bible-wide Portuguese text search with highlighted selected verse. */
+.bible-verse-search{background:#1f343d;border:1px solid #547078;border-radius:16px;padding:18px;margin:20px 0}
+.bible-verse-search>label{display:flex;gap:9px;align-items:center;color:#cfe2e4;font-size:13px;font-weight:800;margin-bottom:12px}
+.bible-verse-search>label svg{color:#b8e255}
+.bible-verse-search-controls{display:flex;gap:9px}
+.bible-verse-search-controls input{flex:1;min-width:0;border:2px solid #54727d;border-radius:10px;background:#10232b;color:#e8f3f3;padding:12px;font-size:14px}
+.bible-verse-search-controls button{flex-shrink:0}
+.bible-verse-results{max-height:390px;overflow-y:auto;margin-top:15px;border-top:1px solid #4d666f;padding-top:6px}
+.bible-verse-results h3{font-size:13px;color:#b7cecf}
+.bible-verse-results>button{width:100%;display:flex;align-items:flex-start;gap:10px;border:1px solid #415b61;border-radius:11px;background:#1c3037;color:#dcebec;text-align:left;margin:8px 0;padding:12px}
+.bible-verse-results>button:hover{background:#2b4740;border-color:#98c648}
+.bible-verse-results>button strong{color:#c1eb85;font-size:12px;min-width:95px;flex-shrink:0}
+.bible-verse-results>button span{flex:1;font-size:13px;line-height:1.5}
+.bible-verse-results>button svg{flex-shrink:0;color:#b0d667}
+.bible-verse.bible-verse-highlight{background:#354638;border-left:4px solid #aedf52;border-radius:5px;padding:9px 11px;margin-left:-11px;color:#f4fae6}
+@media(max-width:650px){.bible-verse-search{padding:13px}.bible-verse-search-controls button{font-size:11px;padding:11px}.bible-verse-results>button{flex-wrap:wrap}.bible-verse-results>button span{min-width:70%;order:3}.bible-verse-results>button svg{margin-left:auto}}
