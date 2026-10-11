@@ -9,6 +9,7 @@ import {supabase} from "./lib/supabase";
 import {getCompletedChapters,setChapterCompleted} from "./features/progress";
 import {signIn,signUp,signOut} from "./features/auth";
 import {achievements,chapterPoints} from "./domain/gamification";
+import {createReadingGroup,getGroupInvite,joinReadingGroup,listReadingGroups,type ReadingGroup} from "./features/groups";
 export default function App(){
  const year=new Date().getFullYear();
  const plan=useMemo(()=>createParallelPlan(year),[year]);
@@ -26,6 +27,17 @@ export default function App(){
  const [user,setUser]=useState<string|null>(null);
  const [email,setEmail]=useState(""),[password,setPassword]=useState("");
  const [message,setMessage]=useState(""),[busy,setBusy]=useState(false);
+ const [groups,setGroups]=useState<ReadingGroup[]>([]);
+ const [groupName,setGroupName]=useState("");
+ const [inviteCode,setInviteCode]=useState("");
+ const [groupMessage,setGroupMessage]=useState("");
+ const [groupBusy,setGroupBusy]=useState(false);
+ const [myInvite,setMyInvite]=useState<{groupId:string;token:string}|null>(null);
+ const refreshGroups=async()=>{setGroups(await listReadingGroups())};
+ const createGroup=async()=>{setGroupBusy(true);setGroupMessage("");try{await createReadingGroup(groupName);setGroupName("");await refreshGroups();setGroupMessage("Grupo criado com sucesso.")}catch(e){setGroupMessage(e instanceof Error?e.message:"Erro ao criar grupo")}finally{setGroupBusy(false)}};
+ const joinGroup=async()=>{setGroupBusy(true);setGroupMessage("");try{await joinReadingGroup(inviteCode);setInviteCode("");await refreshGroups();setGroupMessage("Você entrou no grupo.")}catch(e){setGroupMessage(e instanceof Error?e.message:"Convite inválido")}finally{setGroupBusy(false)}};
+ const viewInvite=async(groupId:string)=>{setGroupBusy(true);setGroupMessage("");try{const token=await getGroupInvite(groupId);setMyInvite({groupId,token})}catch(e){setGroupMessage(e instanceof Error?e.message:"Não foi possível consultar o convite")}finally{setGroupBusy(false)}};
+
  useEffect(()=>{
   const client=supabase;if(!client)return;
   let active=true;
@@ -34,6 +46,12 @@ export default function App(){
   const {data:{subscription}}=client.auth.onAuthStateChange(()=>{void refresh()});
   return()=>{active=false;subscription.unsubscribe()};
  },[year]);
+ useEffect(()=>{
+  if(tab!=="groups"||!user){setGroups([]);return}
+  let active=true;
+  void listReadingGroups().then(data=>{if(active)setGroups(data)}).catch(e=>{if(active)setGroupMessage(e instanceof Error?e.message:"Erro ao carregar grupos")});
+  return()=>{active=false};
+ },[tab,user]);
  const progress=chapters.length?Math.round(chapters.filter(ch=>done.includes(ch.id)).length/chapters.length*100):0;
  const toggle=async(id:string,checked:boolean)=>{
   if(!user){setMessage("Entre na sua conta para registrar a leitura.");return}
@@ -64,7 +82,27 @@ export default function App(){
   </>}
   {tab==="calendar"&&<section className="panel"><span className="eyebrow">SUA JORNADA</span><h2>Calendário de leitura</h2><p className="muted">Selecione um dia para abrir suas leituras. Dias completos aparecem marcados.</p><div className="calendar-grid">{plan.map(d=><button type="button" key={d.day} className={dayComplete(d.day)?"finished":d.day===currentDay?"current":""} onClick={()=>openDay(d.day)} aria-label={`Abrir dia ${d.day}`}>{d.day}</button>)}</div></section>}
   {tab==="achievements"&&<section className="panel"><span className="eyebrow">CONSTÂNCIA E PROGRESSO</span><h2>Suas conquistas</h2><div className="metric-grid"><div><Trophy/><strong>{done.length*10}</strong><span>XP</span></div><div><Flame/><strong>{streak}</strong><span>Dias seguidos</span></div><div><CheckCircle2/><strong>{finishedDays}</strong><span>Dias completos</span></div></div><div className="progress-line"><span>Progresso anual</span><strong>{annualProgress}%</strong></div><div className="track"><div style={{width:`${annualProgress}%`}}/></div>{achievements(done.map(chapterId=>({chapterId,completedAt:""}))).map(a=><div className="achievement" key={a.id}><Trophy size={19}/><span>{a.label}</span><strong>{a.earned?"Conquistada":"Pendente"}</strong></div>)}<p className="muted">A pontuação reconhece a constância, não mede espiritualidade.</p></section>}
-  {tab==="groups"&&<section className="panel"><span className="eyebrow">COMUNIDADE LAB</span><h2>Grupos de leitura</h2><p className="muted">Acompanhe a Bíblia em comunidade. Convites, gestão de líderes e rankings privados serão habilitados após a revisão das permissões.</p><div className="feature-note"><Users size={25}/><div><strong>Em preparação</strong><p>Os dados dos participantes não são públicos.</p></div></div></section>}
+  {tab==="groups"&&<section className="panel">
+    <span className="eyebrow">COMUNIDADE LAB</span><h2>Grupos de leitura</h2>
+    <p className="muted">Leia em comunidade. Seus registros de capítulos continuam privados.</p>
+    {!user?<p className="feature-note">Entre na sua conta na aba Hoje para criar ou participar de um grupo.</p>:<>
+      <div className="group-forms">
+        <form onSubmit={e=>{e.preventDefault();void createGroup()}}>
+          <h3>Criar grupo</h3><label htmlFor="lab-group-name">Nome do grupo</label>
+          <input id="lab-group-name" value={groupName} minLength={2} maxLength={100} required placeholder="Ex.: GC O Caminho" onChange={e=>setGroupName(e.target.value)}/>
+          <button disabled={groupBusy} type="submit">Criar grupo</button>
+        </form>
+        <form onSubmit={e=>{e.preventDefault();void joinGroup()}}>
+          <h3>Entrar por convite</h3><label htmlFor="lab-invite">Código do convite</label>
+          <input id="lab-invite" value={inviteCode} required placeholder="Código recebido do líder" onChange={e=>setInviteCode(e.target.value)}/>
+          <button disabled={groupBusy} type="submit">Participar</button>
+        </form>
+      </div>
+      {groupMessage&&<p role="status" className="notice">{groupMessage}</p>}
+      <h3>Meus grupos ({groups.length})</h3>
+      {groups.length===0?<p className="muted">Nenhum grupo encontrado. Crie um ou entre com um convite.</p>:groups.map(g=><div className="group-entry" key={g.id}><div><strong>{g.name}</strong><small>Grupo privado</small></div><button type="button" disabled={groupBusy} onClick={()=>void viewInvite(g.id)}>Ver convite do líder</button>{myInvite?.groupId===g.id&&<div className="invite-token"><span>Código do convite: {myInvite.token}</span><button onClick={()=>void navigator.clipboard?.writeText(myInvite.token)} type="button">Copiar</button></div>}</div>)}
+    </>}
+  </section>}
   {tab==="profile"&&<section className="panel"><span className="eyebrow">MINHA CONTA</span><h2>Perfil</h2><p className="muted">{user?`Conectado como ${user}`:"Faça login na aba Hoje para registrar suas leituras."}</p><div className="metric-grid"><div><BookOpen/><strong>{done.length}</strong><span>Capítulos lidos</span></div><div><CalendarDays/><strong>{finishedDays}</strong><span>Dias completos</span></div><div><Trophy/><strong>{annualProgress}%</strong><span>Plano anual</span></div></div>{user&&<button className="signout" onClick={()=>void signOut()}>Sair da conta</button>}</section>}
   <footer>LAB · Leitura bíblica integral · {year}</footer>
  </main>;
