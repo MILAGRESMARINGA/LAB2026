@@ -1,4 +1,5 @@
 import {supabase} from "../lib/supabase";
+import {confirmationRedirectUrl,recoveryRedirectUrl} from "../lib/auth-urls";
 export type RegistrationResult={emailConfirmationRequired:boolean};
 export type RegistrationMode="individual"|"grupo";
 const normalizedEmail=(value:string)=>value.trim().toLowerCase();
@@ -39,7 +40,7 @@ export async function signUp(email:string,password:string,displayName:string,mod
   email:normalizedEmail(email),
   password,
   options:{
-   emailRedirectTo:window.location.origin,
+   emailRedirectTo:confirmationRedirectUrl(),
    data:{display_name:clean,preferred_mode:mode}
   }
  });
@@ -51,7 +52,7 @@ export async function resendSignUpConfirmation(email:string):Promise<void>{
  if(!supabase)throw Error("Supabase não configurado");
  const normalized=normalizedEmail(email);
  if(!validEmail(normalized))throw Error("Informe um e-mail válido.");
- const {error}=await supabase.auth.resend({type:"signup",email:normalized,options:{emailRedirectTo:window.location.origin}});
+ const {error}=await supabase.auth.resend({type:"signup",email:normalized,options:{emailRedirectTo:confirmationRedirectUrl()}});
  if(error)throw error;
 }
 export async function signOut(){
@@ -63,7 +64,7 @@ export async function requestPasswordReset(email:string):Promise<void>{
  if(!supabase)throw Error("Supabase não configurado");
  const normalized=normalizedEmail(email);
  if(!validEmail(normalized))throw Error("Informe um endereço de e-mail válido");
- const {error}=await supabase.auth.resetPasswordForEmail(normalized,{redirectTo:window.location.origin});
+ const {error}=await supabase.auth.resetPasswordForEmail(normalized,{redirectTo:recoveryRedirectUrl()});
  if(error)throw error;
 }
 export async function updateAccountPassword(password:string):Promise<void>{
