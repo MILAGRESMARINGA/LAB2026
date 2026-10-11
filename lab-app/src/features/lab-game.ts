@@ -35,3 +35,20 @@ export async function startNewGameCycle():Promise<LabGameState>{
  if(error)throw error;
  return data as LabGameState;
 }
+
+export type GCLeagueEntry={
+ rank_position:number;group_id:string;group_name:string;
+ members:number;consenting_members:number;days_completed:number;
+ compliance_pct:number;window_start:string;window_end:string;
+};
+export async function getGCLeague():Promise<GCLeagueEntry[]>{
+ if(!supabase)throw Error("Serviço de leitura indisponível");
+ const {data,error}=await supabase.rpc("lab_game_gc_league");
+ if(error)throw error;
+ return (data??[]) as GCLeagueEntry[];
+}
+export async function setGCCompetition(groupId:string,enabled:boolean):Promise<void>{
+ if(!supabase)throw Error("Serviço de leitura indisponível");
+ const {error}=await supabase.rpc("lab_game_set_gc_competition",{p_group_id:groupId,p_enabled:enabled});
+ if(error)throw error;
+}
