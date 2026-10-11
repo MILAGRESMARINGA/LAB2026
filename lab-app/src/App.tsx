@@ -1,109 +1,101 @@
-import {useEffect,useMemo,useState} from "react";
-import {BookOpen,CheckCircle2,CalendarDays,ShieldCheck,LogIn,LogOut,Trophy,Users,UserRound,ChevronLeft,ChevronRight,Flame} from "lucide-react";
-import {createParallelPlan,verifyParallelPlan} from "./domain/parallel-plan";
-import {dayOfYear} from "./domain/plan";
-import {chaptersForDay,formatReadingDate} from "./domain/calendar";
-import {readingStreak,completedDayCount} from "./domain/streaks";
+import {useCallback,useEffect,useMemo,useState} from "react";
+import {ArrowLeft,ArrowRight,Award,BookOpen,CalendarDays,Check,CheckCircle2,Compass,Flame,Library,LockKeyhole,LogIn,LogOut,Play,Sparkles,Target,Trophy,Users,UserRound,Video} from "lucide-react";
+import {createGamePlan,GAME_DAYS,verifyGamePlan} from "./domain/game-plan";
+import {categoryOfBook,STUDY_BLOCKS,BIBLEPROJECT_VIDEO_LINKS} from "./domain/studies";
 import {CANON,totalChapters} from "./domain/canon";
 import {supabase} from "./lib/supabase";
-import {getCompletedChapters,setChapterCompleted} from "./features/progress";
-import {signIn,signUp,signOut} from "./features/auth";
-import {achievements,chapterPoints} from "./domain/gamification";
+import {signIn,signOut,signUp} from "./features/auth";
+import {loadGameState,confirmGameChapter,saveGameProfile,getGameRanking,type LabGameState,type LabRankingEntry} from "./features/lab-game";
 import {createReadingGroup,getGroupInvite,joinReadingGroup,listReadingGroups,type ReadingGroup} from "./features/groups";
+type Tab="today"|"journey"|"studies"|"groups"|"profile";
+const tabs=[{id:"today",label:"Hoje",icon:BookOpen},{id:"journey",label:"Jornada",icon:Compass},{id:"studies",label:"Estudos",icon:Library},{id:"groups",label:"GCs",icon:Users},{id:"profile",label:"Perfil",icon:UserRound}] as const;
+const plan=createGamePlan();
+const validPlan=verifyGamePlan(plan);
+const describeError=(e:unknown)=>e instanceof Error?e.message:"Não foi possível concluir a operação.";
 export default function App(){
- const year=new Date().getFullYear();
- const plan=useMemo(()=>createParallelPlan(year),[year]);
- const currentDay=dayOfYear(new Date());
- const [selectedDay,setSelectedDay]=useState(currentDay);
- const [tab,setTab]=useState<"today"|"calendar"|"achievements"|"groups"|"profile">("today");
- const today=plan[selectedDay-1];
- const chapters=chaptersForDay(today);
- const [done,setDone]=useState<string[]>([]);
- const completed=new Set(done);
- const planDays=plan.map(d=>({day:d.day,chapters:chaptersForDay(d)}));
- const annualProgress=Math.round(done.length/totalChapters*100);
- const streak=readingStreak(completed,planDays,currentDay);
- const finishedDays=completedDayCount(completed,planDays);
- const [user,setUser]=useState<string|null>(null);
+ const [tab,setTab]=useState<Tab>("today");
+ const [user,setUser]=useState<{id:string;email:string}|null>(null);
+ const [game,setGame]=useState<LabGameState|null>(null);
+ const [loading,setLoading]=useState(false),[busy,setBusy]=useState(false);
+ const [message,setMessage]=useState("");
  const [email,setEmail]=useState(""),[password,setPassword]=useState("");
- const [message,setMessage]=useState(""),[busy,setBusy]=useState(false);
+ const [introStep,setIntroStep]=useState(0),[preferredMode,setPreferredMode]=useState<"individual"|"grupo">("individual");
+ const [viewAuth,setViewAuth]=useState(false);
+ const [profileName,setProfileName]=useState(""),[optIn,setOptIn]=useState(false);
  const [groups,setGroups]=useState<ReadingGroup[]>([]);
- const [groupName,setGroupName]=useState("");
- const [inviteCode,setInviteCode]=useState("");
- const [groupMessage,setGroupMessage]=useState("");
- const [groupBusy,setGroupBusy]=useState(false);
- const [myInvite,setMyInvite]=useState<{groupId:string;token:string}|null>(null);
- const refreshGroups=async()=>{setGroups(await listReadingGroups())};
- const createGroup=async()=>{setGroupBusy(true);setGroupMessage("");try{await createReadingGroup(groupName);setGroupName("");await refreshGroups();setGroupMessage("Grupo criado com sucesso.")}catch(e){setGroupMessage(e instanceof Error?e.message:"Erro ao criar grupo")}finally{setGroupBusy(false)}};
- const joinGroup=async()=>{setGroupBusy(true);setGroupMessage("");try{await joinReadingGroup(inviteCode);setInviteCode("");await refreshGroups();setGroupMessage("Você entrou no grupo.")}catch(e){setGroupMessage(e instanceof Error?e.message:"Convite inválido")}finally{setGroupBusy(false)}};
- const viewInvite=async(groupId:string)=>{setGroupBusy(true);setGroupMessage("");try{const token=await getGroupInvite(groupId);setMyInvite({groupId,token})}catch(e){setGroupMessage(e instanceof Error?e.message:"Não foi possível consultar o convite")}finally{setGroupBusy(false)}};
-
+ const [groupName,setGroupName]=useState(""),[inviteCode,setInviteCode]=useState("");
+ const [groupBusy,setGroupBusy]=useState(false),[groupMessage,setGroupMessage]=useState("");
+ const [invites,setInvites]=useState<Record<string,string>>({});
+ const [rankingGroup,setRankingGroup]=useState(""),[ranking,setRanking]=useState<LabRankingEntry[]>([]);
+ const [selectedStudy,setSelectedStudy]=useState(STUDY_BLOCKS[0].id);
+ const [showStages,setShowStages]=useState(28);
+ const refreshGame=useCallback(async()=>{setLoading(true);try{const state=await loadGameState();setGame(state);setProfileName(state.display_name||"Leitor LAB");setOptIn(Boolean(state.leaderboard_opt_in));setMessage("")}catch(e){setMessage(describeError(e))}finally{setLoading(false)}},[]);
  useEffect(()=>{
   const client=supabase;if(!client)return;
   let active=true;
-  const refresh=async()=>{const {data:{user}}=await client.auth.getUser();if(!active)return;setUser(user?.email??null);if(user){try{setDone(await getCompletedChapters(year))}catch(e){setMessage(String(e))}}else setDone([])};
-  void refresh();
-  const {data:{subscription}}=client.auth.onAuthStateChange(()=>{void refresh()});
+  const setAuth=async()=>{const {data:{user:authenticated}}=await client.auth.getUser();if(!active)return;setUser(authenticated?{id:authenticated.id,email:authenticated.email||""}:null)};
+  void setAuth();
+  const {data:{subscription}}=client.auth.onAuthStateChange(()=>{void setAuth()});
   return()=>{active=false;subscription.unsubscribe()};
- },[year]);
+ },[]);
+ useEffect(()=>{if(!user){setGame(null);setGroups([]);return}void refreshGame()},[user?.id,refreshGame]);
  useEffect(()=>{
-  if(tab!=="groups"||!user){setGroups([]);return}
+  if(!user||(tab!=="groups"&&tab!=="profile"))return;
   let active=true;
-  void listReadingGroups().then(data=>{if(active)setGroups(data)}).catch(e=>{if(active)setGroupMessage(e instanceof Error?e.message:"Erro ao carregar grupos")});
+  void listReadingGroups().then(data=>{if(active){setGroups(data);setRankingGroup(prev=>prev||data[0]?.id||"")}}).catch(e=>{if(active)setGroupMessage(describeError(e))});
   return()=>{active=false};
- },[tab,user]);
- const progress=chapters.length?Math.round(chapters.filter(ch=>done.includes(ch.id)).length/chapters.length*100):0;
- const toggle=async(id:string,checked:boolean)=>{
-  if(!user){setMessage("Entre na sua conta para registrar a leitura.");return}
-  setBusy(true);setMessage("");
-  try{await setChapterCompleted(year,id,checked);setDone(old=>checked?[...new Set([...old,id])]:old.filter(x=>x!==id))}
-  catch(e){setMessage(e instanceof Error?e.message:"Erro ao salvar leitura")}
-  finally{setBusy(false)}
- };
- const auth=async(mode:"in"|"up")=>{setBusy(true);setMessage("");try{if(mode==="in")await signIn(email,password);else{await signUp(email,password);setMessage("Cadastro solicitado. Verifique seu e-mail, se necessário.")}}catch(e){setMessage(e instanceof Error?e.message:"Falha de autenticação")}finally{setBusy(false)}};
- const sections=[{title:"Antigo Testamento",data:today.old},{title:"Salmos",data:today.psalms},{title:"Novo Testamento",data:today.newTestament}];
- const tabs=[{id:"today",label:"Hoje",icon:BookOpen},{id:"calendar",label:"Calendário",icon:CalendarDays},{id:"achievements",label:"Conquistas",icon:Trophy},{id:"groups",label:"Grupos",icon:Users},{id:"profile",label:"Perfil",icon:UserRound}] as const;
- const dayComplete=(day:number)=>{const chapters=chaptersForDay(plan[day-1]);return chapters.length>0&&chapters.every(ch=>completed.has(ch.id))};
- const openDay=(day:number)=>{setSelectedDay(day);setTab("today")};
- return <main className="shell">
-  <header><div className="brand"><BookOpen size={25}/><span>LAB <small>LEITURA ANUAL DA BÍBLIA</small></span></div><span className="year"><CalendarDays size={16}/>{year}</span></header>
-  <nav className="app-nav" aria-label="Navegação principal">{tabs.map(t=><button key={t.id} type="button" className={tab===t.id?"active":""} onClick={()=>setTab(t.id)}><t.icon size={17}/><span>{t.label}</span></button>)}</nav>
-  {tab==="today"&&<><section className="hero"><span className="eyebrow">SUA JORNADA NA PALAVRA</span><h1>Um dia de cada vez.<br/><em>A Bíblia toda em um ano.</em></h1><p>Leia as Escrituras, desenvolva constância e acompanhe sua jornada.</p><div className="stats"><div><strong>{CANON.length}</strong><span>Livros</span></div><div><strong>{totalChapters.toLocaleString("pt-BR")}</strong><span>Capítulos</span></div><div><strong>{plan.length}</strong><span>Dias</span></div></div></section>
-  <section className="panel"><div className="section-head"><div><span className="eyebrow">PLANO ANUAL</span><h2>Leitura de hoje</h2><p>Dia {today.day} de {plan.length} · {formatReadingDate(year,today.day)}</p></div><span className="chip">{user?"Conectado":"Acesso livre"}</span></div>
-  {supabase&&!user&&<form className="auth" onSubmit={e=>{e.preventDefault();void auth("in")}}><input aria-label="E-mail" type="email" placeholder="E-mail" required value={email} onChange={e=>setEmail(e.target.value)}/><input aria-label="Senha" type="password" placeholder="Senha" required minLength={6} value={password} onChange={e=>setPassword(e.target.value)}/><button disabled={busy} type="submit"><LogIn size={15}/> Entrar</button><button type="button" disabled={busy} onClick={()=>void auth("up")}>Criar conta</button></form>}
-  {user&&<div className="auth"><span>{user}</span><button onClick={()=>void signOut()}><LogOut size={15}/> Sair</button></div>}
-  <div className="day-switch"><button type="button" disabled={selectedDay<=1} onClick={()=>setSelectedDay(d=>d-1)} aria-label="Dia anterior"><ChevronLeft size={18}/></button><strong>Dia {selectedDay}</strong><button type="button" disabled={selectedDay>=plan.length} onClick={()=>setSelectedDay(d=>d+1)} aria-label="Próximo dia"><ChevronRight size={18}/></button></div>
-  <div className="progress-line"><span>Progresso de hoje</span><strong>{progress}%</strong></div><div className="track"><div style={{width:`${progress}%`}}/></div>
-  {sections.map(section=><div key={section.title}><h3>{section.title}</h3>{section.data.length===0?<p className="empty">Sem capítulo nesta seção hoje.</p>:section.data.map(ch=><label className="reading" key={ch.id}><div className="reading-title"><BookOpen size={18}/><span>{ch.book} <b>{ch.chapter}</b></span></div><input type="checkbox" disabled={busy||!user} checked={done.includes(ch.id)} onChange={e=>void toggle(ch.id,e.target.checked)}/></label>)}</div>)}
-  {progress===100&&<p className="complete"><CheckCircle2 size={18}/> Leitura do dia concluída!</p>}
-  {message&&<p role="status" className="notice">{message}</p>}
-  {user&&<p className="notice">Pontos por capítulos confirmados: {chapterPoints(done.map(chapterId=>({chapterId,completedAt:""})))} · Conquistas: {achievements(done.map(chapterId=>({chapterId,completedAt:""}))).filter(a=>a.earned).map(a=>a.label).join(", ")||"Nenhuma"}</p>}
-  <p className="notice"><ShieldCheck size={16}/> {verifyParallelPlan(plan)?"Plano anual validado: 1.189 capítulos sem duplicação.":"Erro de cobertura."} {supabase?"Progresso salvo apenas após autenticação.":"Configure o Supabase do LAB para salvar seu progresso."}</p></section>
-  </>}
-  {tab==="calendar"&&<section className="panel"><span className="eyebrow">SUA JORNADA</span><h2>Calendário de leitura</h2><p className="muted">Selecione um dia para abrir suas leituras. Dias completos aparecem marcados.</p><div className="calendar-grid">{plan.map(d=><button type="button" key={d.day} className={dayComplete(d.day)?"finished":d.day===currentDay?"current":""} onClick={()=>openDay(d.day)} aria-label={`Abrir dia ${d.day}`}>{d.day}</button>)}</div></section>}
-  {tab==="achievements"&&<section className="panel"><span className="eyebrow">CONSTÂNCIA E PROGRESSO</span><h2>Suas conquistas</h2><div className="metric-grid"><div><Trophy/><strong>{done.length*10}</strong><span>XP</span></div><div><Flame/><strong>{streak}</strong><span>Dias seguidos</span></div><div><CheckCircle2/><strong>{finishedDays}</strong><span>Dias completos</span></div></div><div className="progress-line"><span>Progresso anual</span><strong>{annualProgress}%</strong></div><div className="track"><div style={{width:`${annualProgress}%`}}/></div>{achievements(done.map(chapterId=>({chapterId,completedAt:""}))).map(a=><div className="achievement" key={a.id}><Trophy size={19}/><span>{a.label}</span><strong>{a.earned?"Conquistada":"Pendente"}</strong></div>)}<p className="muted">A pontuação reconhece a constância, não mede espiritualidade.</p></section>}
-  {tab==="groups"&&<section className="panel">
-    <span className="eyebrow">COMUNIDADE LAB</span><h2>Grupos de leitura</h2>
-    <p className="muted">Leia em comunidade. Seus registros de capítulos continuam privados.</p>
-    {!user?<p className="feature-note">Entre na sua conta na aba Hoje para criar ou participar de um grupo.</p>:<>
-      <div className="group-forms">
-        <form onSubmit={e=>{e.preventDefault();void createGroup()}}>
-          <h3>Criar grupo</h3><label htmlFor="lab-group-name">Nome do grupo</label>
-          <input id="lab-group-name" value={groupName} minLength={2} maxLength={100} required placeholder="Ex.: GC O Caminho" onChange={e=>setGroupName(e.target.value)}/>
-          <button disabled={groupBusy} type="submit">Criar grupo</button>
-        </form>
-        <form onSubmit={e=>{e.preventDefault();void joinGroup()}}>
-          <h3>Entrar por convite</h3><label htmlFor="lab-invite">Código do convite</label>
-          <input id="lab-invite" value={inviteCode} required placeholder="Código recebido do líder" onChange={e=>setInviteCode(e.target.value)}/>
-          <button disabled={groupBusy} type="submit">Participar</button>
-        </form>
-      </div>
-      {groupMessage&&<p role="status" className="notice">{groupMessage}</p>}
-      <h3>Meus grupos ({groups.length})</h3>
-      {groups.length===0?<p className="muted">Nenhum grupo encontrado. Crie um ou entre com um convite.</p>:groups.map(g=><div className="group-entry" key={g.id}><div><strong>{g.name}</strong><small>Grupo privado</small></div><button type="button" disabled={groupBusy} onClick={()=>void viewInvite(g.id)}>Ver convite do líder</button>{myInvite?.groupId===g.id&&<div className="invite-token"><span>Código do convite: {myInvite.token}</span><button onClick={()=>void navigator.clipboard?.writeText(myInvite.token)} type="button">Copiar</button></div>}</div>)}
-    </>}
-  </section>}
-  {tab==="profile"&&<section className="panel"><span className="eyebrow">MINHA CONTA</span><h2>Perfil</h2><p className="muted">{user?`Conectado como ${user}`:"Faça login na aba Hoje para registrar suas leituras."}</p><div className="metric-grid"><div><BookOpen/><strong>{done.length}</strong><span>Capítulos lidos</span></div><div><CalendarDays/><strong>{finishedDays}</strong><span>Dias completos</span></div><div><Trophy/><strong>{annualProgress}%</strong><span>Plano anual</span></div></div>{user&&<button className="signout" onClick={()=>void signOut()}>Sair da conta</button>}</section>}
-  <footer>LAB · Leitura bíblica integral · {year}</footer>
- </main>;
+ },[tab,user?.id]);
+ const stage=game?plan[Math.max(0,Math.min(GAME_DAYS-1,game.day-1))]:plan[0];
+ const completedIds=new Set(game?.checked??[]);
+ const nextChapter=stage.chapters.find(ch=>!completedIds.has(ch.id));
+ const stageDone=Boolean(game)&&!nextChapter;
+ const stageProgress=stage.chapters.length?Math.round(completedIds.size/stage.chapters.length*100):0;
+ const activeDays=game?.completed_days??0;
+ const bestDays=game?.best_days??0;
+ const rankLevel=bestDays>=365?"Guardião da Palavra":bestDays>=100?"Peregrino":bestDays>=30?"Constante":bestDays>=7?"Semeador":"Iniciante";
+ const flameLevel=activeDays>=30?"intense":activeDays>=7?"steady":activeDays>0?"growing":"quiet";
+ const sign=async(mode:"in"|"up")=>{setBusy(true);setMessage("");try{if(mode==="in"){await signIn(email,password);setViewAuth(false);if(preferredMode==="grupo")setTab("groups")}else{await signUp(email,password);setMessage("Cadastro solicitado. Confirme o e-mail, caso seja necessário, e entre na sua conta.")}}catch(e){setMessage(describeError(e))}finally{setBusy(false)}};
+ const confirm=async()=>{if(!nextChapter||!user||busy)return;setBusy(true);setMessage("");try{const updated=await confirmGameChapter(nextChapter.id);setGame(updated)}catch(e){setMessage(describeError(e));void refreshGame()}finally{setBusy(false)}};
+ const refreshGroups=async()=>{const data=await listReadingGroups();setGroups(data);if(!rankingGroup&&data[0])setRankingGroup(data[0].id)};
+ const createGroup=async()=>{setGroupBusy(true);setGroupMessage("");try{await createReadingGroup(groupName);setGroupName("");await refreshGroups();setGroupMessage("Seu GC foi criado.")}catch(e){setGroupMessage(describeError(e))}finally{setGroupBusy(false)}};
+ const joinGroup=async()=>{setGroupBusy(true);setGroupMessage("");try{await joinReadingGroup(inviteCode);setInviteCode("");await refreshGroups();setGroupMessage("Você entrou no GC.")}catch(e){setGroupMessage(describeError(e))}finally{setGroupBusy(false)}};
+ const viewInvite=async(groupId:string)=>{setGroupBusy(true);try{const token=await getGroupInvite(groupId);setInvites(prev=>({...prev,[groupId]:token}))}catch(e){setGroupMessage(describeError(e))}finally{setGroupBusy(false)}};
+ const viewRanking=async()=>{if(!rankingGroup)return;setGroupBusy(true);setGroupMessage("");try{setRanking(await getGameRanking(rankingGroup))}catch(e){setGroupMessage(describeError(e))}finally{setGroupBusy(false)}};
+ const saveProfile=async()=>{setBusy(true);setMessage("");try{await saveGameProfile(profileName,optIn);await refreshGame();setMessage("Preferências atualizadas.")}catch(e){setMessage(describeError(e))}finally{setBusy(false)}};
+ const selectedBlock=useMemo(()=>STUDY_BLOCKS.find(b=>b.id===selectedStudy)??STUDY_BLOCKS[0],[selectedStudy]);
+ const goTab=(next:Tab)=>{setMessage("");setTab(next);if(next==="today"&&user)void refreshGame()};
+ return <div className="game-app">
+  <header className="game-header"><div className="brandmark"><span className="brand-symbol"><Flame size={23}/></span><div><strong>LAB<span>GAME</span></strong><small>LEITURA ANUAL DA BÍBLIA</small></div></div><div className="header-status"><span className={"flame-indicator "+flameLevel}><Flame size={20}/>{activeDays}</span><span className="xp-counter"><Award size={18}/>{game?.total_xp??0} XP</span></div></header>
+  <main className="game-content">
+   {tab==="today"&&<div className="today-layout">
+    {!user?<section className="onboarding game-panel">
+      {!viewAuth?<><div className="intro-progress"><div style={{width:String((introStep+1)*25)+"%"}}/></div><div className="onboarding-visual"><div className="lab-emblem"><Flame size={61}/></div><span className="eyebrow">SUA JORNADA COMEÇA AQUI</span></div>
+       {introStep===0&&<><h1>A Bíblia toda.<br/><em>Um dia de cada vez.</em></h1><p>365 etapas, até quatro capítulos por dia. Uma experiência de leitura e constância, individualmente ou com seu GC.</p></>}
+       {introStep===1&&<><h1>Acenda a sua <em>constância.</em></h1><p>Confirme a leitura de cada capítulo do dia. Você não pode avançar antes da hora. Se perder um dia, a tentativa recomeça — mas seu recorde permanece.</p><div className="feature-row"><Flame/><span>Chama de constância</span><Trophy/><span>Recorde pessoal</span></div></>}
+       {introStep===2&&<><h1>Como você quer <em>começar?</em></h1><p>Você poderá participar de grupos depois, mesmo começando individualmente.</p><div className="onboarding-choices"><button className={preferredMode==="individual"?"chosen":""} onClick={()=>setPreferredMode("individual")}><UserRound/> Minha jornada individual <Check/></button><button className={preferredMode==="grupo"?"chosen":""} onClick={()=>setPreferredMode("grupo")}><Users/> Com meu grupo de crescimento <Check/></button></div></>}
+       {introStep===3&&<><h1>Seu primeiro <em>desafio.</em></h1><p>Comece com Gênesis 1, Salmos 1 e João 1. Ao terminar, a próxima etapa ficará disponível amanhã.</p><div className="preview-chapters">{plan[0].chapters.map(ch=><div key={ch.id}><BookOpen size={17}/>{ch.book} {ch.chapter}</div>)}</div></>}
+       <div className="intro-actions">{introStep>0&&<button type="button" className="subtle-button" onClick={()=>setIntroStep(n=>n-1)}><ArrowLeft size={16}/> Voltar</button>}<button className="primary-cta" onClick={()=>introStep===3?setViewAuth(true):setIntroStep(n=>n+1)}>{introStep===3?"COMEÇAR MINHA JORNADA":"CONTINUAR"} <ArrowRight size={19}/></button></div>
+      </>:<><div className="auth-intro"><div className="lab-emblem small"><BookOpen size={34}/></div><h1>Entre na sua jornada</h1><p>Use sua conta LABGAME para registrar o progresso com segurança.</p></div>
+       {supabase?<form className="auth-card" onSubmit={e=>{e.preventDefault();void sign("in")}}><label htmlFor="lab-email">E-mail</label><input id="lab-email" type="email" autoComplete="email" value={email} required onChange={e=>setEmail(e.target.value)}/><label htmlFor="lab-password">Senha</label><input id="lab-password" type="password" autoComplete="current-password" minLength={6} value={password} required onChange={e=>setPassword(e.target.value)}/><button className="primary-cta" disabled={busy} type="submit"><LogIn size={18}/> ENTRAR</button><button className="secondary-cta" disabled={busy||!email||password.length<6} type="button" onClick={()=>void sign("up")}>CRIAR MINHA CONTA</button></form>:<p>O serviço de contas não está configurado.</p>}
+       <button className="subtle-button" onClick={()=>setViewAuth(false)}><ArrowLeft size={17}/> Voltar</button></>}
+       {message&&<p role="status" className="feedback-message">{message}</p>}
+     </section>:<><section className="challenge-top"><div><span className="eyebrow">DESAFIO ATIVO · {GAME_DAYS} ETAPAS</span><h1>Continue sua <em>jornada.</em></h1><p>Uma etapa por dia. Uma nova oportunidade de crescer em constância.</p></div><div className={"flame-hero "+flameLevel}><Flame size={62}/><strong>{activeDays}</strong><span>DIAS</span></div></section>
+      <section className="metrics-strip"><div><Trophy size={20}/><strong>{bestDays}</strong><span>Recorde</span></div><div><Award size={20}/><strong>{game?.total_xp??0}</strong><span>XP total</span></div><div><Target size={20}/><strong>{Math.round(activeDays/GAME_DAYS*100)}%</strong><span>Jornada</span></div></section>
+      <section className="game-panel lesson-panel"><div className="lesson-head"><span className="eyebrow">ETAPA {stage.day} DE {GAME_DAYS}</span><span className="lesson-pill"><CalendarDays size={16}/> Hoje</span></div><h2>{stageDone?"Leitura de hoje concluída!":"Sua leitura de hoje"}</h2><p className="muted">{stageDone?"Seu próximo desafio será liberado no próximo dia.":"Confirme cada capítulo na ordem da etapa. Nenhuma leitura antecipada é pontuada."}</p>
+       <div className="progress-line"><span>Capítulos confirmados</span><strong>{completedIds.size}/{stage.chapters.length}</strong></div><div className="lesson-progress"><div style={{width:String(stageProgress)+"%"}}/></div>
+       <div className="lesson-path">{stage.chapters.map((ch,i)=>{const done=completedIds.has(ch.id);const current=nextChapter?.id===ch.id;return <div className={"lesson-step "+(done?"done":current?"current":"locked")} key={ch.id}><div className="step-number">{done?<Check size={20}/>:current?<BookOpen size={21}/>:<LockKeyhole size={18}/>}</div><div className="step-body"><span>CAPÍTULO {i+1} DE {stage.chapters.length}</span><strong>{ch.book} {ch.chapter}</strong><small>{categoryOfBook(ch.book)}</small></div>{done?<span className="step-points">+10 XP</span>:current?<span className="step-now">AGORA</span>:null}</div>})}</div>
+       {nextChapter&&<div className="active-reading"><div className="reading-prompt"><Sparkles size={20}/><span>Leia <strong>{nextChapter.book} {nextChapter.chapter}</strong> na sua Bíblia antes de confirmar.</span></div><button className="primary-cta" disabled={busy||loading} onClick={()=>void confirm()}><CheckCircle2 size={21}/>{busy?"SALVANDO...":"CONFIRMEI A LEITURA"}<ArrowRight size={19}/></button><p className="small-caption">Confirmação pessoal de leitura. O texto bíblico integrado dependerá da licença da tradução selecionada.</p></div>}
+       {stageDone&&<div className="daily-victory"><div className="victory-icon"><Trophy size={35}/></div><h3>Etapa conquistada!</h3><p>Você leu todos os capítulos de hoje e ganhou {stage.chapters.length*10} XP. Volte amanhã para continuar.</p><div className="victory-summary"><span><Flame size={16}/> {activeDays} dias</span><span><Award size={16}/> +{stage.chapters.length*10} XP</span></div><button className="secondary-cta" onClick={()=>goTab("journey")}>VER MINHA JORNADA <ArrowRight size={16}/></button></div>}
+       {message&&<p role="status" className="feedback-message">{message}</p>}
+       {loading&&<p className="small-caption">Atualizando sua etapa...</p>}
+      </section><section className="connections-panel"><span className="eyebrow">CONEXÕES DA PALAVRA</span><h3>Estude além do capítulo</h3><p>Explore temas, contextos e conexões entre livros sem alterar a regra da leitura diária.</p><button className="secondary-cta" onClick={()=>goTab("studies")}>EXPLORAR ESTUDOS <ArrowRight size={17}/></button></section></>}
+   </div>}
+   {tab==="journey"&&<section className="game-panel"><span className="eyebrow">MAPA DE PROGRESSO</span><h1>Sua <em>jornada</em></h1><p className="muted">Cada etapa representa um dia completo de leitura. Etapas futuras permanecem bloqueadas.</p><div className="journey-stats"><div><Flame/><strong>{activeDays}</strong><span>Sequência</span></div><div><Trophy/><strong>{bestDays}</strong><span>Melhor marca</span></div><div><Award/><strong>{game?.total_xp??0}</strong><span>XP</span></div></div><div className="stage-grid">{plan.slice(0,showStages).map(d=>{const done=Boolean(game)&&d.day<=game.completed_days;const current=Boolean(game)&&d.day===game.day&&!done;return <div className={"stage-node "+(done?"finished":current?"unlocked":"blocked")} key={d.day}>{done?<Check size={17}/>:current?<Play size={16}/>:<LockKeyhole size={15}/>}<strong>{d.day}</strong></div>})}</div>{showStages<GAME_DAYS&&<button className="secondary-cta" onClick={()=>setShowStages(n=>Math.min(GAME_DAYS,n+35))}>VER MAIS ETAPAS <ArrowRight size={16}/></button>}<p className="small-caption">Após um dia perdido, a nova tentativa recomeça na etapa 1. Seu recorde histórico permanece.</p>{user&&<button className="primary-cta" onClick={()=>goTab("today")}>IR À ETAPA ATUAL <ArrowRight size={16}/></button>}</section>}
+   {tab==="studies"&&<section className="game-panel"><span className="eyebrow">BIBLIOTECA LAB</span><h1>Estudos e <em>conexões.</em></h1><p className="muted">Panoramas literários, históricos e teológicos para acompanhar a leitura, sem pontuação de capítulos.</p><div className="study-grid">{STUDY_BLOCKS.map(b=><button key={b.id} className={"study-tile "+(selectedStudy===b.id?"selected":"")} onClick={()=>setSelectedStudy(b.id)}><Library size={24}/><strong>{b.title}</strong><small>{b.type==="conexão"?"Conexão bíblica":"Tema de estudo"}</small></button>)}</div><article className="study-detail"><span className="eyebrow">APROFUNDAMENTO</span><h2>{selectedBlock.title}</h2><p>{selectedBlock.intro}</p><h3>Leia e compare</h3><div className="reference-list">{selectedBlock.references.map(ref=><span key={ref}><BookOpen size={15}/>{ref}</span>)}</div><p className="small-caption">Estas conexões são roteiros de estudo. A exegese capítulo a capítulo será publicada após revisão bíblica e teológica.</p></article><article className="study-detail"><span className="eyebrow">PANORAMA DOS LIVROS</span><h2>Vídeos BibleProject</h2><p>Os links oficiais por livro serão adicionados após o recebimento e a conferência das playlists do Antigo e Novo Testamento.</p><div className="video-placeholder"><Video size={23}/><span>{Object.keys(BIBLEPROJECT_VIDEO_LINKS).length===0?"Aguardando suas playlists para vincular os vídeos.":"Vídeos disponíveis na biblioteca."}</span></div></article></section>}
+   {tab==="groups"&&<section className="game-panel"><span className="eyebrow">COMUNIDADE E CONSTÂNCIA</span><h1>Seus <em>GCs.</em></h1><p className="muted">Participe do seu grupo de crescimento e compare a constância entre leitores que escolherem aparecer no ranking.</p>{!user?<div className="feature-message"><Users size={27}/><p>Entre na sua conta para criar ou participar de um grupo.</p><button className="primary-cta" onClick={()=>{setTab("today");setViewAuth(true)}}>ENTRAR</button></div>:<><div className="group-forms"><form onSubmit={e=>{e.preventDefault();void createGroup()}}><h3>Criar um GC</h3><label htmlFor="gc-name">Nome do grupo</label><input id="gc-name" minLength={2} maxLength={100} required value={groupName} onChange={e=>setGroupName(e.target.value)} placeholder="Ex.: GC O Caminho"/><button type="submit" disabled={groupBusy}>CRIAR GC</button></form><form onSubmit={e=>{e.preventDefault();void joinGroup()}}><h3>Entrar por convite</h3><label htmlFor="gc-code">Código recebido</label><input id="gc-code" required value={inviteCode} onChange={e=>setInviteCode(e.target.value)} placeholder="Código do líder"/><button type="submit" disabled={groupBusy}>ENTRAR NO GC</button></form></div>{groupMessage&&<p role="status" className="feedback-message">{groupMessage}</p>}<h2>Grupos em que participo</h2>{groups.length===0?<p className="muted">Você ainda não está em nenhum grupo.</p>:groups.map(g=><div className="group-entry" key={g.id}><div><strong>{g.name}</strong><small>{g.owner_id===user.id?"Líder do grupo":"Participante"}</small></div>{g.owner_id===user.id&&<button type="button" disabled={groupBusy} onClick={()=>void viewInvite(g.id)}>CONVITE</button>}{invites[g.id]&&<div className="invite-token"><span>{invites[g.id]}</span><button type="button" onClick={()=>void navigator.clipboard?.writeText(invites[g.id])}>COPIAR</button></div>}</div>)}<div className="ranking-area"><span className="eyebrow">RANKING DO GRUPO</span><h2>Desafio de constância</h2><p className="muted">Somente participantes que autorizaram aparecer no ranking são exibidos. A classificação usa a melhor sequência de dias.</p><div className="ranking-controls"><label htmlFor="ranking-group">Selecione um grupo</label><select id="ranking-group" value={rankingGroup} onChange={e=>{setRankingGroup(e.target.value);setRanking([])}}><option value="">Selecione</option>{groups.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}</select><button disabled={groupBusy||!rankingGroup} onClick={()=>void viewRanking()}>VER RANKING</button></div>{ranking.map((entry,i)=><div className="rank-entry" key={i}><strong>#{i+1}</strong><span>{entry.participant}</span><small><Flame size={15}/>{entry.best_days} dias · {entry.total_xp} XP</small></div>)}</div></>}</section>}
+   {tab==="profile"&&<section className="game-panel"><span className="eyebrow">PERFIL E CONQUISTAS</span><h1>Minha <em>jornada.</em></h1>{!user?<p className="muted">Entre na sua conta para registrar conquistas e definir seu nome no GC.</p>:<><p className="muted">{user.email}</p><div className="profile-rank"><Trophy size={34}/><div><span>SEU NÍVEL</span><strong>{rankLevel}</strong><small>Seu crescimento é medido em dias de leitura confirmados, não em valor espiritual.</small></div></div><div className="journey-stats"><div><Flame/><strong>{activeDays}</strong><span>Constância</span></div><div><Trophy/><strong>{bestDays}</strong><span>Recorde</span></div><div><Award/><strong>{game?.total_xp??0}</strong><span>XP total</span></div></div><h2>Meus marcos</h2><div className="milestone-list">{[1,7,30,100,180,365].map(goal=><div className={"milestone "+(bestDays>=goal?"earned":"")} key={goal}><Award size={19}/><span>{goal===365?"Bíblia completa":goal+" dias seguidos"}</span><strong>{bestDays>=goal?"CONQUISTADO":"BLOQUEADO"}</strong></div>)}</div><form className="profile-form" onSubmit={e=>{e.preventDefault();void saveProfile()}}><h2>Identidade no GC</h2><label htmlFor="display-name">Nome exibido</label><input id="display-name" value={profileName} minLength={2} maxLength={60} required onChange={e=>setProfileName(e.target.value)}/><label className="toggle-rank"><input type="checkbox" checked={optIn} onChange={e=>setOptIn(e.target.checked)}/> Quero aparecer nos rankings privados dos meus GCs.</label><button className="secondary-cta" disabled={busy} type="submit">SALVAR PERFIL</button></form><button className="logout-button" type="button" onClick={()=>void signOut()}><LogOut size={16}/> Sair da conta</button>{message&&<p role="status" className="feedback-message">{message}</p>}</>}</section>}
+  </main>
+  <nav className="game-bottom-nav" aria-label="Menu LABGAME">{tabs.map(t=><button key={t.id} type="button" className={tab===t.id?"active":""} onClick={()=>goTab(t.id)} aria-current={tab===t.id?"page":undefined}><t.icon size={21}/><span>{t.label}</span></button>)}</nav>
+  <footer className="game-footer">LABGAME · {CANON.length} livros · {totalChapters.toLocaleString("pt-BR")} capítulos · {validPlan?"Plano íntegro":"Erro no plano"}</footer>
+ </div>;
 }
