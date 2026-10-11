@@ -1,7 +1,7 @@
 import {useEffect,useRef,useState} from "react";
 import {BookOpen,CheckCircle2,ChevronDown,Minus,Plus,RefreshCw} from "lucide-react";
 import {readBibleChapter,type BibleChapter} from "../features/bible";
-export function BibleReader({chapterId,onConfirm,busy=false}:{chapterId:string;onConfirm?:()=>void;busy?:boolean}){
+export function BibleReader({chapterId,onConfirm,busy=false,highlightVerse}:{chapterId:string;onConfirm?:()=>void;busy?:boolean;highlightVerse?:number|null}){
  const [chapter,setChapter]=useState<BibleChapter|null>(null);
  const [error,setError]=useState("");
  const [loading,setLoading]=useState(true);
@@ -19,6 +19,12 @@ export function BibleReader({chapterId,onConfirm,busy=false}:{chapterId:string;o
   const el=scrollRef.current;
   if(chapter&&el) setReadToEnd(el.scrollHeight<=el.clientHeight+32);
  },[chapter]);
+ useEffect(()=>{
+  if(!chapter||!highlightVerse)return;
+  const container=scrollRef.current;
+  const target=container?.querySelector(`[data-verse-number="${highlightVerse}"]`);
+  if(target instanceof HTMLElement)target.scrollIntoView({behavior:"smooth",block:"center"});
+ },[chapter,highlightVerse]);
  const observe=()=>{
   const el=scrollRef.current;
   if(el&&(el.scrollTop+el.clientHeight>=el.scrollHeight-65))setReadToEnd(true);
@@ -29,7 +35,7 @@ export function BibleReader({chapterId,onConfirm,busy=false}:{chapterId:string;o
   {error&&<div className="bible-reader-status" role="alert"><p>{error}</p><button type="button" className="secondary-cta" onClick={()=>setReload(x=>x+1)}><RefreshCw size={16}/> Tentar novamente</button></div>}
   {chapter&&<><div className="bible-verse-scroll" tabIndex={0} ref={scrollRef} onScroll={observe} style={{fontSize:fontSize+"px"}} aria-label={"Texto de "+chapter.book_name+" capítulo "+chapter.chapter_number}>
    <h2>{chapter.book_name} {chapter.chapter_number}</h2>
-   {chapter.verses.map((verse,index)=><p key={verse.number+"-"+index} className="bible-verse"><sup>{verse.number}</sup> {verse.text}</p>)}
+   {chapter.verses.map((verse,index)=><p key={verse.number+"-"+index} data-verse-number={verse.number} className={"bible-verse "+(verse.number===highlightVerse?"bible-verse-highlight":"")}><sup>{verse.number}</sup> {verse.text}</p>)}
    <p className="chapter-finish"><CheckCircle2 size={20}/> Fim do capítulo</p>
   </div>
   {onConfirm&&!readToEnd&&<p className="reader-scroll-hint"><ChevronDown size={16}/> Role a leitura até o final para liberar a confirmação.</p>}
