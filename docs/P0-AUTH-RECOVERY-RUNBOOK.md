@@ -63,3 +63,10 @@ Fontes:
 - https://supabase.com/docs/guides/auth/redirect-urls
 - https://supabase.com/docs/guides/auth/auth-email-templates
 - https://supabase.com/docs/reference/javascript/auth-resetpasswordforemail
+
+## Compilação e publicação (conferência final)
+
+- GitHub Actions `LAB CI #147`: https://github.com/MILAGRESMARINGA/LAB2026/actions/runs/38139538766
+- Testes automatizados: **84 aprovados em 17 arquivos**; `npm run build` aprovado (TypeScript + Vite).
+- A Vercel bloqueou os builds recentes por **`build-rate-limit`**. O alias `labgame-biblia.vercel.app` ainda aponta para `dpl_CWvVxqJc3WkHKfKqKpoQven46P6i`, não para os commits do P0. **Não considerar cadastro por OTP nem rotas novas disponíveis publicamente até um deploy novo ficar READY e o alias ser atualizado.**
+- Os modelos HTML do repositório foram criados, **mas não estão ativos** até serem colados e salvos em Authentication → Email Templates do Supabase.
