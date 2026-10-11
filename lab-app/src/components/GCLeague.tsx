@@ -55,7 +55,7 @@ export function GCLeague({userId,groups,onGroupsChange}:Props){
     </div>)}</div>}
    {rows.length>0&&<p className="gc-league-period"><CheckCircle2 size={16}/> Período: {new Date(rows[0].window_start+"T12:00:00").toLocaleDateString("pt-BR")} a {new Date(rows[0].window_end+"T12:00:00").toLocaleDateString("pt-BR")}</p>}
   </>}
-  <p className="gc-league-footnote">Critério: dias completos de leitura confirmada ÷ (7 × total de integrantes), em porcentagem. Só são somadas leituras de participantes que autorizaram o ranking. Vídeos e XP extra não influenciam essa classificação.</p>
+  <p className="gc-league-footnote">Critério: dias completos confirmados pelos participantes que consentiram ÷ (7 × número de participantes com consentimento). Quem não participa do ranking não reduz a nota do GC. Vídeos e XP extra não influenciam essa classificação.</p>
   {message&&<p className="feedback-message" role="status">{message}</p>}
  </section>;
 }
