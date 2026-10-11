@@ -285,3 +285,23 @@ body.video-modal-open{overflow:hidden}
 .gc-profile-person-stats span{display:flex;gap:4px;align-items:center;font-size:11px;color:#bad2ca}
 .gc-profile-person-stats svg{color:#b2dc68}
 @media(max-width:650px){.account-heading h2{font-size:24px}.account-mode-tabs button{font-size:11px}.scorecard-breakdown{grid-template-columns:1fr}.scorecard-breakdown>div{flex-direction:row;align-items:center;flex-wrap:wrap}.scorecard-breakdown>div strong{font-size:20px}.scorecard-breakdown>div small{width:100%}.personal-scorecard{padding:15px}.gc-profile{padding:14px}.gc-profile-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.gc-profile-person-stats{width:100%;justify-content:flex-start}.gc-profile-rank{width:30px}}
+
+/* P0: Auth callback and verified password recovery. */
+.auth-flow-page{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(circle at top,#203e36,#102027 65%)}
+.auth-flow-card{width:100%;max-width:515px;display:flex;flex-direction:column;gap:18px;padding:clamp(20px,5vw,42px);border:2px solid #56716e;background:#182d32;border-radius:23px;box-shadow:0 25px 100px #030b0db8}
+.auth-flow-icon{width:65px;height:65px;display:flex;align-items:center;justify-content:center;border-radius:16px;background:#334c33;color:#b6e64c}
+.auth-flow-card h1{font-size:clamp(25px,6vw,36px);line-height:1.2;margin:0}
+.auth-flow-card>p{font-size:15px;color:#c9d8d5;line-height:1.6;margin:0}
+.auth-flow-card strong{overflow-wrap:anywhere;color:#e3f9a8}
+.auth-flow-form{display:grid;gap:12px}
+.auth-flow-form label{font-weight:750;font-size:14px}
+.auth-flow-form input{background:#0e232a;border:2px solid #5d7780;border-radius:10px;padding:14px;width:100%;min-height:48px;color:#fff;font-size:16px}
+.auth-flow-form input:focus-visible{outline:3px solid #b5e54b;outline-offset:2px}
+.auth-flow-password{position:relative}
+.auth-flow-password input{padding-right:56px}
+.auth-flow-password button{position:absolute;right:6px;top:6px;width:43px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:0;background:#34515a;color:#e4f5fa}
+.auth-flow-form .primary-cta{margin-top:8px}
+.auth-flow-link{display:flex;align-items:center;justify-content:center;gap:9px;text-align:center;text-decoration:none}
+.auth-flow-back{display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;color:#b7cacc;text-decoration:none;padding:11px}
+.auth-flow-back:hover{text-decoration:underline}
+@media(max-width:560px){.auth-flow-page{padding:13px;align-items:flex-start;padding-top:8vh}.auth-flow-card{gap:14px}}
