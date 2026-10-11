@@ -1,8 +1,8 @@
 import {supabase} from "../lib/supabase";
-export type ReadingGroup={id:string;name:string;owner_id:string;created_at:string};
+export type ReadingGroup={id:string;name:string;owner_id:string;created_at:string;competition_opt_in:boolean};
 export async function listReadingGroups():Promise<ReadingGroup[]>{
  if(!supabase)throw Error("Supabase não configurado");
- const {data,error}=await supabase.from("reading_groups").select("id,name,owner_id,created_at").order("created_at",{ascending:false});
+ const {data,error}=await supabase.from("reading_groups").select("id,name,owner_id,created_at,competition_opt_in").order("created_at",{ascending:false});
  if(error)throw error;
  return data??[];
 }
