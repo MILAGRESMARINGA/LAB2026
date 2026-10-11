@@ -194,6 +194,11 @@ Documentação e testes: `docs/AUTH-PROFILES-AND-SCORING.md`; `lab-app/tests/acc
 - [ ] **Painel Supabase:** Site URL e Redirect URLs; ativar os dois templates; configurar SMTP próprio e autenticação de domínio SPF/DKIM/DMARC.
 - [ ] **QA real:** enviar e receber os dois e-mails, validar links e OTP, trocar senha, acessar Perfil e GCs em Android/iOS.
 - [x] **CI de código validado**: https://github.com/MILAGRESMARINGA/LAB2026/actions/runs/38139538766 (84/84 + build).
-- [ ] **Publicação P0**: Vercel com `build-rate-limit`; domínio fixo ainda aponta para deploy anterior `dpl_CWvVxqJc3WkHKfKqKpoQven46P6i`. Liberar quota, implantar branch e atualizar alias somente depois de READY.
+- [ ] **Publicação P0**: Vercel com `build-rate-limit`; o domínio fixo foi atualizado para o deploy intermediário READY `dpl_C686YQ1s1aFGPnHNNRgXU1biXoa1` (commit `97f0623054c697dcc1e6ba5a9cb7898c5734d7d0`); restam por publicar os últimos ajustes já aprovados por CI. Liberar quota e implantar a HEAD depois de READY.
 
 **Instruções operacionais:** `docs/P0-AUTH-RECOVERY-RUNBOOK.md`. Não classificar P0 como concluído integralmente até validar SMTP e uma conta real. A última versão comprovadamente READY anterior não contém necessariamente todas as mudanças P0.
+
+### Publicação parcial de P0
+- [x] Alias `labgame-biblia.vercel.app` atualizado para Vercel READY `dpl_C686YQ1s1aFGPnHNNRgXU1biXoa1`.
+- [x] `GET /auth/callback` e `GET /auth/reset-password` respondem HTTP 200 com o shell SPA.
+- [ ] Sincronizar a versão final da HEAD: últimos ajustes e testes estão no GitHub, mas a Vercel bloqueia builds adicionais por cota.
