@@ -24,7 +24,7 @@ GRANT EXECUTE ON FUNCTION public.lab_game_set_gc_competition(uuid,boolean) TO au
 
 CREATE OR REPLACE FUNCTION public.lab_game_gc_league()
 RETURNS TABLE(
- position integer,group_id uuid,group_name text,
+ rank_position integer,group_id uuid,group_name text,
  members integer,consenting_members integer,days_completed bigint,
  compliance_pct numeric,window_start date,window_end date
 )
@@ -66,8 +66,8 @@ BEGIN
  ),
  score AS (
    SELECT grp.id,grp.name,grp.size_total,grp.consenting,
-      COUNT(DISTINCT (complete_day.user_id,complete_day.read_on))::bigint AS complete_count,
-      ROUND(100.0*COUNT(DISTINCT (complete_day.user_id,complete_day.read_on))
+      COUNT(DISTINCT (complete_day.user_id,complete_day.read_on)) FILTER(WHERE complete_day.user_id IS NOT NULL)::bigint AS complete_count,
+      ROUND(100.0*COUNT(DISTINCT (complete_day.user_id,complete_day.read_on)) FILTER(WHERE complete_day.user_id IS NOT NULL)
          /(7*grp.size_total),1) AS rate
    FROM eligible_groups grp
    JOIN public.reading_group_members m ON m.group_id=grp.id
