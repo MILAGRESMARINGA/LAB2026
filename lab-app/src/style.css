@@ -20,7 +20,7 @@ button,input,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.
 .group-forms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:25px 0}.group-forms form{border:2px solid #3b4f58;border-radius:16px;background:#1c3038;padding:20px;display:grid;gap:12px}.group-forms form h3{margin:0}.group-forms label,.profile-form label,.ranking-controls label{font-size:12px;color:#b4c8cc;font-weight:800}.group-forms button,.group-entry button,.ranking-controls button{border:2px solid #568e3f;border-radius:11px;padding:11px 14px;color:#dfffbd;background:#31502f;font-size:12px;font-weight:850}
 .group-entry{border:2px solid #334951;border-radius:14px;display:flex;align-items:center;justify-content:space-between;gap:13px;flex-wrap:wrap;padding:17px;margin:10px 0}.group-entry small{display:block;color:#a2b7ba;margin-top:5px}.invite-token{display:flex;gap:10px;align-items:center;width:100%;background:#253d3a;padding:10px;border-radius:12px;overflow-wrap:anywhere;font-size:12px}.invite-token span{flex:1;min-width:0}.ranking-area{padding-top:20px}.ranking-controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.ranking-controls select{flex:1}.rank-entry{display:flex;align-items:center;gap:16px;padding:15px;border-bottom:1px solid #31464c}.rank-entry>strong{color:#f0c86d}.rank-entry span{flex:1}.rank-entry small{display:inline-flex;align-items:center;gap:5px;color:#b3cb9b}.feature-message{display:grid;gap:15px;padding:20px;color:#c3d8d6}
 .profile-rank{display:flex;align-items:center;gap:19px;padding:22px;border:2px solid #435a48;border-radius:16px;margin:22px 0;background:#21372e}.profile-rank svg{color:#ffd473}.profile-rank div{display:flex;flex-direction:column;gap:5px}.profile-rank span{font-size:11px;font-weight:800;color:#abc290}.profile-rank strong{font-size:24px}.profile-rank small{font-size:12px;line-height:1.6;color:#aac0b9}.milestone-list{display:grid;gap:7px;margin:20px 0}.milestone{padding:14px;border:1px solid #344c54;border-radius:12px;display:flex;align-items:center;gap:12px;color:#81969d}.milestone span{flex:1}.milestone strong{font-size:11px}.milestone.earned{color:#bbdf8b;background:#243a2e;border-color:#536e37}.profile-form{display:grid;gap:12px;margin-top:28px}.toggle-rank{display:flex;align-items:center;gap:10px;font-size:14px!important;line-height:1.5;margin:10px 0}.toggle-rank input{width:21px;height:21px;accent-color:#a8db41;flex-shrink:0}.profile-form .secondary-cta{margin-top:10px}.logout-button{display:flex;align-items:center;gap:8px;border:0;background:transparent;color:#9eb4ba;padding:15px 0;margin-top:20px}
-.game-bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#18272df4;backdrop-filter:blur(12px);border-top:2px solid #31454d;display:flex;justify-content:center;padding:10px 12px max(10px,env(safe-area-inset-bottom));z-index:10}.game-bottom-nav button{display:flex;flex-direction:column;align-items:center;gap:5px;width:min(180px,20%);background:transparent;border:0;color:#8fa3aa;font-weight:750;font-size:11px;padding:7px}.game-bottom-nav button.active{color:#b6e44b}.game-bottom-nav button.active svg{filter:drop-shadow(0 0 8px #a3e23e44)}.game-footer{text-align:center;color:#70858c;font-size:11px;padding:12px 0 115px}
+.game-bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#18272df4;backdrop-filter:blur(12px);border-top:2px solid #31454d;display:flex;justify-content:center;padding:10px 12px max(10px,env(safe-area-inset-bottom));z-index:10}.game-bottom-nav button{display:flex;flex-direction:column;align-items:center;gap:5px;width:min(160px,16.666%);min-width:0;background:transparent;border:0;color:#8fa3aa;font-weight:750;font-size:11px;padding:7px}.game-bottom-nav button.active{color:#b6e44b}.game-bottom-nav button.active svg{filter:drop-shadow(0 0 8px #a3e23e44)}.game-footer{text-align:center;color:#70858c;font-size:11px;padding:12px 0 115px}
 @media(max-width:650px){.game-header{padding:0 16px;height:68px}.brandmark strong{font-size:20px}.brandmark small{font-size:7px;letter-spacing:.8px}.brand-symbol{height:39px;width:39px}.header-status{gap:10px;font-size:12px}.header-status svg{width:16px}.game-content{padding:17px 14px 40px;min-height:calc(100vh - 130px)}.game-panel{padding:20px 17px;border-radius:19px}.game-content h1{font-size:34px;letter-spacing:-1.1px}.game-content h2{font-size:22px}.onboarding{min-height:calc(100dvh - 175px);margin:0;gap:10px}.onboarding-visual{margin:16px 0 10px}.onboarding>p{font-size:15px}.challenge-top{padding:16px 4px;align-items:center}.challenge-top h1{font-size:30px}.challenge-top p{font-size:12px}.flame-hero{height:114px;width:106px;border-radius:25px}.flame-hero svg{width:43px;height:43px}.flame-hero strong{font-size:25px}.metrics-strip,.journey-stats{gap:7px}.metrics-strip>div,.journey-stats>div{padding:12px 4px;border-radius:12px}.metrics-strip strong,.journey-stats strong{font-size:20px}.metrics-strip span,.journey-stats span{font-size:10px}.lesson-panel{padding:20px 17px}.step-body strong{font-size:16px}.step-number{width:40px;height:40px}.lesson-step{gap:9px;padding:11px}.stage-grid{grid-template-columns:repeat(5,1fr);gap:7px}.stage-node{min-height:65px}.study-grid,.group-forms{grid-template-columns:1fr}.ranking-controls{flex-direction:column;align-items:stretch}.rank-entry{flex-wrap:wrap}.game-bottom-nav{padding:5px 0 max(8px,env(safe-area-inset-bottom))}.game-bottom-nav button{font-size:10px;padding:10px 0}.game-bottom-nav button svg{width:20px}.game-footer{padding-bottom:97px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 
@@ -99,3 +99,52 @@ body.video-modal-open{overflow:hidden}
 .video-modal:fullscreen{max-width:100%;max-height:100%;width:100%;height:100%;border:0;border-radius:0}
 .video-modal:fullscreen .video-frame{flex:1;aspect-ratio:auto;min-height:150px}
 @media(max-width:650px){.bible-reader-header{padding:11px}.bible-verse-scroll{height:50dvh;padding:15px 16px}.video-modal-backdrop{padding:0}.video-modal{max-height:100dvh;height:100dvh;border-radius:0}.video-modal-header{padding:14px}.video-modal-header h2{font-size:19px}.video-frame{flex:0 0 auto}.video-controls{padding:10px 15px}.video-controls .secondary-cta{padding:10px 12px}.video-credit,.video-player-hint,.video-status,.video-success,.video-reward{padding-left:15px;padding-right:15px}}
+
+/* Canonical Bible library: standalone study never advances the daily challenge. */
+.bible-library{max-width:875px;margin:auto}
+.bible-library-heading p{max-width:680px;line-height:1.65}
+.bible-edition-tag{display:inline-flex;align-items:center;gap:9px;color:#c7e8ad;background:#2b4036;border:1px solid #4c6e52;border-radius:24px;padding:10px 14px;font-size:12px;font-weight:750;margin:8px 0 24px}
+.bible-selector{border:1px solid #456069;border-radius:17px;padding:18px;background:#21323b}
+.bible-selector-top{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:12px;margin-bottom:7px}
+.bible-selector-top label{font-size:12px;font-weight:800;color:#d0e6e6}
+.bible-selector-controls{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:12px}
+.bible-selector-controls select{width:100%;border:2px solid #526771;background:#14262e;color:#edf5f4;border-radius:11px;font-size:16px;font-weight:700;padding:13px;min-width:0}
+.bible-search-toggle{display:flex;align-items:center;gap:10px;color:#c1df9a;border:0;background:transparent;font-weight:750;padding:15px 1px 2px;font-size:12px}
+.bible-search-toggle svg:last-child{margin-left:auto}
+.bible-book-browser{border:1px solid #49636b;border-radius:15px;padding:17px;background:#1b3038;margin:13px 0 0}
+.bible-book-browser>label,.bible-browser-label{display:block;font-size:12px;font-weight:800;color:#c9dedf;margin-bottom:7px}
+.bible-book-browser>input{width:100%;border:2px solid #526b73;border-radius:11px;background:#10232c;color:#f6ffff;font-size:14px;padding:13px}
+.bible-books-list{max-height:220px;overflow-y:auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:13px 0 20px}
+.bible-books-list button,.bible-chapters-grid button{border:1px solid #4f646d;border-radius:10px;background:#22343d;color:#e2f0f0;padding:10px;font-weight:750;text-align:center}
+.bible-books-list button.selected,.bible-chapters-grid button.selected{background:#a7da40;border-color:#a7da40;color:#18301f}
+.bible-chapters-grid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:6px}
+.bible-library-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:17px 0}
+.bible-library-actions>strong{color:#dbeedf;text-align:center}
+.bible-library-actions>.secondary-cta{padding:12px 18px;white-space:nowrap}
+.bible-library-reader .bible-reader{max-width:100%;margin:12px 0}
+.bible-library-reader .bible-verse-scroll{height:min(65dvh,720px)}
+.bible-library-actions-bottom{justify-content:flex-start;flex-wrap:wrap}
+.bible-save-button{display:inline-flex;align-items:center;gap:9px;background:#263b43;border:2px solid #536b76;color:#def0ec;border-radius:12px;padding:12px 15px;font-weight:750;font-size:13px}
+.bible-save-button.active{color:#bedf6f;border-color:#77984e;background:#33452c}
+.bible-save-button:disabled{opacity:.6;cursor:wait}
+.bible-favorites{margin:24px 0 15px;border-top:1px solid #455760;padding-top:15px}
+.bible-favorites h2{display:flex;align-items:center;gap:9px;color:#e6f0ef}
+.bible-favorites h2 svg{color:#c2e475}
+.bible-favorite-items{display:flex;flex-wrap:wrap;gap:8px}
+.bible-favorite-items button{display:flex;gap:9px;align-items:center;background:#283d44;border:1px solid #557077;color:#ebf4f2;border-radius:11px;padding:10px 12px;font-size:12px}
+.bible-favorite-items button svg:last-child{color:#aedc50}
+.bible-study-note{display:flex;gap:12px;align-items:flex-start;padding:15px;border:1px dashed #5c775f;border-radius:13px;color:#bcd1be;font-size:13px;line-height:1.55;margin:25px 0 15px}
+.bible-study-note svg{color:#a5d54b;flex-shrink:0}
+@media(max-width:650px){
+ .game-bottom-nav button{font-size:9px;gap:4px;padding:9px 1px;letter-spacing:-.2px}
+ .bible-library{padding:20px 13px}
+ .bible-edition-tag{font-size:11px;margin-bottom:17px}
+ .bible-selector{padding:13px}
+ .bible-books-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .bible-chapters-grid{grid-template-columns:repeat(6,minmax(0,1fr))}
+ .bible-library-actions{gap:6px}
+ .bible-library-actions>.secondary-cta{font-size:11px;padding:10px 9px;gap:5px}
+ .bible-library-actions>strong{font-size:13px}
+ .bible-selector-controls select{padding:11px;font-size:14px}
+ .bible-library-reader .bible-verse-scroll{height:min(62dvh,680px)}
+}
