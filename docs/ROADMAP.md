@@ -39,7 +39,13 @@ Atualização: 11/10/2026. Branch: `lab-rebuild-2026` do repositório `MILAGRESM
 - [x] Suporte a grupos e rankings privados opt-in
 - [ ] Testes E2E com navegador e leitores reais
 - [ ] Homologar acessibilidade WCAG, motion reduzido, contraste, rolagem de versículos e leitura em telas pequenas
-- [ ] Notificações com consentimento e recuperação de conta
+- [x] Recuperação de senha: envio de link e troca segura após evento PASSWORD_RECOVERY
+- [x] Tratamento de sessão Supabase sem getUser assíncrono dentro do callback de autenticação
+- [x] Manifesto instalável, ícone próprio e service worker de shell público sem cache de credenciais/dados
+- [x] Orientações de instalação Android/iOS e aviso de conexão na interface
+- [ ] Adicionar ícones PNG e homologar instalação em dispositivos reais
+- [ ] Configurar redirecionamento de recuperação no domínio definitivo do Supabase Auth
+- [ ] Notificações opt-in para lembrete de leitura diária
 
 ## 3 — Grupos de crescimento (GC)
 - [x] Criar grupo, convidar por token e entrar com autorização
@@ -47,7 +53,7 @@ Atualização: 11/10/2026. Branch: `lab-rebuild-2026` do repositório `MILAGRESM
 - [x] Ranking individual privado ordenado por melhor sequência
 - [x] Consentimento individual para exibição do nome
 - [x] Liga entre GCs: participação voluntária pelo líder e consentimento individual
-- [x] Classificação proporcional por dias completos nos últimos 7 dias, sem pontuar vídeos
+- [x] Classificação semanal proporcional aos dias completos **dos membros que consentiram**; opt-out não penaliza o GC
 - [x] Mínimo de três membros com consentimento para aparecer na liga
 - [x] Restrição de leitura da liga aos integrantes de GCs inscritos (RPC security definer)
 - [x] Teste SQL de cálculo semanal (4,8%), grupo elegível e bloqueio a não integrantes
@@ -69,11 +75,11 @@ Atualização: 11/10/2026. Branch: `lab-rebuild-2026` do repositório `MILAGRESM
 - [x] Build Vercel READY após integração BibleProject (commit feb41cc; 8 arquivos e 43 testes aprovados)
 - [x] Convite para panorama do livro após confirmar seu último capítulo
 - [x] Player BibleProject incorporado em modal, com opção de tela cheia e créditos visíveis
-- [x] 6 panoramas com identificador Mux oficial direto; demais títulos acessíveis via playlist oficial incorporada
+- [x] 25 panoramas com identificador Mux obtido da página oficial; demais títulos acessíveis via playlist oficial incorporada
 - [x] XP extra por panorama: 5 pontos uma única vez por vídeo, sem substituir capítulo nem permitir avanço
 - [x] Guarda de tempo mínimo de 90 s e confirmação explícita; sem fingir comprovação automática de visualização integral
 - [x] Teste SQL de XP, reenvio duplicado, bloqueio antes do prazo, avanço da etapa inalterado
-- [ ] Curadoria dos identificadores específicos de vídeo para os títulos ainda ligados à playlist
+- [ ] Curadoria dos identificadores específicos dos demais panoramas ainda ligados à playlist (25 diretos até aqui)
 - [ ] Conferência manual em Android e iOS do player e da tela cheia
 - [ ] Exegese por capítulo e blocos temáticos revisados por especialistas
 - [x] Aba **Bíblia** com seleção dos 66 livros e capítulos, navegação anterior/próximo e leitor sem depender de login
@@ -137,3 +143,19 @@ Regras completas: `docs/LABGAME-2.0-RULES.md`. Nenhum livro ou capítulo pode se
 - Endpoint `lab_bible_search(text,integer)`: acesso autenticado e anônimo somente leitura, sem conceder XP.
 - A nova suíte acrescenta 4 testes de RPC e validação, totalizando 55 testes em 11 arquivos.
 - Permanecem pendentes: teste manual no Android/iOS, busca por frases antigas com grafia histórica, acessibilidade de leitores de tela e autenticação com contas reais.
+
+## Marco — instalação e autenticação, 11/10/2026
+
+- PWA com `manifest.webmanifest`, `sw.js` e ícone SVG. Cache exclusivo de shell HTML/CSS/JS e ícone; sem armazenamento offline de Bíblia, tokens, leituras ou XP.
+- Nova recuperação de senha por e-mail e criação de senha com pelo menos 8 caracteres. Configuração de URLs permitidas no Supabase ainda necessária.
+- Correção de justiça na Liga GC: denominador da taxa é o número de participantes com consentimento, não a população total do grupo.
+- Curadoria adicional de 19 IDs oficiais de panoramas BibleProject: agora 25 reproduções individuais conhecidas. A seleção de vídeos restantes continua via playlist integrada.
+- 63 testes da primeira tentativa passaram, mas o `tsc` apontou ausência de tipos de Node no teste de PWA; foram adicionados `@types/node` e o tipo `node` no `tsconfig`.
+- **Bloqueio externo de publicação:** Vercel recusou novo deploy com `402 api-deployments-free-per-day`. A versão desta rodada está no GitHub, **ainda sem build completo aprovado nem publicação nova**.
+- Instruções e dependências: `docs/MOBILE-INSTALL-AND-RECOVERY.md`.
+
+### Aceite pendente de lançamento
+1. Executar `npm install && npm test && npm run build` após a liberação do deploy ou em uma execução CI acessível.
+2. Verificar `/manifest.webmanifest`, `/icons/labgame.svg` e `/sw.js` pela URL final.
+3. Homologar recuperação de senha e instalação em Chrome Android e Safari iOS.
+4. Homologar reprodução em tela cheia dos vídeos novos.
