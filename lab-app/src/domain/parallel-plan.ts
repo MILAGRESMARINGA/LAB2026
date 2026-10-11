@@ -12,7 +12,7 @@ const distribute=(chapters:Chapter[],days:number)=>{
 };
 export function createParallelPlan(year:number):ParallelDay[]{
  if(!Number.isInteger(year)||year<1||year>9999)throw Error("Ano inválido");
- const days=new Date(Date.UTC(year,1,29)).getUTCMonth()===1?366:365;
+ const days=(year%4===0&&(year%100!==0||year%400===0))?366:365;
  const psalms=CHAPTERS.filter(c=>c.book==="Salmos");
  const old=CHAPTERS.filter(c=>c.testament==="AT"&&c.book!=="Salmos");
  const nt=CHAPTERS.filter(c=>c.testament==="NT");
