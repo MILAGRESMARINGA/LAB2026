@@ -30,7 +30,7 @@ Atualização: 11/10/2026. Branch: `lab-rebuild-2026` do repositório `MILAGRESM
 - [ ] Auditoria especializada de segurança e retenção de dados
 
 ## 2 — Frontend e gamificação
-- [x] Interface móvel, temática escura, navegação em cinco áreas
+- [x] Interface móvel, temática escura, navegação em seis áreas (Hoje, Bíblia, Jornada, Estudos, GCs, Perfil)
 - [x] Onboarding com proposta, regras, modo de participação e primeiro desafio
 - [x] Etapas individuais com feedback após cada capítulo
 - [x] XP, sequência atual, recorde, títulos e conquistas
@@ -46,7 +46,11 @@ Atualização: 11/10/2026. Branch: `lab-rebuild-2026` do repositório `MILAGRESM
 - [x] Proteção contra acesso ao ranking por não membros
 - [x] Ranking individual privado ordenado por melhor sequência
 - [x] Consentimento individual para exibição do nome
-- [ ] Competição **entre GCs** com classificação justa por participação/assiduidade
+- [x] Liga entre GCs: participação voluntária pelo líder e consentimento individual
+- [x] Classificação proporcional por dias completos nos últimos 7 dias, sem pontuar vídeos
+- [x] Mínimo de três membros com consentimento para aparecer na liga
+- [x] Restrição de leitura da liga aos integrantes de GCs inscritos (RPC security definer)
+- [x] Teste SQL de cálculo semanal (4,8%), grupo elegível e bloqueio a não integrantes
 - [ ] Dashboard para líderes, convites revogáveis e moderação
 - [ ] Períodos de competição, histórico de temporadas e critérios contra abuso
 
@@ -72,7 +76,11 @@ Atualização: 11/10/2026. Branch: `lab-rebuild-2026` do repositório `MILAGRESM
 - [ ] Curadoria dos identificadores específicos de vídeo para os títulos ainda ligados à playlist
 - [ ] Conferência manual em Android e iOS do player e da tela cheia
 - [ ] Exegese por capítulo e blocos temáticos revisados por especialistas
-- [ ] Busca bíblica, referências cruzadas e recursos de leitura acessível
+- [x] Aba **Bíblia** com seleção dos 66 livros e capítulos, navegação anterior/próximo e leitor sem depender de login
+- [x] Busca de livros sem acentos, capítulo favorito privado e retorno rápido aos capítulos salvos
+- [x] RLS e FK para favoritos por conta individual, sem efeito na sequência nem no XP
+- [x] Testes de navegação canônica e transição entre livros (51 testes no último build)
+- [ ] Pesquisa textual por versículo, referências cruzadas e notas privadas
 
 ## 5 — Qualidade, operação e lançamento
 - [x] Projeto LABGAME isolado de demais bancos de dados do usuário
@@ -83,6 +91,7 @@ Atualização: 11/10/2026. Branch: `lab-rebuild-2026` do repositório `MILAGRESM
 - [x] Testes de categorias bíblicas e fluxo de capítulos aprovados (36/36 no Vercel)
 - [x] Deploy Vercel READY do leitor e vídeos: 9 arquivos e 47 testes aprovados; commit ffed67f
 - [x] Dados textuais e permissões verificados no Supabase após importação
+- [x] Deploy READY com biblioteca e GC versus GC: 51 testes em 10 arquivos, compilação aprovada (Vercel `dpl_DgEYmJiiy8JrZqhaPLAHCTeqa7AN`)
 - [ ] Validar transições e responsividade com navegador real e duas contas autenticadas
 - [ ] Testes de RLS com credenciais autenticadas por HTTP e duas sessões distintas
 - [ ] Observabilidade de falhas, plano de backup/rollback, desempenho mobile
@@ -110,3 +119,10 @@ Regras completas: `docs/LABGAME-2.0-RULES.md`. Nenhum livro ou capítulo pode se
 - Banco LABGAME: 66 livros, 1.189 capítulos, 31.101 versículos; zero capítulo faltante; 71 recursos BibleProject e controles de XP.
 - Direitos: [docs/BIBLE-DATA-AND-MEDIA.md](BIBLE-DATA-AND-MEDIA.md). Próximas traduções exigem origem e licença explicitamente comprovadas.
 - Segurança: o endpoint de conclusão de vídeos pontua no máximo uma vez por recurso; não permite gravação direta por usuários nem substitui capítulos.
+
+## Marco de desenvolvimento — Biblioteca + Liga GC
+- Migração `202610110007_bible_favorites.sql`: capítulos favoritos privados por usuário.
+- Migração `202610110008_gc_league.sql`: inscrição pela liderança e ranking coletivo móvel de 7 dias.
+- Banco testado com contas temporárias em transação revertida. Resultado coletivo de 4,8% para 1 leitura válida em 7 dias × 3 integrantes. Não expõe nomes individuais.
+- Release prévia na Vercel: `labgame-biblia-932nkfcu8-antonios-projects-0bf892e8.vercel.app` (READY, 51 testes).
+- Não homologado ainda: execução manual no navegador, sincronização de favoritos entre aparelhos, vídeo em tela cheia no Android/iOS.
