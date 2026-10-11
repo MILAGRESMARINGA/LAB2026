@@ -73,3 +73,15 @@ export async function updateAccountPassword(password:string):Promise<void>{
  const {error}=await supabase.auth.updateUser({password});
  if(error)throw error;
 }
+
+/** Manual OTP fallback for email links opened in another browser or PWA context. */
+export async function verifyEmailCode(email:string,code:string,type:"email"|"recovery"){
+ if(!supabase)throw Error("Supabase não configurado");
+ const clean=normalizedEmail(email);
+ const token=code.replace(/\s|-/g,"");
+ if(!validEmail(clean))throw Error("Informe um e-mail válido.");
+ if(!/^\d{6}$/.test(token))throw Error("Informe o código de seis dígitos recebido por e-mail.");
+ const {data,error}=await supabase.auth.verifyOtp({email:clean,token,type});
+ if(error)throw error;
+ if(!data.session)throw Error("O código não criou uma sessão válida. Solicite um novo e-mail.");
+}
