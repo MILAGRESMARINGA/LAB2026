@@ -159,3 +159,25 @@ Regras completas: `docs/LABGAME-2.0-RULES.md`. Nenhum livro ou capítulo pode se
 2. Verificar `/manifest.webmanifest`, `/icons/labgame.svg` e `/sw.js` pela URL final.
 3. Homologar recuperação de senha e instalação em Chrome Android e Safari iOS.
 4. Homologar reprodução em tela cheia dos vídeos novos.
+
+## Correção de acesso — cadastro, XP e perfis (11/10/2026)
+
+- [x] Conferido Supabase LABGAME da Vercel: URL correta e chave publishable ativa.
+- [x] Cadastro dividido do login; valida nome, e-mail, senha forte e confirmação, com reenvio de ativação e mensagens legíveis.
+- [x] Login direto das abas **Perfil** e **GCs**, inclusive sem conta anterior; restauração de sessão sem exibir formulário durante carregamento.
+- [x] Perfil pessoal inicializado com nome de cadastro via metadata validada na primeira sincronização.
+- [x] Perfil pessoal com fórmula detalhada: 10 XP/capítulo + 5 XP/panorama único; comparação contábil `balanced` entre histórico e pontuação armazenada.
+- [x] Perfil GC privado com total de integrantes, consentimentos, dias de leitura nos últimos sete dias, assiduidade e ranking de leitores.
+- [x] Critérios de classificação individual documentados; ranking GC semanal ponderado por participantes que consentiram.
+- [x] Funções SQL `lab_game_scorecard()` e `lab_game_group_summary(uuid)` aplicadas no Supabase.
+- [x] Testes unitários adicionais de cadastro, login e fórmulas de ranking.
+- [x] Build Vercel `dpl_CWvVxqJc3WkHKfKqKpoQven46P6i`: **73 testes / 15 arquivos, READY**, commit `0fa39967ccaefa20f73b0c0502a98612b2b7ec99`.
+- [x] Endereço fixo **https://labgame-biblia.vercel.app** vinculado ao último build aprovado.
+- [ ] **Configurar Site URL e Redirect URLs em Supabase Authentication** para `https://labgame-biblia.vercel.app`, sem depender de links preview.
+- [ ] Homologar envio de confirmação de e-mail, recuperação de conta e login reais em Android e iOS.
+- [ ] Testar com duas contas legítimas: criação de GC, convite, perfil privado, autorização de ranking, XP de leitura e vídeo.
+- [ ] Fazer auditoria final de segurança, consentimento e recuperação de dados antes de distribuição ampla.
+
+Documentação e testes: `docs/AUTH-PROFILES-AND-SCORING.md`; `lab-app/tests/account-access.test.ts`; `lab-app/tests/scorecards.test.ts`.
+
+**Observação:** os 73 testes aprovados cobrem regras de código e mocks de autenticação, não comprovam a entrega real de e-mails. O novo cadastro precisa de homologação com usuários reais após a configuração dos redirecionamentos do Supabase.
