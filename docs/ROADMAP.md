@@ -55,7 +55,12 @@ Atualização: 11/10/2026. Branch: `lab-rebuild-2026` do repositório `MILAGRESM
 - [x] Blocos introdutórios: Gênesis 1 × João 1, promessa, Lucas → Atos, profetas, Espírito Santo e salvação
 - [x] Estudos dissociados da pontuação da leitura para evitar atalhos
 - [ ] Texto bíblico completo no aplicativo com edição/licença apropriadas
-- [ ] Panoramas oficiais BibleProject para cada livro (aguardando playlists do usuário)
+- [x] Playlists do BibleProject enviadas pelo usuário: Antigo e Novo Testamento
+- [x] Catálogo de panoramas/guia oficial em português mapeado para os 66 livros
+- [x] Vídeo associado ao capítulo correspondente na tela de leitura, com divisão por faixas quando aplicável
+- [x] Biblioteca com escolha de livro, links diretos ao conteúdo oficial e acesso às playlists completas
+- [x] Convite para panorama do livro após confirmar seu último capítulo
+- [ ] Conferência manual, em navegadores reais, dos links e da reprodução externa no Android/iOS
 - [ ] Exegese por capítulo e blocos temáticos revisados por especialistas
 - [ ] Busca bíblica, referências cruzadas e recursos de leitura acessível
 
