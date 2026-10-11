@@ -1,57 +1,86 @@
-# LABGAME — Roadmap de desenvolvimento
-Atualizado em 2026-10-11. Estados baseados em evidência de código, banco e deploy; "implementado" não significa homologado.
+# LABGAME 2.0 — Roadmap de execução
 
-## P0 — Fundação e isolamento
-- [x] Branch `lab-rebuild-2026` separada de main
-- [x] Projeto Supabase exclusivo LABGAME (azejfxvaamgkmfmwdzjn)
-- [x] Schema inicial: reading_completions, reading_groups, reading_group_members com RLS
-- [x] Vercel `labgame-biblia` conectada ao repositório e variáveis públicas
-- [x] Primeiro deploy READY (commit 6afe9c3)
-- [ ] Inventário e remoção controlada do código legado CRMIMOBI
+Atualização: 11/10/2026. Branch: `lab-rebuild-2026` do repositório `MILAGRESMARINGA/LAB2026`.
 
-## P1 — Integridade bíblica
-- [x] Cânon de 66 livros e 1.189 capítulos
-- [x] Gerador anual de 365/366 dias
-- [x] Três fluxos: AT, Salmos, NT começando em João
-- [x] Testes unitários de cobertura, ano bissexto e primeiro dia (código)
-- [ ] Confirmar execução dos testes no build Vercel com comando obrigatório `npm test && npm run build`; validar balanceamento e continuidade
-- [ ] Definir versão oficial do plano com equipe bíblica (não modificar calendário após adesão)
+**Visão:** aplicativo de leitura bíblica integral em formato de jornada de aprendizagem, com disciplina diária, progressão visual, recorde pessoal, GCs e material de estudo bíblico. Identidade gráfica própria; as telas do Duolingo são inspiração de experiência, não de reprodução de marca ou personagem.
 
-## P2 — Frontend
-- [x] Navegação Hoje, Calendário, Conquistas, Grupos e Perfil (commit 2728103)
-- [x] Navegação entre dias, progresso anual, XP e dias consecutivos
-- [x] CSS responsivo para celular
-- [x] Confirmar build READY da versão de cinco telas e da interface inicial de grupos na Vercel
-- [ ] Testar fluxo mobile e acessibilidade WCAG
+## 0 — Integridade bíblica e edição do plano
+- [x] Fonte canônica: Bíblia protestante com 66 livros e 1.189 capítulos
+- [x] Modalidade competitiva de **365 dias consecutivos**, iniciada na data do participante
+- [x] Distribuição automática de **1 a 4 capítulos por etapa**
+- [x] Dia inicial: **Gênesis 1, Salmos 1, João 1**
+- [x] Sequências em AT, Salmos e NT, com ligação Lucas → Atos
+- [x] Plano v1 congelado no PostgreSQL; 365 etapas e 1.189 referências únicas verificadas
+- [x] Testes unitários de integridade e cobertura do plano
+- [ ] Revisão formal por especialista em cânon, exegese e leitura pastoral
+- [ ] Versão coletiva janeiro–dezembro separada da modalidade individual de 365 etapas
 
-## P3 — Autenticação e dados
-- [x] Funções de login, cadastro, logout e upsert de leituras
-- [ ] Teste real de cadastro, confirmação de e-mail, login e recuperação de sessão
-- [x] Diagnosticar e corrigir GRANTs ausentes para papel `authenticated`; papel `anon` sem SELECT/INSERT nas tabelas privadas\n- [ ] Testes RLS com duas contas reais distintas e anônimo
-- [ ] Política de recuperação de senha, exclusão de conta e LGPD
+## 1 — Regras do jogo e segurança
+- [x] Servidor determina o dia corrente em `America/Sao_Paulo`
+- [x] Somente capítulos do **dia e da etapa atual** rendem XP
+- [x] Bloqueio contra antecipar capítulos, reenvios duplicados e pontuação extra
+- [x] Etapa avança apenas quando todos os capítulos do dia foram confirmados
+- [x] Perdeu uma etapa? Encerra tentativa e volta ao dia 1 na próxima sessão
+- [x] Melhor sequência histórica preservada, mesmo após reinícios
+- [x] Conclusão dos 365 dias preservada até início voluntário de novo ciclo
+- [x] Novo ciclo bloqueado no mesmo dia da conclusão
+- [x] Banco com tabelas dedicadas e RPCs transacionais; acesso privado por RLS
+- [x] Simulações transacionais de confirmação, idempotência, perda do dia, recorde, grupos e reinício concluído, revertidas após cada teste
+- [ ] Homologar com pessoas reais em fusos e dispositivos diferentes
+- [ ] Auditoria especializada de segurança e retenção de dados
 
-## P4 — Gamificação
-- [x] Motor básico de XP e conquistas por capítulos únicos
-- [x] Cálculo de dias completos e sequência de leitura
-- [ ] Regras de leitura atrasada, reinício anual e recompensas
-- [ ] Antiabuso e histórico auditável
-- [ ] Ranking opcional com consentimento e privacidade
+## 2 — Frontend e gamificação
+- [x] Interface móvel, temática escura, navegação em cinco áreas
+- [x] Onboarding com proposta, regras, modo de participação e primeiro desafio
+- [x] Etapas individuais com feedback após cada capítulo
+- [x] XP, sequência atual, recorde, títulos e conquistas
+- [x] Mapa com etapas concluídas, atual e futuras bloqueadas
+- [x] Chama simbólica para a constância; sem equivalência com espiritualidade pessoal
+- [x] Suporte a grupos e rankings privados opt-in
+- [ ] Testes E2E com navegador e leitores reais
+- [ ] Acessibilidade WCAG, motion reduzido, contraste e leitura em telas pequenas
+- [ ] Notificações com consentimento e recuperação de conta
 
-## P5 — Comunidade
-- [x] Tabelas de grupos e membros
-- [x] Funções de convites UUID e aceite autenticado por RPC; tela de criação e ingresso em grupos\n- [ ] Testes funcionais ponta a ponta com dois participantes
-- [x] Políticas de visualização individual, associação por convite e administração do proprietário\n- [ ] Papéis de moderador e painel de administração; auditoria externa de RLS
-- [ ] Painel do líder e acompanhamento agregado sem expor dados indevidos
+## 3 — Grupos de crescimento (GC)
+- [x] Criar grupo, convidar por token e entrar com autorização
+- [x] Proteção contra acesso ao ranking por não membros
+- [x] Ranking individual privado ordenado por melhor sequência
+- [x] Consentimento individual para exibição do nome
+- [ ] Competição **entre GCs** com classificação justa por participação/assiduidade
+- [ ] Dashboard para líderes, convites revogáveis e moderação
+- [ ] Períodos de competição, histórico de temporadas e critérios contra abuso
 
-## P6 — Operação e publicação
-- [x] GitHub Actions configurado para teste/build
-- [x] Build Vercel READY com cinco telas e fluxo inicial de grupos (commit fb6a4bc)\n- [ ] Confirmar novo build executando testes Vitest antes da compilação
-- [ ] Monitoramento, backups e plano de rollback
-- [ ] Testes E2E, desempenho, segurança e acessibilidade
-- [ ] Aprovação de homologação e publicação de produção
+## 4 — Bíblia, estudos e contextualização
+- [x] Livros categorizados em Pentateuco, históricos, poéticos, profetas, Evangelhos, Atos, cartas e Apocalipse
+- [x] Blocos introdutórios: Gênesis 1 × João 1, promessa, Lucas → Atos, profetas, Espírito Santo e salvação
+- [x] Estudos dissociados da pontuação da leitura para evitar atalhos
+- [ ] Texto bíblico completo no aplicativo com edição/licença apropriadas
+- [ ] Panoramas oficiais BibleProject para cada livro (aguardando playlists do usuário)
+- [ ] Exegese por capítulo e blocos temáticos revisados por especialistas
+- [ ] Busca bíblica, referências cruzadas e recursos de leitura acessível
 
-## Evidências e alterações recentes\n- `lab-app/supabase/migrations/202610110001_lab_access_and_groups.sql` aplicada ao Supabase LABGAME.\n- `lab-app/src/features/groups.ts` implementa consulta, criação e aceite de convite.\n- `lab-app/src/domain/plan.ts` e `parallel-plan.ts` agora calculam calendário gregoriano por aritmética.\n- Vercel configurada com `npm test && npm run build` como bloqueio para publicações futuras.\n- Pendente comprovar resultado final dos testes do último deploy, além dos cenários de segurança com usuários reais.\n\n## Agentes / responsabilidades
-Principal Architect coordena: Backend, Database, Security, QA/Reliability, Frontend/UX, Integration, Platform/Observability e AI. Estes papéis orientam revisões; não implicam processos autônomos em execução.
+## 5 — Qualidade, operação e lançamento
+- [x] Projeto LABGAME isolado de demais bancos de dados do usuário
+- [x] Repositório GitHub e Vercel conectados para deploy
+- [x] Pipeline exige `npm test && npm run build`
+- [x] Build da primeira versão gamificada aprovado (32 testes em sete arquivos)
+- [ ] Confirmar novo build com os testes adicionais de categorias bíblicas e fluxo de capítulos
+- [ ] Testes de RLS com credenciais autenticadas por HTTP e duas sessões distintas
+- [ ] Observabilidade de falhas, plano de backup/rollback, desempenho mobile
+- [ ] Publicação homologada e abertura gradual por GC
 
-## Critérios de conclusão
-Não declarar fase concluída sem teste e evidência. Não modificar projetos Supabase externos ao LABGAME. Nunca expor chaves service_role ao frontend.
+## Papéis de agentes
+- **principal-architect:** invariantes, modelo versionado e arquitetura
+- **backend-engineer:** RPCs transacionais e limites de etapas
+- **database-engineer:** PostgreSQL, migrações e índices
+- **security-engineer:** RLS, autorização por GC e proteção de dados
+- **qa-reliability-engineer:** testes de regressão, fluxo anual e cenários de falha
+- **frontend-ux-engineer:** onboarding, jornada e acessibilidade
+- **integration-engineer:** links BibleProject, traduções licenciadas e autenticação
+- **platform-observability-engineer:** logs, releases, backups e monitoramento
+- **ai-engineer:** estudos e conteúdos pedagógicos sob revisão humana
+
+Esses nomes são responsabilidades de revisão e desenvolvimento, **não** processos de agentes autônomos em execução.
+
+## Acordos e critérios
+Regras completas: `docs/LABGAME-2.0-RULES.md`. Nenhum livro ou capítulo pode ser removido, repetido artificialmente ou alterado para caber na gamificação. Não tratar o estado espiritual das pessoas como métrica do jogo. Não publicar exegese automatizada sem revisão nem links de vídeos ainda não fornecidos.
