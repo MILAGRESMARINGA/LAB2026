@@ -15,7 +15,7 @@ describe("Panoramas BibleProject pt-BR",()=>{
   for(const [book] of CANON)expect(getBibleProjectVideos(book).length,book).toBeGreaterThan(0);
  });
  it("não referencia livros fora do cânon",()=>{
-  const canonical=new Set(CANON.map(([book])=>book));
+  const canonical=new Set<string>(CANON.map(([book])=>book));
   for(const book of Object.keys(BIBLEPROJECT_VIDEO_LINKS))expect(canonical.has(book),book).toBe(true);
  });
  it("usa apenas URLs de recursos oficiais em português",()=>{
