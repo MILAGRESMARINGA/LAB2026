@@ -52,3 +52,50 @@ button,input,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.
 .finished-book-links a{display:flex;align-items:center;gap:11px;border:1px solid #617e61;border-radius:10px;color:#e3f6e6;text-decoration:none;padding:11px;font-size:13px}
 .finished-book-links a span{flex:1}
 .finished-book-links a:hover{background:#385844}
+
+/* Bíblia Almeida 1911 — texto original em capítulos, dentro do LABGAME */
+.bible-reader{width:100%;max-width:670px;margin:8px auto 10px;text-align:left;border:2px solid #435761;border-radius:18px;background:#172932;overflow:hidden}
+.bible-reader-header{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 17px;background:#233a42;border-bottom:1px solid #455b62}
+.bible-reader-header>div:first-child{display:flex;flex-direction:column;gap:8px}
+.bible-reader-header strong{display:flex;align-items:center;gap:8px;font-size:14px}
+.reader-font-controls{display:flex;align-items:center;gap:8px}
+.reader-font-controls button{display:flex;align-items:center;justify-content:center;border:1px solid #6a8389;background:#263f49;color:#edfaf6;width:36px;height:36px;border-radius:9px}
+.reader-font-controls span{font-size:14px;font-weight:800}
+.bible-verse-scroll{height:min(52dvh,510px);overflow-y:auto;overscroll-behavior:contain;padding:20px 24px;scrollbar-color:#729363 #1a2b33;line-height:1.85;color:#e5eeee;font-family:Georgia, "Times New Roman",serif;text-align:left}
+.bible-verse-scroll:focus-visible{outline-offset:-4px}
+.bible-verse-scroll h2{text-align:center;color:#c7eea4;font-size:1.5em;line-height:1.3;margin:3px 0 23px}
+.bible-verse{margin:0 0 .9em;text-align:left;overflow-wrap:break-word}
+.bible-verse sup{font-family:Inter,system-ui,sans-serif;font-size:.65em;font-weight:800;color:#b6d96e;vertical-align:super;margin-right:3px}
+.chapter-finish{margin:26px auto 8px;padding:16px;border-top:1px solid #54705b;display:flex;align-items:center;justify-content:center;gap:10px;color:#b7ea6d;font-size:15px;font-family:Inter,system-ui,sans-serif}
+.reader-scroll-hint{display:flex;align-items:center;gap:6px;color:#bcdb98;padding:8px 18px;margin:5px 0 0;font-size:12px;line-height:1.5}
+.reader-confirm{width:calc(100% - 28px);margin:13px auto 10px}
+.reader-attribution{font-size:11px;color:#a0b5ba;line-height:1.5;margin:0;padding:5px 18px 16px}
+.bible-reader-status{min-height:180px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:8px;padding:20px}
+.bible-reader-status .secondary-cta{margin:auto}
+.lesson-reading .bible-reader{margin:14px auto}
+.lesson-reading .lesson-video-resource{width:100%}
+button.lesson-video-resource,button.book-video-item,.finished-book-links button{font:inherit;cursor:pointer;text-align:left}
+button.lesson-video-resource,button.book-video-item{width:100%}
+.finished-book-links button{display:flex;align-items:center;gap:11px;border:1px solid #617e61;border-radius:10px;color:#e3f6e6;background:transparent;padding:11px;font-size:13px}
+.finished-book-links button span{flex:1}
+.finished-book-links button:hover{background:#385844}
+body.video-modal-open{overflow:hidden}
+.video-modal-backdrop{position:fixed;inset:0;background:#030b0ee8;z-index:100;display:flex;align-items:center;justify-content:center;padding:14px}
+.video-modal{max-width:1000px;width:100%;max-height:min(96dvh,920px);background:#182932;border:2px solid #51656b;border-radius:20px;display:flex;flex-direction:column;overflow-y:auto;box-shadow:0 18px 90px #0009}
+.video-modal-header{padding:18px 22px;display:flex;align-items:flex-start;justify-content:space-between;gap:20px}
+.video-modal-header h2{margin:7px 0 0;font-size:24px}
+.video-modal-header>button{border:1px solid #556d76;background:#233b43;color:#fff;border-radius:10px;width:42px;height:42px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.video-frame{aspect-ratio:16/9;width:100%;min-height:0;background:#070f14;overflow:hidden}
+.video-frame iframe{display:block;border:0;width:100%;height:100%}
+.video-controls{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 20px}
+.video-controls a{font-size:13px;color:#b6e4ec;display:flex;align-items:center;gap:7px}
+.video-credit,.video-player-hint,.video-status,.video-success,.video-reward{padding:0 22px;line-height:1.6;font-size:13px}
+.video-credit{color:#b8c8ce}.video-credit a{color:#bceaff;text-decoration:underline;text-underline-offset:3px}
+.video-player-hint{display:flex;gap:8px;align-items:flex-start;color:#e7cf8b;margin:13px 0 0}
+.video-player-hint svg{flex-shrink:0}
+.video-success{display:flex;gap:10px;align-items:center;color:#b6e95e;font-weight:800;padding-bottom:16px}
+.video-reward{padding-bottom:20px}.video-reward p{color:#c6d2d1}.video-reward .primary-cta{max-width:450px}
+.video-modal>.feedback-message{margin:0 20px 17px}
+.video-modal:fullscreen{max-width:100%;max-height:100%;width:100%;height:100%;border:0;border-radius:0}
+.video-modal:fullscreen .video-frame{flex:1;aspect-ratio:auto;min-height:150px}
+@media(max-width:650px){.bible-reader-header{padding:11px}.bible-verse-scroll{height:50dvh;padding:15px 16px}.video-modal-backdrop{padding:0}.video-modal{max-height:100dvh;height:100dvh;border-radius:0}.video-modal-header{padding:14px}.video-modal-header h2{font-size:19px}.video-frame{flex:0 0 auto}.video-controls{padding:10px 15px}.video-controls .secondary-cta{padding:10px 12px}.video-credit,.video-player-hint,.video-status,.video-success,.video-reward{padding-left:15px;padding-right:15px}}
