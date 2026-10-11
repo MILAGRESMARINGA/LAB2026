@@ -29,15 +29,21 @@ A apresentação usa mecânicas de progressão de jogos educativos, sem copiar m
 - Chama apagada/baixa/crescente/forte representa somente **constância registrada**, nunca presença do Espírito Santo, grau de espiritualidade ou aceitação de Deus.
 - Marcos iniciais: 1, 7, 30, 100, 180 e 365 dias. Comparações sociais têm caráter voluntário.
 - A classificação atual do GC usa **melhor sequência**, seguida de dias acumulados e XP; somente participantes com `leaderboard_opt_in=true` aparecem.
-- Rankings são acessíveis só a membros autenticados do GC. Não há divulgação pública de e-mails.
+- Rankings individuais são acessíveis apenas a membros autenticados do respectivo GC. Não há divulgação pública de e-mails.
+- **Liga entre GCs**: somente líderes podem inscrever seus grupos. A liga exibe apenas estatísticas agregadas e admite GCs com pelo menos 3 membros que consentiram em aparecer nos rankings.
+- **Pontuação coletiva semanal**: dias completos confirmados nos últimos 7 dias por participantes que consentiram, divididos por `7 × total de integrantes do GC` (porcentagem). Não há vantagem automática por número absoluto de integrantes.
+- Apenas integrantes de algum GC inscrito podem consultar a liga. A participação é reversível pelo líder; a exibição individual depende das preferências de cada pessoa.
+- XP de vídeos não influencia a pontuação da liga. GCs que ingressarem no meio da semana entram na mesma janela móvel, sem compensação retroativa.
 
 ## Estudos e recursos
 - Categorias: Pentateuco; históricos; poéticos; profetas maiores/menores; Evangelhos; Atos; cartas paulinas/gerais; literatura apocalíptica.
 - Blocos: criação (Gênesis 1 × João 1), promessa, Lucas → Atos, profetas e história, Espírito Santo, salvação e nova vida.
-- Estudos **não rendem os mesmos pontos de capítulos** e não autorizam avanço antecipado.
+- Estudos e leitura livre de capítulos **não concedem os 10 XP diários** e não autorizam avanço antecipado.
+- A aba Bíblia permite consultar qualquer capítulo da Almeida 1911 e guardar favoritos privados; essas ações não pontuam.
+- Vídeos de panorama do BibleProject concedem **5 XP extra por vídeo único**, com confirmação pessoal após uma sessão mínima de 90 segundos. Não substituem capítulos nem avançam etapas. A confirmação de visualização não constitui prova automática de reprodução integral.
 - Exegese por capítulo exige revisão teológica, literária, histórica e canônica; não publicar interpretações geradas automaticamente sem revisão.
-- Playlist BibleProject de cada livro: **pendente de links enviados e verificados**.
-- Texto integral no aplicativo: **depende de licença/edição apropriada**. A versão atual oferece confirmação da leitura em Bíblia impressa ou aplicativo externo.
+- Playlists BibleProject do AT e do NT já integradas, com recursos oficiais associados aos 66 livros. Parte dos panoramas possui vídeo individual embutido; os demais usam a playlist oficial dentro do player.
+- Texto integral disponível no Supabase e no leitor do aplicativo: **Almeida de 1911** (domínio público, grafia histórica), com 66 livros e 1.189 capítulos. Outras traduções dependem de licença expressa.
 
 ## Critérios técnicos de aceite
 1. Testes garantem 365 dias, 1.189 capítulos distintos, máximo de 4 por etapa, primeiro dia correto e ordem interna dos livros.
@@ -51,6 +57,12 @@ A apresentação usa mecânicas de progressão de jogos educativos, sem copiar m
 ## Próximos ciclos
 - QA: testes PostgreSQL simulando datas e perfis de duas contas; E2E em navegador.
 - Produto: opção de entrar em desafio individual ou GC, perfil, onboarding persistido, calendário com possibilidade de escolher GC.
-- Gamificação: disputa **entre GCs** com métricas justas por tamanho, empates, consentimento e antiguidade de participação.
-- Conteúdo: curadoria de exegese; textos bíblicos licenciados; vídeos BibleProject por livro; resumos teológicos verificados.
+- Gamificação: liga de GCs implementada por resultados semanais agregados; pendentes temporadas fechadas, antiguidade de participação, períodos parciais e desempates editoriais.
+- Conteúdo: curadoria de exegese; futuras traduções licenciadas; vinculação de vídeos individualizados restantes; resumos teológicos verificados.
 - Operação: monitoramento, backup, recuperação de senha, controle de dados pessoais, WCAG e notificações opt-in.
+
+## Biblioteca, favoritos e atribuição
+- A leitura livre é acessível sem cadastro; para salvar favoritos é necessário login.
+- Os favoritos têm RLS por usuário em `lab_bible_favorites`, sem escrita anônima.
+- A Bíblia de 1911 mantém ortografia histórica, sem modernização automática.
+- Incorporar conteúdos BibleProject somente conforme condições não comerciais, preservando os créditos e o acesso à fonte original. Veja `docs/BIBLE-DATA-AND-MEDIA.md`.
