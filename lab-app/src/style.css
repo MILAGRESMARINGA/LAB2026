@@ -305,3 +305,12 @@ body.video-modal-open{overflow:hidden}
 .auth-flow-back{display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;color:#b7cacc;text-decoration:none;padding:11px}
 .auth-flow-back:hover{text-decoration:underline}
 @media(max-width:560px){.auth-flow-page{padding:13px;align-items:flex-start;padding-top:8vh}.auth-flow-card{gap:14px}}
+
+/* In-app six-digit email OTP: mobile keyboard and clear recovery action. */
+.account-code-form{display:grid;gap:12px;width:100%;text-align:left;margin:7px 0}
+.account-code-form label{font-weight:800;font-size:13px;color:#d4edb8}
+.account-code-form input{width:100%;min-height:58px;letter-spacing:.4em;text-align:center;font-size:26px;font-variant-numeric:tabular-nums;border:2px solid #668f70;border-radius:13px;background:#14292d;color:#f6fee4}
+.account-code-form input:focus-visible{outline:3px solid #b4e74f;outline-offset:2px}
+.account-code-form .primary-cta{width:100%;font-size:13px}
+.signup-confirmation .subtle-button{font-size:13px;color:#bdcfd0}
+@media(max-width:460px){.account-code-form input{font-size:23px}.account-code-form .primary-cta{font-size:11px}}
