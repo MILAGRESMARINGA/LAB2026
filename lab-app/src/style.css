@@ -196,3 +196,18 @@ body.video-modal-open{overflow:hidden}
 .bible-verse-results>button svg{flex-shrink:0;color:#b0d667}
 .bible-verse.bible-verse-highlight{background:#354638;border-left:4px solid #aedf52;border-radius:5px;padding:9px 11px;margin-left:-11px;color:#f4fae6}
 @media(max-width:650px){.bible-verse-search{padding:13px}.bible-verse-search-controls button{font-size:11px;padding:11px}.bible-verse-results>button{flex-wrap:wrap}.bible-verse-results>button span{min-width:70%;order:3}.bible-verse-results>button svg{margin-left:auto}}
+
+/* Mobile installation and network state. No offline chapter completion is implied. */
+.install-labgame{border:1px solid #4e685b;background:#213a32;border-radius:19px;padding:23px;margin-top:35px}
+.install-heading{display:flex;align-items:center;gap:12px}
+.install-app-icon{display:flex;align-items:center;justify-content:center;width:53px;height:53px;flex-shrink:0;border-radius:14px;background:#a9d83e;color:#1d321f}
+.install-heading h2{font-size:20px;line-height:1.35;margin:7px 0 0}
+.install-labgame>p{font-size:13px;line-height:1.65;color:#c0d4cb}
+.install-labgame .primary-cta{max-width:360px;margin:20px 0 5px}
+.install-labgame .install-directions{padding:14px;border-radius:11px;background:#293f40;border:1px solid #4c6c68}
+.install-labgame .install-directions strong{color:#bfe882}
+.install-offline{display:flex;gap:10px;align-items:flex-start;color:#f8d3a1!important}
+.install-offline svg{flex-shrink:0}
+.network-status{display:flex;align-items:center;justify-content:center;gap:8px;background:#4c3925;color:#ffe2ae;border-bottom:1px solid #7c5f3c;padding:10px 14px;margin:0;font-size:13px;text-align:center;line-height:1.45}
+.network-status svg{flex-shrink:0}
+@media(max-width:650px){.install-labgame{padding:17px}.install-heading h2{font-size:17px}.network-status{font-size:11px}}
