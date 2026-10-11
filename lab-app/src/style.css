@@ -211,3 +211,11 @@ body.video-modal-open{overflow:hidden}
 .network-status{display:flex;align-items:center;justify-content:center;gap:8px;background:#4c3925;color:#ffe2ae;border-bottom:1px solid #7c5f3c;padding:10px 14px;margin:0;font-size:13px;text-align:center;line-height:1.45}
 .network-status svg{flex-shrink:0}
 @media(max-width:650px){.install-labgame{padding:17px}.install-heading h2{font-size:17px}.network-status{font-size:11px}}
+
+.password-recovery-mask{position:fixed;inset:0;z-index:120;background:#071213ec;display:flex;align-items:center;justify-content:center;padding:18px}
+.password-recovery-modal{background:#1d3239;color:#effaf7;border:2px solid #49646b;border-radius:22px;padding:30px;max-width:450px;width:100%;display:grid;gap:14px;box-shadow:0 24px 75px #050c0caa}
+.password-recovery-modal h2{font-size:25px;margin:0}
+.password-recovery-modal p{color:#bed2d0;font-size:14px;line-height:1.6}
+.password-recovery-modal label{font-size:12px;font-weight:800}
+.password-recovery-modal input{border:2px solid #617a81;background:#102127;color:#fff;border-radius:11px;padding:15px;font-size:16px;min-width:0;width:100%}
+@media(max-width:500px){.password-recovery-modal{padding:19px}}
