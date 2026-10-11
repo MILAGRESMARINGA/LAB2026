@@ -35,14 +35,14 @@ A proporção semanal usa `dias completos dos participantes com consentimento / 
 
 ## BibleProject dentro do aplicativo
 
-- Mapeados **25 panoramas com reprodução individual por ID público dos streams oficiais**, vinculados à página correspondente do BibleProject.
+- Mapeados **25 panoramas com reprodução individual por IDs de streams encontrados nas páginas oficiais**, vinculados aos recursos correspondentes do BibleProject.
 - Demais vídeos utilizam temporariamente a playlist incorporada e devem passar por curadoria individual.
 - Os direitos dos vídeos pertencem ao BibleProject; a experiência usa player incorporado, com créditos e link da fonte. Não copiar os vídeos para o banco.
 - O XP extra continua separado da leitura. A espera mínima e a confirmação são autorrelato; não garantem monitoramento de visualização integral.
 
 ## Situação de validação
 
-- Build anterior de 51/55 testes: aprovado antes desta rodada.
+- Builds anteriores: 55 testes aprovados antes desta rodada.
 - Primeira tentativa desta rodada: **63 testes passaram**, mas a compilação TypeScript detectou ausência de `@types/node` nos testes de PWA.
 - Correção aplicada: dependência `@types/node` e configuração do `tsconfig.json`.
 - Publicação posterior recusada pela API Vercel: `402 api-deployments-free-per-day` (limite diário). Por isso, **o novo build e a nova experiência ainda não podem ser considerados homologados ou publicados**.
