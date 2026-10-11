@@ -1,4 +1,3 @@
-import type {DailyReading} from "./plan";
 export function readingStreak(completedIds:ReadonlySet<string>,days:ReadonlyArray<{day:number;chapters:ReadonlyArray<{id:string}>}>,throughDay:number):number{
  let count=0;
  for(let i=Math.min(throughDay,days.length)-1;i>=0;i--){
