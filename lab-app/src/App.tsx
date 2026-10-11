@@ -4,7 +4,7 @@ import {createGamePlan,GAME_DAYS,verifyGamePlan} from "./domain/game-plan";
 import {categoryOfBook,STUDY_BLOCKS,BIBLEPROJECT_PLAYLISTS,BIBLEPROJECT_OFFICIAL_COLLECTIONS,getBibleProjectVideos,getBibleProjectVideoForChapter} from "./domain/studies";
 import {CANON,OLD_TESTAMENT,NEW_TESTAMENT,totalChapters} from "./domain/canon";
 import {supabase} from "./lib/supabase";
-import {signIn,signOut,signUp} from "./features/auth";
+import {signIn,signOut,signUp,requestPasswordReset,updateAccountPassword} from "./features/auth";
 import {loadGameState,confirmGameChapter,saveGameProfile,getGameRanking,startNewGameCycle,type LabGameState,type LabRankingEntry} from "./features/lab-game";
 import {createReadingGroup,getGroupInvite,joinReadingGroup,listReadingGroups,type ReadingGroup} from "./features/groups";
 import {BibleReader} from "./components/BibleReader";
@@ -27,6 +27,10 @@ export default function App(){
  const [email,setEmail]=useState(""),[password,setPassword]=useState("");
  const [introStep,setIntroStep]=useState(0),[preferredMode,setPreferredMode]=useState<"individual"|"grupo">("individual");
  const [viewAuth,setViewAuth]=useState(false);
+ const [resetEmailMode,setResetEmailMode]=useState(false);
+ const [passwordRecoveryMode,setPasswordRecoveryMode]=useState(false);
+ const [newPassword,setNewPassword]=useState("");
+ const [recoveryNotice,setRecoveryNotice]=useState("");
  const [lessonOpen,setLessonOpen]=useState(false);
  const [activeVideo,setActiveVideo]=useState<{resource:BibleProjectResource;book:string}|null>(null);
  const openVideo=(resource:BibleProjectResource,book:string)=>setActiveVideo({resource,book});
@@ -46,7 +50,7 @@ export default function App(){
   let active=true;
   const setAuth=async()=>{const {data:{user:authenticated}}=await client.auth.getUser();if(!active)return;setUser(authenticated?{id:authenticated.id,email:authenticated.email||""}:null)};
   void setAuth();
-  const {data:{subscription}}=client.auth.onAuthStateChange(()=>{void setAuth()});
+  const {data:{subscription}}=client.auth.onAuthStateChange(event=>{if(event==="PASSWORD_RECOVERY")setPasswordRecoveryMode(true);void setAuth()});
   return()=>{active=false;subscription.unsubscribe()};
  },[]);
  useEffect(()=>{if(!user){setGame(null);setGroups([]);return}void refreshGame()},[user?.id,refreshGame]);
@@ -69,6 +73,17 @@ export default function App(){
  const rankLevel=bestDays>=365?"Guardião da Palavra":bestDays>=100?"Peregrino":bestDays>=30?"Constante":bestDays>=7?"Semeador":"Iniciante";
  const flameLevel=activeDays>=30?"intense":activeDays>=7?"steady":activeDays>0?"growing":"quiet";
  const sign=async(mode:"in"|"up")=>{setBusy(true);setMessage("");try{if(mode==="in"){await signIn(email,password);setViewAuth(false);if(preferredMode==="grupo")setTab("groups")}else{await signUp(email,password);setMessage("Cadastro solicitado. Confirme o e-mail, caso seja necessário, e entre na sua conta.")}}catch(e){setMessage(describeError(e))}finally{setBusy(false)}};
+ const sendRecovery=async()=>{setBusy(true);setMessage("");try{
+  await requestPasswordReset(email);
+  setResetEmailMode(false);
+  setMessage("Se este e-mail estiver cadastrado, você receberá instruções para redefinir sua senha.");
+ }catch(e){setMessage(describeError(e))}finally{setBusy(false)}};
+ const changePassword=async()=>{setBusy(true);setRecoveryNotice("");try{
+  await updateAccountPassword(newPassword);
+  setPasswordRecoveryMode(false);setNewPassword("");
+  window.history.replaceState(null,"",window.location.pathname);
+  setMessage("Sua senha foi atualizada.");
+ }catch(e){setRecoveryNotice(describeError(e))}finally{setBusy(false)}};
  const confirm=async()=>{if(!nextChapter||!user||busy)return;setBusy(true);setMessage("");try{const chapter=nextChapter;const updated=await confirmGameChapter(chapter.id);setGame(updated);setLastConfirmed({book:chapter.book,chapter:chapter.chapter})}catch(e){setMessage(describeError(e));void refreshGame()}finally{setBusy(false)}};
  const restartChallenge=async()=>{if(!user||busy)return;setBusy(true);setMessage("");try{const next=await startNewGameCycle();setGame(next);setLessonOpen(false);setLastConfirmed(null)}catch(e){setMessage(describeError(e))}finally{setBusy(false)}};
  const refreshGroups=async()=>{const data=await listReadingGroups();setGroups(data);if(!rankingGroup&&data[0])setRankingGroup(data[0].id)};
@@ -92,7 +107,24 @@ export default function App(){
        {introStep===3&&<><h1>Seu primeiro <em>desafio.</em></h1><p>Comece com Gênesis 1, Salmos 1 e João 1. Ao terminar, a próxima etapa ficará disponível amanhã.</p><div className="preview-chapters">{plan[0].chapters.map(ch=><div key={ch.id}><BookOpen size={17}/>{ch.book} {ch.chapter}</div>)}</div></>}
        <div className="intro-actions">{introStep>0&&<button type="button" className="subtle-button" onClick={()=>setIntroStep(n=>n-1)}><ArrowLeft size={16}/> Voltar</button>}<button className="primary-cta" onClick={()=>introStep===3?setViewAuth(true):setIntroStep(n=>n+1)}>{introStep===3?"COMEÇAR MINHA JORNADA":"CONTINUAR"} <ArrowRight size={19}/></button></div>
       </>:<><div className="auth-intro"><div className="lab-emblem small"><BookOpen size={34}/></div><h1>Entre na sua jornada</h1><p>Use sua conta LABGAME para registrar o progresso com segurança.</p></div>
-       {supabase?<form className="auth-card" onSubmit={e=>{e.preventDefault();void sign("in")}}><label htmlFor="lab-email">E-mail</label><input id="lab-email" type="email" autoComplete="email" value={email} required onChange={e=>setEmail(e.target.value)}/><label htmlFor="lab-password">Senha</label><input id="lab-password" type="password" autoComplete="current-password" minLength={6} value={password} required onChange={e=>setPassword(e.target.value)}/><button className="primary-cta" disabled={busy} type="submit"><LogIn size={18}/> ENTRAR</button><button className="secondary-cta" disabled={busy||!email||password.length<6} type="button" onClick={()=>void sign("up")}>CRIAR MINHA CONTA</button></form>:<p>O serviço de contas não está configurado.</p>}
+       {supabase?(resetEmailMode?
+        <form className="auth-card" onSubmit={e=>{e.preventDefault();void sendRecovery()}}>
+         <h2>Recuperar minha conta</h2>
+         <p className="muted">Enviaremos um link para seu e-mail cadastrado.</p>
+         <label htmlFor="lab-recovery-email">E-mail</label>
+         <input id="lab-recovery-email" type="email" value={email} autoComplete="email" required onChange={e=>setEmail(e.target.value)}/>
+         <button className="primary-cta" type="submit" disabled={busy}>ENVIAR LINK DE RECUPERAÇÃO</button>
+         <button className="subtle-button" type="button" onClick={()=>setResetEmailMode(false)}>VOLTAR AO LOGIN</button>
+        </form>:
+        <form className="auth-card" onSubmit={e=>{e.preventDefault();void sign("in")}}>
+         <label htmlFor="lab-email">E-mail</label>
+         <input id="lab-email" type="email" autoComplete="email" value={email} required onChange={e=>setEmail(e.target.value)}/>
+         <label htmlFor="lab-password">Senha</label>
+         <input id="lab-password" type="password" autoComplete="current-password" minLength={6} value={password} required onChange={e=>setPassword(e.target.value)}/>
+         <button className="primary-cta" disabled={busy} type="submit"><LogIn size={18}/> ENTRAR</button>
+         <button className="secondary-cta" disabled={busy||!email||password.length<6} type="button" onClick={()=>void sign("up")}>CRIAR MINHA CONTA</button>
+         <button className="subtle-button" type="button" onClick={()=>{setResetEmailMode(true);setMessage("")}}>ESQUECI MINHA SENHA</button>
+        </form>):<p>O serviço de contas não está configurado.</p>}
        <button className="subtle-button" onClick={()=>setViewAuth(false)}><ArrowLeft size={17}/> Voltar</button></>}
        {message&&<p role="status" className="feedback-message">{message}</p>}
      </section>:<><section className="challenge-top"><div><span className="eyebrow">DESAFIO ATIVO · {GAME_DAYS} ETAPAS</span><h1>Continue sua <em>jornada.</em></h1><p>Uma etapa por dia. Uma nova oportunidade de crescer em constância.</p></div><div className={"flame-hero "+flameLevel}><Flame size={62}/><strong>{activeDays}</strong><span>DIAS</span></div></section>
@@ -135,6 +167,17 @@ export default function App(){
   </main>
   <nav className="game-bottom-nav" aria-label="Menu LABGAME">{tabs.map(t=><button key={t.id} type="button" className={tab===t.id?"active":""} onClick={()=>goTab(t.id)} aria-current={tab===t.id?"page":undefined}><t.icon size={21}/><span>{t.label}</span></button>)}</nav>
   {activeVideo&&<BibleProjectPlayer key={activeVideo.resource.url} resource={activeVideo.resource} book={activeVideo.book} signedIn={Boolean(user)} onClose={()=>setActiveVideo(null)} onBonus={total=>setGame(prev=>prev?{...prev,total_xp:total}:prev)}/>}
+  {passwordRecoveryMode&&<div className="password-recovery-mask">
+   <form className="password-recovery-modal" aria-label="Criar nova senha" onSubmit={e=>{e.preventDefault();void changePassword()}}>
+    <span className="eyebrow">SEGURANÇA DA CONTA</span>
+    <h2>Crie uma nova senha</h2>
+    <p>Seu link de recuperação foi reconhecido. Defina uma nova senha para continuar sua jornada.</p>
+    <label htmlFor="lab-new-password">Nova senha (mínimo de 8 caracteres)</label>
+    <input id="lab-new-password" type="password" required minLength={8} autoComplete="new-password" value={newPassword} onChange={e=>setNewPassword(e.target.value)}/>
+    <button type="submit" className="primary-cta" disabled={busy||newPassword.length<8}>ATUALIZAR SENHA</button>
+    {recoveryNotice&&<p role="alert" className="feedback-message">{recoveryNotice}</p>}
+   </form>
+  </div>}
   <footer className="game-footer">LABGAME · {CANON.length} livros · {totalChapters.toLocaleString("pt-BR")} capítulos · {validPlan?"Plano íntegro":"Erro no plano"}</footer>
  </div>;
 }
