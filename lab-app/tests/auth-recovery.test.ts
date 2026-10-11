@@ -15,10 +15,10 @@ describe("Recuperação de acesso LABGAME",()=>{
   await expect(requestPasswordReset("não é email")).rejects.toThrow();
   expect(resetPasswordForEmail).not.toHaveBeenCalled();
  });
- it("envia a recuperação apenas para a origem atual",async()=>{
+ it(envia recuperação à rota fixa do LABGAME",async()=>{
   resetPasswordForEmail.mockResolvedValue({error:null});
   await requestPasswordReset("Leitor@EXAMPLE.COM");
-  expect(resetPasswordForEmail).toHaveBeenCalledWith("leitor@example.com",{redirectTo:"https://labgame-biblia.vercel.app"});
+  expect(resetPasswordForEmail).toHaveBeenCalledWith("leitor@example.com",{redirectTo:"https://labgame-biblia.vercel.app/auth/reset-password"});
  });
  it("exige senha de pelo menos oito caracteres",async()=>{
   await expect(updateAccountPassword("1234567")).rejects.toThrow("8 caracteres");
