@@ -64,7 +64,7 @@ export default function App(){
   });
   return()=>{active=false;subscription.unsubscribe()};
  },[]);
- useEffect(()=>{if(!user){setGame(null);setGroups([]);return}void refreshGame()},[user?.id,refreshGame]);
+ useEffect(()=>{if(!user){setGame(null);setGroups([]);return}if(passwordRecoveryMode)return;void refreshGame()},[user?.id,refreshGame,passwordRecoveryMode]);
  useEffect(()=>{
   if(!user||(tab!=="groups"&&tab!=="profile"))return;
   let active=true;
