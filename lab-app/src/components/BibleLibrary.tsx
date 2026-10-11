@@ -1,9 +1,10 @@
 import {useEffect,useMemo,useState} from "react";
 import {ArrowLeft,ArrowRight,Bookmark,BookOpen,ChevronRight,Library,Search,Video} from "lucide-react";
-import {CANON,NEW_TESTAMENT,OLD_TESTAMENT} from "../domain/canon";
+import {NEW_TESTAMENT,OLD_TESTAMENT} from "../domain/canon";
 import {adjacentBibleReference,bibleChapterReference,bibleReferenceById,searchCanonicalBooks} from "../domain/bible-navigation";
 import {getBibleProjectVideoForChapter,type BibleProjectResource} from "../domain/bibleproject";
 import {listBibleFavorites,saveBibleFavorite} from "../features/bible-favorites";
+import {searchBibleVerses,type BibleSearchHit} from "../features/bible";
 import {BibleReader} from "./BibleReader";
 
 type Props={
@@ -19,6 +20,11 @@ export function BibleLibrary({signedIn,onVideo}:Props){
  const [busy,setBusy]=useState(false);
  const [message,setMessage]=useState("");
  const [showBooks,setShowBooks]=useState(false);
+ const [verseQuery,setVerseQuery]=useState("");
+ const [verseResults,setVerseResults]=useState<BibleSearchHit[]>([]);
+ const [searchingVerses,setSearchingVerses]=useState(false);
+ const [searchedVerses,setSearchedVerses]=useState(false);
+ const [focusedVerse,setFocusedVerse]=useState<number|null>(null);
  const reference=useMemo(()=>bibleChapterReference(book,chapter),[book,chapter]);
  const previous=adjacentBibleReference(book,chapter,-1);
  const next=adjacentBibleReference(book,chapter,1);
@@ -32,7 +38,7 @@ export function BibleLibrary({signedIn,onVideo}:Props){
   return()=>{active=false};
  },[signedIn]);
  const open=(newBook:string,newChapter:number)=>{
-  setBook(newBook);setChapter(newChapter);setMessage("");setShowBooks(false);
+  setBook(newBook);setChapter(newChapter);setFocusedVerse(null);setMessage("");setShowBooks(false);
  };
  const step=(offset:-1|1)=>{
   const nextRef=adjacentBibleReference(book,chapter,offset);
@@ -47,6 +53,16 @@ export function BibleLibrary({signedIn,onVideo}:Props){
    setFavorites(old=>isFavorite?old.filter(x=>x!==reference.chapterId):[reference.chapterId,...old]);
   }catch(e){setMessage(readableError(e))}
   finally{setBusy(false)}
+ };
+ const runVerseSearch=async()=>{
+  setSearchingVerses(true);setSearchedVerses(false);setMessage("");
+  try{setVerseResults(await searchBibleVerses(verseQuery));setSearchedVerses(true)}
+  catch(e){setVerseResults([]);setMessage(readableError(e))}
+  finally{setSearchingVerses(false)}
+ };
+ const openSearchHit=(hit:BibleSearchHit)=>{
+  open(hit.book_name,hit.chapter_number);
+  setFocusedVerse(hit.verse_number);
  };
  const favoriteReferences=favorites.map(id=>{try{return bibleReferenceById(id)}catch{return null}}).filter(x=>x!==null);
  return <section className="game-panel bible-library">
@@ -84,12 +100,28 @@ export function BibleLibrary({signedIn,onVideo}:Props){
    <span className="bible-browser-label">Capítulos de {book}</span>
    <div className="bible-chapters-grid">{Array.from({length:reference.chapterCount},(_,i)=><button type="button" key={i+1} className={chapter===i+1?"selected":""} onClick={()=>open(book,i+1)}>{i+1}</button>)}</div>
   </div>}
+  <form className="bible-verse-search" onSubmit={e=>{e.preventDefault();void runVerseSearch()}}>
+   <label htmlFor="bible-verse-query"><Search size={18}/> Pesquisar no texto de toda a Bíblia</label>
+   <div className="bible-verse-search-controls">
+    <input id="bible-verse-query" type="search" minLength={2} maxLength={100} value={verseQuery} placeholder="Ex.: amor, Jesus, princípio, salvação" onChange={e=>{setVerseQuery(e.target.value);setVerseResults([]);setSearchedVerses(false)}} required/>
+    <button type="submit" className="secondary-cta" disabled={searchingVerses||verseQuery.trim().length<2}>{searchingVerses?"BUSCANDO...":"BUSCAR"}</button>
+   </div>
+   {searchedVerses&&<div className="bible-verse-results" aria-live="polite">
+    <h3>{verseResults.length===0?"Nenhum versículo encontrado":verseResults.length+" resultado(s) de busca"}</h3>
+    {verseResults.map(hit=><button type="button" key={hit.chapter_id+":"+hit.verse_number} onClick={()=>openSearchHit(hit)}>
+     <strong>{hit.book_name} {hit.chapter_number}:{hit.verse_number}</strong>
+     <span>{hit.verse_text}</span>
+     <ChevronRight size={17}/>
+    </button>)}
+    {verseResults.length>=40&&<p className="small-caption">Mostrando os 40 primeiros resultados. Refine a pesquisa para encontrar outras passagens.</p>}
+   </div>}
+  </form>
   <div className="bible-library-actions">
    <button className="secondary-cta" type="button" disabled={!previous} onClick={()=>step(-1)}><ArrowLeft size={16}/> Anterior</button>
    <strong>{book} {chapter}</strong>
    <button className="secondary-cta" type="button" disabled={!next} onClick={()=>step(1)}>Próximo <ArrowRight size={16}/></button>
   </div>
-  <div className="bible-library-reader"><BibleReader key={reference.chapterId} chapterId={reference.chapterId}/></div>
+  <div className="bible-library-reader"><BibleReader key={reference.chapterId} chapterId={reference.chapterId} highlightVerse={focusedVerse}/></div>
   <div className="bible-library-actions bible-library-actions-bottom">
    <button type="button" disabled={busy} className={"bible-save-button "+(isFavorite?"active":"")} onClick={()=>void toggle()} aria-pressed={isFavorite}>
     <Bookmark size={19} fill={isFavorite?"currentColor":"none"}/>{isFavorite?"Salvo nos favoritos":"Salvar capítulo"}
