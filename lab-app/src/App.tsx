@@ -48,9 +48,20 @@ export default function App(){
  useEffect(()=>{
   const client=supabase;if(!client)return;
   let active=true;
-  const setAuth=async()=>{const {data:{user:authenticated}}=await client.auth.getUser();if(!active)return;setUser(authenticated?{id:authenticated.id,email:authenticated.email||""}:null)};
+  let authEventReceived=false;
+  const setAuth=async()=>{
+   const {data:{user:authenticated}}=await client.auth.getUser();
+   if(!active||authEventReceived)return;
+   setUser(authenticated?{id:authenticated.id,email:authenticated.email||""}:null);
+  };
   void setAuth();
-  const {data:{subscription}}=client.auth.onAuthStateChange(event=>{if(event==="PASSWORD_RECOVERY")setPasswordRecoveryMode(true);void setAuth()});
+  const {data:{subscription}}=client.auth.onAuthStateChange((event,session)=>{
+   if(!active)return;
+   authEventReceived=true;
+   if(event==="PASSWORD_RECOVERY")setPasswordRecoveryMode(true);
+   const authenticated=session?.user;
+   setUser(authenticated?{id:authenticated.id,email:authenticated.email||""}:null);
+  });
   return()=>{active=false;subscription.unsubscribe()};
  },[]);
  useEffect(()=>{if(!user){setGame(null);setGroups([]);return}void refreshGame()},[user?.id,refreshGame]);
