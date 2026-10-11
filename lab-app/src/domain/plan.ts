@@ -2,7 +2,7 @@ import {CHAPTERS, type Chapter} from "./canon";
 export type DailyReading={day:number;chapters:Chapter[]};
 export function createAnnualPlan(year:number):DailyReading[]{
  if(!Number.isInteger(year)||year<1||year>9999) throw new Error("Ano inválido");
- const days=new Date(Date.UTC(year,1,29)).getUTCMonth()===1?366:365;
+ const days=(year%4===0&&(year%100!==0||year%400===0))?366:365;
  // Balanced distribution, complete coverage, no repetition.
  const base=Math.floor(CHAPTERS.length/days), remainder=CHAPTERS.length%days;
  let offset=0;
