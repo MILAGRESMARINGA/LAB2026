@@ -181,3 +181,18 @@ Regras completas: `docs/LABGAME-2.0-RULES.md`. Nenhum livro ou capítulo pode se
 Documentação e testes: `docs/AUTH-PROFILES-AND-SCORING.md`; `lab-app/tests/account-access.test.ts`; `lab-app/tests/scorecards.test.ts`.
 
 **Observação:** os 73 testes aprovados cobrem regras de código e mocks de autenticação, não comprovam a entrega real de e-mails. O novo cadastro precisa de homologação com usuários reais após a configuração dos redirecionamentos do Supabase.
+
+## P0 — Recuperação e cadastro por e-mail (11/10/2026)
+
+- [x] Destinos de confirmação e redefinição fixados no domínio público canônico, sem depender do preview ou de `window.location.origin`.
+- [x] Rotas `/auth/callback` e `/auth/reset-password` com verificação de sessão, alteração de senha e instruções para links expirados.
+- [x] Suporte a links padrão com tokens de fragmento, códigos PKCE tratados pelo SDK e modelos customizados com `token_hash`.
+- [x] Alternativa com OTP de seis dígitos para ativação e recuperação dentro da PWA, evitando troca de contexto do navegador.
+- [x] Templates de e-mail HTML preparados com link HTTPS, `TokenHash` e `Token`: `lab-app/supabase/email-templates/`.
+- [x] `VITE_PUBLIC_APP_URL=https://labgame-biblia.vercel.app` cadastrado na Vercel para Preview e Production.
+- [x] Testes adicionados para URLs, links expirados, ativação e recuperação por OTP; corrigidos problemas iniciais de sintaxe e regras de erro.
+- [ ] **Painel Supabase:** Site URL e Redirect URLs; ativar os dois templates; configurar SMTP próprio e autenticação de domínio SPF/DKIM/DMARC.
+- [ ] **QA real:** enviar e receber os dois e-mails, validar links e OTP, trocar senha, acessar Perfil e GCs em Android/iOS.
+- [ ] **CI e deploy mais recentes:** limite de build Vercel `build-rate-limit` detectado; aguardando liberação para compilação homologatória e promoção ao endereço fixo.
+
+**Instruções operacionais:** `docs/P0-AUTH-RECOVERY-RUNBOOK.md`. Não classificar P0 como concluído integralmente até validar SMTP e uma conta real. A última versão comprovadamente READY anterior não contém necessariamente todas as mudanças P0.
