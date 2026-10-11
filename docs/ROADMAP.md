@@ -59,6 +59,7 @@ Atualização: 11/10/2026. Branch: `lab-rebuild-2026` do repositório `MILAGRESM
 - [x] Catálogo de panoramas/guia oficial em português mapeado para os 66 livros
 - [x] Vídeo associado ao capítulo correspondente na tela de leitura, com divisão por faixas quando aplicável
 - [x] Biblioteca com escolha de livro, links diretos ao conteúdo oficial e acesso às playlists completas
+- [x] Build Vercel READY após integração BibleProject (commit feb41cc; 8 arquivos e 43 testes aprovados)
 - [x] Convite para panorama do livro após confirmar seu último capítulo
 - [ ] Conferência manual, em navegadores reais, dos links e da reprodução externa no Android/iOS
 - [ ] Exegese por capítulo e blocos temáticos revisados por especialistas
