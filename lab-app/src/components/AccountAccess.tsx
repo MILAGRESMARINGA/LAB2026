@@ -2,9 +2,10 @@ import {useId,useState} from "react";
 import {ArrowLeft,CheckCircle2,Eye,EyeOff,KeyRound,LogIn,Mail,UserRound,Users,UserPlus} from "lucide-react";
 import {
  authErrorMessage,requestPasswordReset,resendSignUpConfirmation,
- signIn,signUp,validateRegistration,type RegistrationMode
+ signIn,signUp,verifyEmailCode,validateRegistration,type RegistrationMode
 } from "../features/auth";
 import {supabase} from "../lib/supabase";
+import {PUBLIC_APP_ORIGIN} from "../lib/auth-urls";
 
 type Mode="login"|"signup"|"reset";
 type Props={
@@ -22,13 +23,14 @@ export function AccountAccess({initialMode="login",preferredMode="individual",ti
  const [showPassword,setShowPassword]=useState(false);
  const [participation,setParticipation]=useState<RegistrationMode>(preferredMode);
  const [waitingEmail,setWaitingEmail]=useState(false);
+ const [otpCode,setOtpCode]=useState("");
  const [needsConfirmation,setNeedsConfirmation]=useState(false);
  const [message,setMessage]=useState("");
  const [error,setError]=useState("");
  const [busy,setBusy]=useState(false);
  const prefix=useId().replace(/:/g,"");
  const changeMode=(next:Mode)=>{
-  setMode(next);setError("");setMessage("");setWaitingEmail(false);setNeedsConfirmation(false);
+  setMode(next);setError("");setMessage("");setWaitingEmail(false);setNeedsConfirmation(false);setOtpCode("");
  };
  const submit=async()=>{
   if(busy)return;
@@ -51,15 +53,32 @@ export function AccountAccess({initialMode="login",preferredMode="individual",ti
     onLogin?.();
    }else{
     await requestPasswordReset(email);
-    setMessage("Se este e-mail estiver cadastrado, enviaremos um link para redefinir a senha. Confira sua caixa de entrada e o spam.");
+    setWaitingEmail(true);
+    setMessage("Se sua conta existir, enviaremos um link e um código de recuperação. Confira seu e-mail e a pasta de spam.");
    }
   }catch(e){setError(authErrorMessage(e));if(e instanceof Error&&/Email not confirmed/i.test(e.message))setNeedsConfirmation(true)}
+  finally{setBusy(false)}
+ };
+ const confirmCode=async()=>{
+  if(busy||!/^\\d{6}$/.test(otpCode.trim()))return;
+  setBusy(true);setError("");setMessage("");
+  try{
+   await verifyEmailCode(email,otpCode,mode==="reset"?"recovery":"email");
+   setOtpCode("");
+   if(mode==="reset"){
+    window.location.assign(PUBLIC_APP_ORIGIN+"/auth/reset-password");
+   }else{
+    setWaitingEmail(false);
+    setMessage("E-mail confirmado! Sua conta foi ativada.");
+    onLogin?.();
+   }
+  }catch(e){setError(authErrorMessage(e))}
   finally{setBusy(false)}
  };
  const resend=async()=>{
   if(busy)return;
   setBusy(true);setError("");setMessage("");
-  try{await resendSignUpConfirmation(email);setMessage("Novo e-mail solicitado. Aguarde alguns minutos e confira a caixa de spam.")}
+  try{if(mode==="reset")await requestPasswordReset(email);else await resendSignUpConfirmation(email);setMessage("Novo e-mail solicitado. Aguarde alguns minutos e confira a caixa de spam.")}
   catch(e){setError(authErrorMessage(e))}
   finally{setBusy(false)}
  };
@@ -68,15 +87,21 @@ export function AccountAccess({initialMode="login",preferredMode="individual",ti
    <div className="lab-emblem small"><UserRound size={30}/></div>
    <span className="eyebrow">CONTA E PERFIL LABGAME</span>
    <h2>{title}</h2>
-   <p className="muted">{waitingEmail?"Sua conta precisa ser confirmada antes de entrar.":mode==="signup"?"Crie uma conta para salvar sua leitura, ganhar XP e entrar em GCs.":mode==="reset"?"Recupere o acesso usando o e-mail de sua conta.":"Entre para acessar seu perfil, conquistas e grupos."}</p>
+   <p className="muted">{waitingEmail?(mode==="reset"?"Verifique seu e-mail para recuperar a conta.":"Sua conta precisa ser confirmada antes de entrar."):mode==="signup"?"Crie uma conta para salvar sua leitura, ganhar XP e entrar em GCs.":mode==="reset"?"Recupere o acesso usando o e-mail de sua conta.":"Entre para acessar seu perfil, conquistas e grupos."}</p>
   </div>
   {!supabase&&<p className="feedback-message" role="alert">A conexão de contas está indisponível nesta publicação. Tente mais tarde.</p>}
   {waitingEmail?<div className="signup-confirmation">
    <CheckCircle2 size={45}/>
-   <h3>Confirme seu e-mail</h3>
-   <p>Enviamos as instruções para <strong>{email.trim().toLowerCase()}</strong>. Após confirmar, volte ao LABGAME para entrar.</p>
-   <button type="button" className="primary-cta" disabled={busy} onClick={()=>changeMode("login")}>JÁ CONFIRMEI · ENTRAR <LogIn size={17}/></button>
+   <h3>{mode==="reset"?"Recupere sua senha":"Confirme seu e-mail"}</h3>
+   <p>{mode==="reset"?"Se o endereço estiver cadastrado, enviamos instruções para":"Se o cadastro foi aceito, enviamos a confirmação para"} <strong>{email.trim().toLowerCase()}</strong>. Confira a caixa de entrada e a pasta de spam.</p>
+   <p>O e-mail pode incluir um código de seis dígitos. Digite-o aqui para continuar sem sair do aplicativo.</p>
+   <form className="account-code-form" onSubmit={e=>{e.preventDefault();void confirmCode()}}>
+    <label htmlFor={prefix+"otp"}>Código recebido por e-mail</label>
+    <input id={prefix+"otp"} type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} placeholder="000000" value={otpCode} onChange={e=>setOtpCode(e.target.value.replace(/\\D/g,"").slice(0,6))}/>
+    <button className="primary-cta" type="submit" disabled={busy||otpCode.length!==6}>{mode==="reset"?"VALIDAR CÓDIGO E TROCAR SENHA":"VALIDAR CÓDIGO DE CONFIRMAÇÃO"}</button>
+   </form>
    <button type="button" className="secondary-cta" disabled={busy} onClick={()=>void resend()}><Mail size={17}/> REENVIAR E-MAIL</button>
+   <button type="button" className="subtle-button" onClick={()=>changeMode("login")}>VOLTAR AO LOGIN <LogIn size={17}/></button>
   </div>:<>
    {mode!=="reset"&&<div className="account-mode-tabs" role="group" aria-label="Escolher cadastro ou login">
     <button type="button" className={mode==="login"?"active":""} aria-pressed={mode==="login"} onClick={()=>changeMode("login")}><LogIn size={16}/> ENTRAR</button>
