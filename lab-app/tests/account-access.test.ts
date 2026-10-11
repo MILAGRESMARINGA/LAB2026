@@ -33,7 +33,7 @@ describe("Cadastro e login reais do LABGAME",()=>{
   expect(signUpMock).toHaveBeenCalledWith({
    email:"pessoa@example.com",password:"MinhaSenha123",
    options:{
-    emailRedirectTo:"https://labgame-biblia.vercel.app",
+    emailRedirectTo:"https://labgame-biblia.vercel.app/auth/callback",
     data:{display_name:"Leitor de Teste",preferred_mode:"grupo"}
    }
   });
@@ -50,7 +50,7 @@ describe("Cadastro e login reais do LABGAME",()=>{
   await resendSignUpConfirmation("Leitor@EXAMPLE.com");
   expect(resendMock).toHaveBeenCalledWith({
    type:"signup",email:"leitor@example.com",
-   options:{emailRedirectTo:"https://labgame-biblia.vercel.app"}
+   options:{emailRedirectTo:"https://labgame-biblia.vercel.app/auth/callback"}
   });
   expect(authErrorMessage(new Error("Invalid login credentials"))).toContain("incorretos");
   expect(authErrorMessage(new Error("Email not confirmed"))).toContain("Confirme");
