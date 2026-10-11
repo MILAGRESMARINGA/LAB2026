@@ -29,8 +29,8 @@ export function authRedirectError(search:string,hash:string):string|null{
  const raw=query.get("error_description")||fragment.get("error_description")||
   query.get("error")||fragment.get("error");
  if(!raw&&!code)return null;
- const detail=(raw||code||"").toLowerCase();
- if(/expired|otp_expired|invalid.*token|token.*invalid|access_denied/i.test(detail))
+ const detail=[code,raw].filter(Boolean).join(" ").toLowerCase();
+ if(/expired|otp_expired|invalid|token.*invalid|access.denied/i.test(detail))
   return "O link expirou, já foi utilizado ou é inválido. Solicite um novo e-mail de confirmação ou recuperação.";
  if(/rate.limit|too.many/i.test(detail))
   return "Muitas tentativas em pouco tempo. Aguarde alguns minutos e solicite outro link.";
