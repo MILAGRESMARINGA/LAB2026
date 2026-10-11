@@ -22,16 +22,17 @@ export function AccountAccess({initialMode="login",preferredMode="individual",ti
  const [showPassword,setShowPassword]=useState(false);
  const [participation,setParticipation]=useState<RegistrationMode>(preferredMode);
  const [waitingEmail,setWaitingEmail]=useState(false);
+ const [needsConfirmation,setNeedsConfirmation]=useState(false);
  const [message,setMessage]=useState("");
  const [error,setError]=useState("");
  const [busy,setBusy]=useState(false);
  const prefix=useId().replace(/:/g,"");
  const changeMode=(next:Mode)=>{
-  setMode(next);setError("");setMessage("");setWaitingEmail(false);
+  setMode(next);setError("");setMessage("");setWaitingEmail(false);setNeedsConfirmation(false);
  };
  const submit=async()=>{
   if(busy)return;
-  setBusy(true);setError("");setMessage("");
+  setBusy(true);setError("");setMessage("");setNeedsConfirmation(false);
   try{
    if(mode==="signup"){
     const problem=validateRegistration(name,email,password,confirmation);
@@ -52,7 +53,7 @@ export function AccountAccess({initialMode="login",preferredMode="individual",ti
     await requestPasswordReset(email);
     setMessage("Se este e-mail estiver cadastrado, enviaremos um link para redefinir a senha. Confira sua caixa de entrada e o spam.");
    }
-  }catch(e){setError(authErrorMessage(e))}
+  }catch(e){setError(authErrorMessage(e));if(e instanceof Error&&/Email not confirmed/i.test(e.message))setNeedsConfirmation(true)}
   finally{setBusy(false)}
  };
  const resend=async()=>{
@@ -114,6 +115,7 @@ export function AccountAccess({initialMode="login",preferredMode="individual",ti
    {mode==="reset"&&<button type="button" className="subtle-button" onClick={()=>changeMode("login")}><ArrowLeft size={16}/> Voltar ao login</button>}
   </>}
   {error&&<p role="alert" className="feedback-message">{error}</p>}
+  {needsConfirmation&&mode==="login"&&<button type="button" className="secondary-cta" disabled={busy} onClick={()=>void resend()}><Mail size={17}/> REENVIAR CONFIRMAÇÃO</button>}
   {message&&<p role="status" className="account-success-message">{message}</p>}
  </div>;
 }
