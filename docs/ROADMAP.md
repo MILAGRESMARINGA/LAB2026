@@ -80,7 +80,11 @@ Atualização: 11/10/2026. Branch: `lab-rebuild-2026` do repositório `MILAGRESM
 - [x] Busca de livros sem acentos, capítulo favorito privado e retorno rápido aos capítulos salvos
 - [x] RLS e FK para favoritos por conta individual, sem efeito na sequência nem no XP
 - [x] Testes de navegação canônica e transição entre livros (51 testes no último build)
-- [ ] Pesquisa textual por versículo, referências cruzadas e notas privadas
+- [x] Busca textual nos 31.101 versículos Almeida 1911, com índice PostgreSQL de texto completo em português
+- [x] Navegação de resultados até o capítulo e destaque do versículo encontrado
+- [x] Acesso público de somente leitura aos resultados e testes de consultas ao servidor
+- [x] Testes da API de busca, validação dos termos e limite de resultados
+- [ ] Referências cruzadas semânticas, notas privadas e filtros avançados por livro
 
 ## 5 — Qualidade, operação e lançamento
 - [x] Projeto LABGAME isolado de demais bancos de dados do usuário
@@ -126,3 +130,10 @@ Regras completas: `docs/LABGAME-2.0-RULES.md`. Nenhum livro ou capítulo pode se
 - Banco testado com contas temporárias em transação revertida. Resultado coletivo de 4,8% para 1 leitura válida em 7 dias × 3 integrantes. Não expõe nomes individuais.
 - Release prévia na Vercel: `labgame-biblia-932nkfcu8-antonios-projects-0bf892e8.vercel.app` (READY, 51 testes).
 - Não homologado ainda: execução manual no navegador, sincronização de favoritos entre aparelhos, vídeo em tela cheia no Android/iOS.
+
+## Marco de entrega — Busca integral
+- Migração `202610110009_bible_verse_search.sql`: 31.101 versículos, índice GIN, consulta limitada a 50 resultados por requisição.
+- Componente `BibleLibrary.tsx`: pesquisa em português, seleção de um resultado e destaque do versículo no leitor interno.
+- Endpoint `lab_bible_search(text,integer)`: acesso autenticado e anônimo somente leitura, sem conceder XP.
+- A nova suíte acrescenta 4 testes de RPC e validação, totalizando 55 testes em 11 arquivos.
+- Permanecem pendentes: teste manual no Android/iOS, busca por frases antigas com grafia histórica, acessibilidade de leitores de tela e autenticação com contas reais.
