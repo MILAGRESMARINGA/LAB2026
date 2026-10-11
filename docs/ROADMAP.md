@@ -190,9 +190,10 @@ Documentação e testes: `docs/AUTH-PROFILES-AND-SCORING.md`; `lab-app/tests/acc
 - [x] Alternativa com OTP de seis dígitos para ativação e recuperação dentro da PWA, evitando troca de contexto do navegador.
 - [x] Templates de e-mail HTML preparados com link HTTPS, `TokenHash` e `Token`: `lab-app/supabase/email-templates/`.
 - [x] `VITE_PUBLIC_APP_URL=https://labgame-biblia.vercel.app` cadastrado na Vercel para Preview e Production.
-- [x] Testes adicionados para URLs, links expirados, ativação e recuperação por OTP; corrigidos problemas iniciais de sintaxe e regras de erro.
+- [x] Validação no GitHub Actions #147: **84 testes passaram em 17 arquivos** e `npm run build` concluiu com sucesso; commit de código `0772a65d4ff522c74bf0056aaf5ba5e66c2b4f04`.
 - [ ] **Painel Supabase:** Site URL e Redirect URLs; ativar os dois templates; configurar SMTP próprio e autenticação de domínio SPF/DKIM/DMARC.
 - [ ] **QA real:** enviar e receber os dois e-mails, validar links e OTP, trocar senha, acessar Perfil e GCs em Android/iOS.
-- [ ] **CI e deploy mais recentes:** limite de build Vercel `build-rate-limit` detectado; aguardando liberação para compilação homologatória e promoção ao endereço fixo.
+- [x] **CI de código validado**: https://github.com/MILAGRESMARINGA/LAB2026/actions/runs/38139538766 (84/84 + build).
+- [ ] **Publicação P0**: Vercel com `build-rate-limit`; domínio fixo ainda aponta para deploy anterior `dpl_CWvVxqJc3WkHKfKqKpoQven46P6i`. Liberar quota, implantar branch e atualizar alias somente depois de READY.
 
 **Instruções operacionais:** `docs/P0-AUTH-RECOVERY-RUNBOOK.md`. Não classificar P0 como concluído integralmente até validar SMTP e uma conta real. A última versão comprovadamente READY anterior não contém necessariamente todas as mudanças P0.
