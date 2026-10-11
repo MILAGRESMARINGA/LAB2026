@@ -6,6 +6,8 @@ import {CANON,OLD_TESTAMENT,NEW_TESTAMENT,totalChapters} from "./domain/canon";
 import {supabase} from "./lib/supabase";
 import {signOut,updateAccountPassword} from "./features/auth";
 import {AccountAccess} from "./components/AccountAccess";
+import {AuthFlow} from "./components/AuthFlow";
+import {authRouteFromPath} from "./lib/auth-urls";
 import {loadGameState,loadGameScorecard,confirmGameChapter,saveGameProfile,startNewGameCycle,type LabGameState,type LabScorecard} from "./features/lab-game";
 import {createReadingGroup,getGroupInvite,joinReadingGroup,listReadingGroups,type ReadingGroup} from "./features/groups";
 import {BibleReader} from "./components/BibleReader";
@@ -21,7 +23,9 @@ const plan=createGamePlan();
 const validPlan=verifyGamePlan(plan);
 const describeError=(e:unknown)=>e instanceof Error?e.message:"Não foi possível concluir a operação.";
 export default function App(){
- const [tab,setTab]=useState<Tab>("today");
+ const authQuery=typeof window==="undefined"?null:new URLSearchParams(window.location.search).get("auth");
+ const authRoute=typeof window==="undefined"?"none":authRouteFromPath(window.location.pathname);
+ const [tab,setTab]=useState<Tab>(()=>authQuery?"profile":"today");
  const [user,setUser]=useState<{id:string;email:string}|null>(null);
  const [authLoading,setAuthLoading]=useState(Boolean(supabase));
  const [game,setGame]=useState<LabGameState|null>(null);
@@ -105,6 +109,7 @@ export default function App(){
  const saveProfile=async()=>{setBusy(true);setMessage("");try{await saveGameProfile(profileName,optIn);await refreshGame();setMessage("Preferências atualizadas.")}catch(e){setMessage(describeError(e))}finally{setBusy(false)}};
  const selectedBlock=useMemo(()=>STUDY_BLOCKS.find(b=>b.id===selectedStudy)??STUDY_BLOCKS[0],[selectedStudy]);
  const goTab=(next:Tab)=>{setMessage("");setLessonOpen(false);setLastConfirmed(null);setTab(next);if(next==="today"&&user)void refreshGame()};
+ if(authRoute!=="none")return <AuthFlow route={authRoute}/>;
  return <div className="game-app">
   <header className="game-header"><div className="brandmark"><span className="brand-symbol"><Flame size={23}/></span><div><strong>LAB<span>GAME</span></strong><small>LEITURA ANUAL DA BÍBLIA</small></div></div><div className="header-status"><span className={"flame-indicator "+flameLevel}><Flame size={20}/>{activeDays}</span><span className="xp-counter"><Award size={18}/>{totalXP} XP</span></div></header>
   <NetworkStatus/>
@@ -159,7 +164,7 @@ export default function App(){
  </article></section>}
    {tab==="groups"&&<section className="game-panel"><span className="eyebrow">COMUNIDADE E CONSTÂNCIA</span><h1>Seus <em>GCs.</em></h1><p className="muted">Participe do seu grupo de crescimento e compare a constância entre leitores que escolherem aparecer no ranking.</p>{authLoading?<p className="muted" role="status">Restaurando sua sessão...</p>:!user?<AccountAccess initialMode="login" title="Entre para criar ou participar do GC"/>:<><div className="group-forms"><form onSubmit={e=>{e.preventDefault();void createGroup()}}><h3>Criar um GC</h3><label htmlFor="gc-name">Nome do grupo</label><input id="gc-name" minLength={2} maxLength={100} required value={groupName} onChange={e=>setGroupName(e.target.value)} placeholder="Ex.: GC O Caminho"/><button type="submit" disabled={groupBusy}>CRIAR GC</button></form><form onSubmit={e=>{e.preventDefault();void joinGroup()}}><h3>Entrar por convite</h3><label htmlFor="gc-code">Código recebido</label><input id="gc-code" required value={inviteCode} onChange={e=>setInviteCode(e.target.value)} placeholder="Código do líder"/><button type="submit" disabled={groupBusy}>ENTRAR NO GC</button></form></div>{groupMessage&&<p role="status" className="feedback-message">{groupMessage}</p>}<h2>Grupos em que participo</h2>{groups.length===0?<p className="muted">Você ainda não está em nenhum grupo.</p>:groups.map(g=><div className="group-entry" key={g.id}><div><strong>{g.name}</strong><small>{g.owner_id===user.id?"Líder do grupo":"Participante"}</small></div><button type="button" className={rankingGroup===g.id?"gc-select-active":""} onClick={()=>setRankingGroup(g.id)}>PERFIL DO GC</button>{g.owner_id===user.id&&<button type="button" disabled={groupBusy} onClick={()=>void viewInvite(g.id)}>CONVITE</button>}{invites[g.id]&&<div className="invite-token"><span>{invites[g.id]}</span><button type="button" onClick={()=>void navigator.clipboard?.writeText(invites[g.id])}>COPIAR</button></div>}</div>)}{groups.length>0&&<GCProfile key={rankingGroup||groups[0].id} group={groups.find(g=>g.id===rankingGroup)??groups[0]} userId={user.id} onPersonalProfile={()=>setTab("profile")}/>}
 <GCLeague userId={user.id} groups={groups} onGroupsChange={refreshGroups}/></>}</section>}
-   {tab==="profile"&&<section className="game-panel"><span className="eyebrow">PERFIL E CONQUISTAS</span><h1>Minha <em>jornada.</em></h1>{authLoading?<p className="muted" role="status">Restaurando sua sessão...</p>:!user?<AccountAccess initialMode="login" title="Acesse seu perfil pessoal"/>:<><p className="muted">{user.email}</p><div className="profile-rank"><Trophy size={34}/><div><span>SEU NÍVEL</span><strong>{rankLevel}</strong><small>Seu crescimento é medido em dias de leitura confirmados, não em valor espiritual.</small></div></div><div className="journey-stats"><div><Flame/><strong>{activeDays}</strong><span>Constância</span></div><div><Trophy/><strong>{bestDays}</strong><span>Recorde</span></div><div><Award/><strong>{totalXP}</strong><span>XP total</span></div></div><section className="personal-scorecard" aria-label="Pontuação individual detalhada">
+   {tab==="profile"&&<section className="game-panel"><span className="eyebrow">PERFIL E CONQUISTAS</span><h1>Minha <em>jornada.</em></h1>{authLoading?<p className="muted" role="status">Restaurando sua sessão...</p>:!user?<AccountAccess initialMode={authQuery==="reset"?"reset":"login"} title="Acesse seu perfil pessoal"/>:<><p className="muted">{user.email}</p><div className="profile-rank"><Trophy size={34}/><div><span>SEU NÍVEL</span><strong>{rankLevel}</strong><small>Seu crescimento é medido em dias de leitura confirmados, não em valor espiritual.</small></div></div><div className="journey-stats"><div><Flame/><strong>{activeDays}</strong><span>Constância</span></div><div><Trophy/><strong>{bestDays}</strong><span>Recorde</span></div><div><Award/><strong>{totalXP}</strong><span>XP total</span></div></div><section className="personal-scorecard" aria-label="Pontuação individual detalhada">
  <span className="eyebrow">MEUS PONTOS</span>
  <h2>Como ganho XP?</h2>
  <div className="scorecard-breakdown">
