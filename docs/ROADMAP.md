@@ -38,7 +38,7 @@ Atualização: 11/10/2026. Branch: `lab-rebuild-2026` do repositório `MILAGRESM
 - [x] Chama simbólica para a constância; sem equivalência com espiritualidade pessoal
 - [x] Suporte a grupos e rankings privados opt-in
 - [ ] Testes E2E com navegador e leitores reais
-- [ ] Acessibilidade WCAG, motion reduzido, contraste e leitura em telas pequenas
+- [ ] Homologar acessibilidade WCAG, motion reduzido, contraste, rolagem de versículos e leitura em telas pequenas
 - [ ] Notificações com consentimento e recuperação de conta
 
 ## 3 — Grupos de crescimento (GC)
@@ -54,14 +54,23 @@ Atualização: 11/10/2026. Branch: `lab-rebuild-2026` do repositório `MILAGRESM
 - [x] Livros categorizados em Pentateuco, históricos, poéticos, profetas, Evangelhos, Atos, cartas e Apocalipse
 - [x] Blocos introdutórios: Gênesis 1 × João 1, promessa, Lucas → Atos, profetas, Espírito Santo e salvação
 - [x] Estudos dissociados da pontuação da leitura para evitar atalhos
-- [ ] Texto bíblico completo no aplicativo com edição/licença apropriadas
+- [x] Banco bíblico em PostgreSQL: Almeida 1911 (domínio público), 66 livros, 1.189 capítulos e 31.101 versículos
+- [x] Interface de leitura capítulo a capítulo dentro do LABGAME, com versículos, fonte ajustável e confirmação após rolar até o final
+- [x] Leitura pública protegida por RLS; escrita do texto bíblico bloqueada para usuários comuns
+- [x] Script de importação reprodutível e documentação de fonte, licença e proveniência
 - [x] Playlists do BibleProject enviadas pelo usuário: Antigo e Novo Testamento
 - [x] Catálogo de panoramas/guia oficial em português mapeado para os 66 livros
 - [x] Vídeo associado ao capítulo correspondente na tela de leitura, com divisão por faixas quando aplicável
 - [x] Biblioteca com escolha de livro, links diretos ao conteúdo oficial e acesso às playlists completas
 - [x] Build Vercel READY após integração BibleProject (commit feb41cc; 8 arquivos e 43 testes aprovados)
 - [x] Convite para panorama do livro após confirmar seu último capítulo
-- [ ] Conferência manual, em navegadores reais, dos links e da reprodução externa no Android/iOS
+- [x] Player BibleProject incorporado em modal, com opção de tela cheia e créditos visíveis
+- [x] 6 panoramas com identificador Mux oficial direto; demais títulos acessíveis via playlist oficial incorporada
+- [x] XP extra por panorama: 5 pontos uma única vez por vídeo, sem substituir capítulo nem permitir avanço
+- [x] Guarda de tempo mínimo de 90 s e confirmação explícita; sem fingir comprovação automática de visualização integral
+- [x] Teste SQL de XP, reenvio duplicado, bloqueio antes do prazo, avanço da etapa inalterado
+- [ ] Curadoria dos identificadores específicos de vídeo para os títulos ainda ligados à playlist
+- [ ] Conferência manual em Android e iOS do player e da tela cheia
 - [ ] Exegese por capítulo e blocos temáticos revisados por especialistas
 - [ ] Busca bíblica, referências cruzadas e recursos de leitura acessível
 
@@ -69,8 +78,12 @@ Atualização: 11/10/2026. Branch: `lab-rebuild-2026` do repositório `MILAGRESM
 - [x] Projeto LABGAME isolado de demais bancos de dados do usuário
 - [x] Repositório GitHub e Vercel conectados para deploy
 - [x] Pipeline exige `npm test && npm run build`
-- [x] Build da primeira versão gamificada aprovado (32 testes em sete arquivos)\n- [x] Release de jornada por capítulo aprovado no deploy dpl_2mrMg7dYCz8gykjuD9FUz9ZKeaXW (36 testes em 8 arquivos, Vercel READY)
-- [x] Testes de categorias bíblicas e fluxo de capítulos aprovados (36/36 no Vercel)\n- [ ] Validar transições e responsividade com navegador real e duas contas autenticadas
+- [x] Build da primeira versão gamificada aprovado (32 testes em sete arquivos)
+- [x] Release de jornada por capítulo aprovado no deploy dpl_2mrMg7dYCz8gykjuD9FUz9ZKeaXW (36 testes em 8 arquivos, Vercel READY)
+- [x] Testes de categorias bíblicas e fluxo de capítulos aprovados (36/36 no Vercel)
+- [x] Deploy Vercel READY do leitor e vídeos: 9 arquivos e 47 testes aprovados; commit ffed67f
+- [x] Dados textuais e permissões verificados no Supabase após importação
+- [ ] Validar transições e responsividade com navegador real e duas contas autenticadas
 - [ ] Testes de RLS com credenciais autenticadas por HTTP e duas sessões distintas
 - [ ] Observabilidade de falhas, plano de backup/rollback, desempenho mobile
 - [ ] Publicação homologada e abertura gradual por GC
@@ -90,3 +103,10 @@ Esses nomes são responsabilidades de revisão e desenvolvimento, **não** proce
 
 ## Acordos e critérios
 Regras completas: `docs/LABGAME-2.0-RULES.md`. Nenhum livro ou capítulo pode ser removido, repetido artificialmente ou alterado para caber na gamificação. Não tratar o estado espiritual das pessoas como métrica do jogo. Não publicar exegese automatizada sem revisão nem links de vídeos ainda não fornecidos.
+
+## Resultado técnico desta entrega
+
+- Deploy Vercel: `dpl_5ugBTBZjyuwQRkUrRVVNbhqnQHbK` — READY; `npm test && npm run build`: **47 testes aprovados em 9 arquivos**.
+- Banco LABGAME: 66 livros, 1.189 capítulos, 31.101 versículos; zero capítulo faltante; 71 recursos BibleProject e controles de XP.
+- Direitos: [docs/BIBLE-DATA-AND-MEDIA.md](BIBLE-DATA-AND-MEDIA.md). Próximas traduções exigem origem e licença explicitamente comprovadas.
+- Segurança: o endpoint de conclusão de vídeos pontua no máximo uma vez por recurso; não permite gravação direta por usuários nem substitui capítulos.
