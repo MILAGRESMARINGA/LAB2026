@@ -68,5 +68,5 @@ Fontes:
 
 - GitHub Actions `LAB CI #147`: https://github.com/MILAGRESMARINGA/LAB2026/actions/runs/38139538766
 - Testes automatizados: **84 aprovados em 17 arquivos**; `npm run build` aprovado (TypeScript + Vite).
-- A Vercel bloqueou os builds recentes por **`build-rate-limit`**. O alias `labgame-biblia.vercel.app` ainda aponta para `dpl_CWvVxqJc3WkHKfKqKpoQven46P6i`, não para os commits do P0. **Não considerar cadastro por OTP nem rotas novas disponíveis publicamente até um deploy novo ficar READY e o alias ser atualizado.**
+- A Vercel bloqueou os builds recentes por **`build-rate-limit`**. O alias `labgame-biblia.vercel.app` foi atualizado para `dpl_C686YQ1s1aFGPnHNNRgXU1biXoa1` (READY, commit intermediário `97f0623054c697dcc1e6ba5a9cb7898c5734d7d0`) e ambas as rotas de autenticação responderam HTTP 200. Os últimos ajustes de mensagens e CSS ainda estão só na branch devido ao limite de builds. **As novas rotas e formulários de código já estão publicados na versão intermediária**, mas a entrega SMTP/ativação dos templates ainda não foi homologada.
 - Os modelos HTML do repositório foram criados, **mas não estão ativos** até serem colados e salvos em Authentication → Email Templates do Supabase.
