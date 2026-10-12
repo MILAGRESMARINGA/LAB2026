@@ -52,7 +52,7 @@ export function walk(root){
 export function scanSource(text,file="<source>"){
  const messages=[];
  const patterns=[
-  [/\bVITE_[A-Z0-9_]*(?:SERVICE_ROLE|SECRET|PRIVATE|SMTP|RESEND|OPENAI)(?:_KEY)?\b/g,"Variável sensível prefixada VITE_ (exposta no browser)"],
+  [/\bVITE_[A-Z0-9_]*(?:SERVICE_ROLE|SECRET|PRIVATE|SMTP|RESEND|OPENAI)[A-Z0-9_]*\b/g,"Variável sensível prefixada VITE_ (exposta no browser)"],
   [/\bsb_secret_[A-Za-z0-9_-]{10,}\b/g,"Token Supabase secreto aparentemente embutido"],
   [/\bsk-proj-[A-Za-z0-9_-]{10,}\b/g,"Chave de API aparentemente embutida"],
   [/-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/g,"Chave privada aparentemente embutida"],
