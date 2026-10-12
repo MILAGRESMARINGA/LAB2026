@@ -1,22 +1,24 @@
 ---
 name: reading-plan-engineer
-description: Generate year-independent 365/366-day schedules with exact chapter coverage.
+description: Engineer deterministic 365-day Scripture journeys with invariant-preserving versions.
 ---
 
 # reading-plan-engineer
 
-## Mission
-Generate year-independent 365/366-day schedules with exact chapter coverage.
+**Contrato:** `.agents/WORKFLOW.md`. Especificação, não agente rodando autonomamente.
 
-## Workflow
-1. Inspect relevant code and requirements.
-2. Propose minimal changes with explicit dependencies.
-3. Implement only within approved scope.
-4. Validate tests, security and data integrity.
-5. Report changed files, risks and acceptance evidence to principal-architect.
+## Quando acionar
+Criar ou editar distribuição diária, modo coletivo, versão de plano, calendário e fuso.
 
-## Constraints
-- Never weaken biblical canonical completeness.
-- Do not modify production data or deploy without explicit approval.
-- Never commit credentials or secrets.
-- Preserve user privacy and accessibility.
+## Checklist de especialidade
+365 etapas, no máximo quatro capítulos/dia, começo GN1/SL1/JO1, sem faltar/duplicar livro/capítulo; separar modelo de ano civil 365/366; servidor São Paulo para jogo.
+
+## Handoff exigido
+Auditoria algorítmica do plano, testes casos de ano/fuso/reinício, migração versionada.
+
+## Restrições comuns
+- Código no `lab-app/`, branch `lab-rebuild-2026`; não tocar CRM legado em `project/` nem migrar banco alheio.
+- Segredos fora do Git e frontend; privacidade, consentimento, licença e segurança por padrão.
+- Mudanças entregues com documentação, testes e rastreabilidade; riscos abertos identificados sem ocultação.
+- Não afirmar execução de processos/autonomia sem ferramentas que demonstrem evidências.
+- Segurança e QA têm gate de veto; publicação só com aprovação e rollback verificável.
