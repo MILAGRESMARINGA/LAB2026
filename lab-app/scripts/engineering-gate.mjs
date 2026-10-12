@@ -70,7 +70,7 @@ export function scanMigrations(sql){
  const messages=[];
  const tables=[...sql.matchAll(/\bCREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:public\.)?([a-z][a-z_0-9]*)/gi)].map(m=>m[1]);
  for(const table of new Set(tables)){
-  const escaped=table.replace(/[.*+?^$\\{}()|[\]\\]/g,"\\$&");
+  const escaped=table; // SQL identifiers are restricted to [a-z_0-9] above.
   const re=new RegExp("\\bALTER\\s+TABLE\\s+(?:public\\.)?"+escaped+"\\s+ENABLE\\s+ROW\\s+LEVEL\\s+SECURITY\\b","i");
   if(!re.test(sql))messages.push("Tabela sem RLS explícita: "+table);
  }
