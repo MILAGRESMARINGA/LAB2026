@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "test": "vitest run",
+    "test": "vitest run tests",
     "verify:engineering": "node --test scripts/tests/*.test.mjs && node scripts/engineering-gate.mjs",
     "verify:all": "npm run verify:engineering && npm test && npm run build"
   },
