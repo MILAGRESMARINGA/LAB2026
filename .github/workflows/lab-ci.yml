@@ -1,21 +1,52 @@
 name: LAB CI
+
 on:
   push:
     branches: [lab-rebuild-2026]
-    paths: ["lab-app/**", ".github/workflows/lab-ci.yml"]
+    paths:
+      - 'lab-app/**'
+      - 'docs/**'
+      - '.agents/**'
+      - '.github/workflows/lab-ci.yml'
+      - '.github/PULL_REQUEST_TEMPLATE.md'
   pull_request:
-    paths: ["lab-app/**"]
+    paths:
+      - 'lab-app/**'
+      - 'docs/**'
+      - '.agents/**'
+      - '.github/workflows/lab-ci.yml'
+      - '.github/PULL_REQUEST_TEMPLATE.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lab-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify:
+    name: Test, architecture, security and build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: lab-app
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout exact commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Node 20 LTS
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: npm install --no-audit --no-fund
-      - run: npm test
-      - run: npm run build
+      - name: Install dependencies (temporary until lockfile is committed)
+        run: npm install --no-audit --no-fund
+      - name: Validate engineering documentation and security baselines
+        run: npm run verify:engineering
+      - name: Run unit tests
+        run: npm test
+      - name: Check TypeScript and build Vite
+        run: npm run build
