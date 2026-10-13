@@ -202,3 +202,29 @@ Documentação e testes: `docs/AUTH-PROFILES-AND-SCORING.md`; `lab-app/tests/acc
 - [x] Alias `labgame-biblia.vercel.app` atualizado para Vercel READY `dpl_C686YQ1s1aFGPnHNNRgXU1biXoa1`.
 - [x] `GET /auth/callback` e `GET /auth/reset-password` respondem HTTP 200 com o shell SPA.
 - [ ] Sincronizar a versão final da HEAD: últimos ajustes e testes estão no GitHub, mas a Vercel bloqueia builds adicionais por cota.
+
+
+## Auditoria de engenharia e segurança — 12/10/2026
+
+**Fonte de verdade:** [Auditoria ao vivo do PostgreSQL/Supabase](SECURITY-LIVE-AUDIT-2026-10-12.md), [matriz dos 12 pilares](ENGINEERING-BASELINE-AUDIT.md) e [padrão de engenharia](ENGINEERING-STANDARDS.md). Alterações desta etapa limitadas à `lab-rebuild-2026`, sem migração para a produção.
+
+### Infraestrutura e CI
+- [x] Inspeção ao vivo do banco LABGAME `azejfxvaamgkmfmwdzjn`: 15 tabelas com RLS, 12 migrações, 1.189 capítulos de plano únicos em 365 dias, limites 2–4 capítulos/dia, Almeida 1911 com 31.101 versículos e 71 panoramas.
+- [x] CI #171 aprovou gates estáticos, testes Vitest e compilação; SHA `5af7bc7e83f670ea9857772d82c0188519dcb48c`; preview do mesmo SHA READY. Alterações seguintes exigem **novo** build/deploy.
+- [x] Matriz de maturidade 12 pilares, C4, DoR/DoD, ADRs, threat model STRIDE, runbook de incidentes, política de IA/RAG, plano de QA e workflow de agentes.
+- [x] CI executa `verify:engineering`; PHP/nativo/iOS/Android ainda não são ambiente de build e **não** devem ser anunciados como prontos.
+- [x] Nova verificação de regressão: código OTP recupera senha sem mudar a origem do browser (a sessão da PWA/preview é preservada).
+- [ ] Configurar branch protection formal no GitHub, lockfile/`npm ci`, auditoria automatizada de dependências, SAST, SBOM, staging Supabase, backup/restore e E2E cross-user.
+
+### Riscos bloqueantes identificados
+- [x] Inventário de ACL PostgreSQL comprovou `TRUNCATE/TRIGGER/REFERENCES` excessivos para `anon`/`authenticated`, inclusive em tabelas de GC e Bíblia.
+- [x] Migração corretiva **PREPARADA NO GITHUB**: `lab-app/supabase/migrations/202610120001_lab_privileges_hardening.sql` com `REVOKE` não destrutivo, default-grants mais restritos e pós-condições transacionais; script de aceite SQL separado.
+- [ ] **BLOQUEIO P0 — NÃO APLICADA AO BANCO REAL:** revisar com security/database engineers, confirmar backup/staging, aplicar ao Supabase LABGAME, executar `scripts/sql/security-post-migration-check.sql`, reconsultar Security Advisor e fazer smoke.
+- [x] Confirmados dois helper triggers `SECURITY DEFINER` com `EXECUTE` herdado por papéis públicos; correção de `REVOKE` incluída na migração.
+- [ ] Ativar proteção de senhas vazadas (Supabase Auth Advisor), se disponibilizada no plano; testar entrega SMTP, redirects, reset e OTP em aparelho real.
+- [ ] Auditoria com duas identidades legitimamente autenticadas para funções de GC, leitura, leaderboard e consentimento; nenhum teste E2E em produção foi realizado nesta auditoria.
+- [ ] Performance: seis FKs sem índice de cobertura identificadas no advisor; examinar índices após linha de base e antes de crescimento de membros.
+- [ ] Corrigir pendências de legislação/LGPD, incluindo dados de menores, consentimento, exclusão e retenção. Alerta geral de lançamento permanece aberto.
+
+### Política de veracidade operacional
+O fato de GitHub CI e Vercel READY estarem verdes **não prova** que a migração esteja aplicada ou que SMTP, ACLs, permissões cross-user e autenticação em Android/iOS estejam homologadas. Somente marcar caixas como concluídas mediante evidências de execução reais.
