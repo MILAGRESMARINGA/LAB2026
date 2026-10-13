@@ -5,7 +5,7 @@ import {
  signIn,signUp,verifyEmailCode,validateRegistration,type RegistrationMode
 } from "../features/auth";
 import {supabase} from "../lib/supabase";
-import {PUBLIC_APP_ORIGIN} from "../lib/auth-urls";
+import {recoveryAfterOtpPath} from "../lib/auth-urls";
 
 type Mode="login"|"signup"|"reset";
 type Props={
@@ -66,7 +66,7 @@ export function AccountAccess({initialMode="login",preferredMode="individual",ti
    await verifyEmailCode(email,otpCode,mode==="reset"?"recovery":"email");
    setOtpCode("");
    if(mode==="reset"){
-    window.location.assign(PUBLIC_APP_ORIGIN+"/auth/reset-password");
+    window.location.assign(recoveryAfterOtpPath());
    }else{
     setWaitingEmail(false);
     setMessage("E-mail confirmado! Sua conta foi ativada.");
