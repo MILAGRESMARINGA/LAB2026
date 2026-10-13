@@ -4,9 +4,12 @@
 
 ## Começar por aqui
 - [Arquitetura de referência](./ARCHITECTURE.md): C4, limites entre React, Supabase LABGAME, vídeos, SMTP e motor IA futuro.
+- [Dicionário de dados e ERD](./DATA-DICTIONARY.md): 15 tabelas, colunas, FKs, ownership e RLS levantadas no banco real.
+- [Contratos de API e RPC](./API-CONTRACTS.md): funções SQL, parâmetros, papéis e invariantes de XP, autorização e GCs.
 - [Normas obrigatórias de engenharia](./ENGINEERING-STANDARDS.md): DoR, DoD, PR, contrato, gates e responsabilidades.
 - [Auditoria dos 12 pilares](./ENGINEERING-BASELINE-AUDIT.md): status implementado/parcial/ausente/contextual e riscos.
 - [Modelo de ameaças e segurança](./SECURITY-THREAT-MODEL.md): STRIDE, LGPD, RLS, segredos, cadeia de dependências.
+- [Auditoria de segurança ao vivo de 12/10](./SECURITY-LIVE-AUDIT-2026-10-12.md): findings confirmados, migração preparada e status NÃO APLICADO.
 - [Arquitetura e governança da IA](./AI-ARCHITECTURE-AND-GOVERNANCE.md): RAG, origens, exegese, JSON, revisão teológica, fine-tuning.
 - [Plano de testes e releases](./TEST-AND-RELEASE-PLAN.md): CI, smoke, E2E, SQL, dependências, rollback.
 - [Operações e incidentes](./OPERATIONS-INCIDENTS.md): resposta, continuidade e backup.
