@@ -1,6 +1,6 @@
 import {describe,expect,it} from "vitest";
 import {
- PUBLIC_APP_ORIGIN,confirmationRedirectUrl,recoveryRedirectUrl,
+ PUBLIC_APP_ORIGIN,confirmationRedirectUrl,recoveryRedirectUrl,recoveryAfterOtpPath,
  authRouteFromPath,authRedirectError
 } from "../src/lib/auth-urls";
 import {isAuthPage} from "../src/components/AuthFlow";
@@ -9,6 +9,13 @@ describe("P0: links de confirmação e recuperação",()=>{
   expect(PUBLIC_APP_ORIGIN).toBe("https://labgame-biblia.vercel.app");
   expect(confirmationRedirectUrl()).toBe("https://labgame-biblia.vercel.app/auth/callback");
   expect(recoveryRedirectUrl()).toBe("https://labgame-biblia.vercel.app/auth/reset-password");
+ });
+ it("preserva a mesma origem após código OTP, inclusive em preview/PWA",()=>{
+  const path=recoveryAfterOtpPath();
+  expect(path).toBe("/auth/reset-password");
+  expect(new URL(path,"https://preview.example").origin).toBe("https://preview.example");
+  expect(new URL(path,"https://labgame-biblia.vercel.app").pathname).toBe("/auth/reset-password");
+  expect(path).not.toContain("https://");
  });
  it("reconhece as páginas de autenticação, inclusive com barra final",()=>{
   expect(authRouteFromPath("/auth/callback")).toBe("callback");
