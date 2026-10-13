@@ -2,6 +2,8 @@
 
 **Versão:** 1.0 · **Data:** 2026-10-12 · **Owner:** security-engineer. Auditoria preliminar estática, **não é teste de intrusão ou certificado de conformidade**.
 
+> **Alerta de auditoria real — 12/10/2026:** catálogo PostgreSQL revelou `TRUNCATE/TRIGGER/REFERENCES` atribuídos a papéis de cliente e EXECUTE público de duas funções internas. O mínimo privilégio **AINDA NÃO** foi alcançado no banco. Migração corretiva preparada em `lab-app/supabase/migrations/202610120001_lab_privileges_hardening.sql`, **NÃO APLICADA**; ver `docs/SECURITY-LIVE-AUDIT-2026-10-12.md`.
+
 ## Ativos e fronteiras
 
 Ativos protegidos: credenciais e sessões; e-mails e nomes; associação/consentimento/ranking de GC; pontuação e recorde; textos/estudos e direitos autorais; configurações do Supabase/Vercel/GitHub/Resend e futuras chaves de IA.
@@ -25,7 +27,7 @@ Fronteiras: **browser→Supabase Auth/RPC** (browser não confiável); **RPC SEC
 ## Política de segurança
 
 1. **Credenciais**: `service_role`, SMTP, RESEND_API_KEY, OPENAI_API_KEY, chaves privadas e tokens GitHub/Vercel são SOMENTE servidor; jamais `VITE_*`, frontend, commit, mensagem ou captura. Chave Supabase publicável é diferente de service_role.
-2. **Acesso**: mínimo privilégio no CI (somente `contents:read`); main protegida, PR revisado, 2FA, contas distintas por ambiente e credenciais rotativas (depende de configuração administrativa externa).
+2. **Acesso**: mínimo privilégio no CI (somente `contents:read`); proteger `main` e exigir revisão de PR (configuração administrativa ainda NÃO verificada), 2FA, contas distintas por ambiente e credenciais rotativas.
 3. **RLS / SQL**: toda tabela pessoal RLS; RPC de privilégio elevado obrigatoriamente valida `auth.uid()`, grupo, consentimento, objetos qualificados, `search_path` fixado e `GRANT/REVOKE` mínimos. Não confiar em `user_id` do cliente.
 4. **Autenticação**: SMTP + SPF/DKIM/DMARC e testes reais; rota de callback explícita; tokens de uso único nunca em logs de aplicação; solicitar novo token expirado.
 5. **HTTP**: HTTPS, CSP inicialmente Report-Only sem quebrar Mux/YouTube, X-Content-Type-Options, Referrer-Policy, X-Frame-Options e Permissions-Policy. Mover CSP para modo estrito após telemetria/QA.
