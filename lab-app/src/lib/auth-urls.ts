@@ -15,6 +15,12 @@ export const PUBLIC_APP_ORIGIN=(()=>{
 })();
 export const confirmationRedirectUrl=()=>PUBLIC_APP_ORIGIN+"/auth/callback";
 export const recoveryRedirectUrl=()=>PUBLIC_APP_ORIGIN+"/auth/reset-password";
+/**
+ * After a user verifies the 6-digit OTP inside the already-open app, the
+ * Supabase session is stored at THAT browser origin. Navigate by relative
+ * path to preserve the session (unlike emailed links which must be canonical).
+ */
+export const recoveryAfterOtpPath=()=>"/auth/reset-password";
 export type AuthRoute="callback"|"reset"|"none";
 export function authRouteFromPath(pathname:string):AuthRoute{
  if(pathname==="/auth/callback"||pathname==="/auth/callback/")return "callback";
