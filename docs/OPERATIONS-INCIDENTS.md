@@ -19,7 +19,7 @@ Metas propostas a validar com equipe: sev-1 triagem ≤30 min; sev-2 ≤4h útei
 7. **Pós-mortem:** causa-raiz, controles faltantes, regressão automatizada, ADR e owner/prazo.
 
 ## Backup, restauração e dados
-- Responsável confirma backup real no painel do projeto Supabase LABGAME, cobertura de dados e retenção definida. Não assumir que todo plano inclui PITR.
+- **13/10/2026: confirmado via API da organização que LAB2026GAME usa plano Supabase Free**, sem backups diários automáticos garantidos. Antes de qualquer migration de produção, executar e verificar backup próprio conforme [runbook P0 de backup e privilégios](P0-DATABASE-BACKUP-AND-HARDENING.md), reter cópia externa privada e exigir evidência de restauração. Não presumir backup no painel nem PITR.
 - Testar restauração em banco isolado com dados fictícios e medidas de anonimização, não restaurar em produção para teste.
 - Migrações SQL somente de `lab-app/supabase/migrations/`; executar script aprovado após snapshot e revisar `SECURITY DEFINER`.
 - Logar apenas IDs técnicos e métricas agregadas. Solicitações de acesso/exclusão seguem política LGPD e preservar logs somente pelo prazo devido.
