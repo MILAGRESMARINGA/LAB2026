@@ -219,7 +219,7 @@ Documentação e testes: `docs/AUTH-PROFILES-AND-SCORING.md`; `lab-app/tests/acc
 ### Riscos bloqueantes identificados
 - [x] Inventário de ACL PostgreSQL comprovou `TRUNCATE/TRIGGER/REFERENCES/MAINTAIN` excessivos para `anon`/`authenticated`, inclusive em tabelas de GC e Bíblia.
 - [x] Migração corretiva **PREPARADA NO GITHUB**: `lab-app/supabase/migrations/202610120001_lab_privileges_hardening.sql` com `REVOKE` não destrutivo, default-grants mais restritos e pós-condições transacionais; script de aceite SQL separado.
-- [ ] **BLOQUEIO P0 — NÃO APLICADA AO BANCO REAL:** revisar com security/database engineers, confirmar backup/staging, aplicar ao Supabase LABGAME, executar `scripts/sql/security-post-migration-check.sql`, reconsultar Security Advisor e fazer smoke.
+- [x] **P0 ACL resolvido em produção (14/10):** backup local validado 20/20, migração `20261014195640 lab_privileges_hardening_p0` aplicada ao LABGAME, script pós-condições com zero linhas, 68→0 permissões excessivas e 4→0 grants nos helpers. [ ] Smoke real de auth/GC/leitura/XP com duas contas ainda pendente.
 - [x] Confirmados dois helper triggers `SECURITY DEFINER` com `EXECUTE` herdado por papéis públicos; correção de `REVOKE` incluída na migração.
 - [ ] Ativar proteção de senhas vazadas (Supabase Auth Advisor), se disponibilizada no plano; testar entrega SMTP, redirects, reset e OTP em aparelho real.
 - [ ] Auditoria com duas identidades legitimamente autenticadas para funções de GC, leitura, leaderboard e consentimento; nenhum teste E2E em produção foi realizado nesta auditoria.
@@ -239,8 +239,8 @@ O fato de GitHub CI e Vercel READY estarem verdes **não prova** que a migraçã
 - [x] Atualizados `.gitignore` e proteção em CI com parser PowerShell + testes estáticos para evitar publicação acidental de arquivos de backup ou script não revisado.
 - [x] Criado o [runbook P0 de backup/restauração](P0-DATABASE-BACKUP-AND-HARDENING.md); atualizado [runbook de incidentes](OPERATIONS-INCIDENTS.md) para refletir o plano Free e limites reais do provedor.
 - [ ] **Gate 1: ainda falta executar `pg_dump` com o acesso do responsável no Windows** e confirmar arquivo legível, SHA-256, cópia privada.
-- [ ] **Gate 2: ainda falta validar recuperação de conteúdo em banco isolado**; `pg_restore --list` não equivale a restauração comprovada.
-- [ ] **Gate 3: somente então executar a migração no projeto LABGAME**, consultar advisors e confirmar zero permissões perigosas remanescentes pela consulta em `lab-app/scripts/sql/security-post-migration-check.sql`.
+- [x] **Gate 2: recuperação em banco isolado validada estruturalmente e por contagem** (`labgame_restore_test`, 20/20 testes aprovados pelo usuário em 14/10). Restam teste de Auth/Storage gerenciados e backup off-site.
+- [x] **Gate 3: migração ACL aplicada no Supabase LABGAME em 14/10** (`20261014195640`), advisors reconsultados, `security-post-migration-check.sql` retornou zero violações. Persistem recomendações não corrigidas de senhas vazadas e validação das RPCs autenticadas.
 - [ ] **Gate 4: executar smoke de RLS, GCs, ranking, leitor/XP e autenticação** com contas de teste e aprovar promoção do deployment.
 
 **Importante:** não foi executada operação de DDL/DML no Supabase durante esta rodada, e nenhuma alteração foi feita no CRM. O CI é evidência de qualidade de código, não de restauração de banco. Reconsultar status do CI após os últimos commits.
@@ -283,3 +283,12 @@ Visão e regras detalhadas: [LABGAME-3-PRODUCT-AND-PROGRESSION.md](LABGAME-3-PRO
 - [ ] Integração real PostgreSQL/RLS em staging, rollback e auditoria de crédito único.
 - [ ] Revisar histórico pré-migração para eventuais ciclos completos sem bônus; backfill exige autorização separada.
 - [ ] Validar gates P0 de backup, segurança e QA antes da promoção à produção.
+
+
+## Atualização P0 — 14/10/2026
+- [x] Restore local isolado: 20/20 testes aprovados, incluindo contagens, 15 tabelas RLS, 15 PK e 17 FK.
+- [x] ACL hardening aplicado **somente ao Supabase LABGAME**; migração `20261014195640 lab_privileges_hardening_p0` em histórico de produção.
+- [x] SQL de pós-condições executado, sem linhas de violação; 68 permissões excessivas e 4 EXECUTE públicos indevidos passaram a zero.
+- [x] Conteúdo bíblico preservado em produção: 1.189 capítulos do plano, 365 dias, 31.101 versículos, 71 recursos de vídeo.
+- [ ] P0 geral ainda aberto: teste com duas contas reais em login/OTP/reset, XP, GCs e RLS; proteção de senha vazada (se disponível) e cópia externa criptografada/backup recorrente.
+- [ ] A migração do bônus anual **não foi aplicada**; testes transacionais em staging permanecem exigidos.
