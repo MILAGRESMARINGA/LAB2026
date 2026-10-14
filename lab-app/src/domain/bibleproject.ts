@@ -86,8 +86,13 @@ export const BIBLEPROJECT_VIDEO_LINKS:Readonly<Record<string,ReadonlyArray<Bible
   "Judas": [{title:"Judas — guia e vídeo",url:"https://bibleproject.com/pt-br/guides/judas/",kind:"guide"}],
   "Apocalipse": [{title:"Apocalipse 1–11",url:"https://bibleproject.com/pt-br/videos/apocalipse-1-11/",fromChapter:1,toChapter:11}, {title:"Apocalipse 12–22",url:"https://bibleproject.com/pt-br/videos/apocalipse-12-22/",fromChapter:12,toChapter:22}],
 };
+/** Strict book matching. Part 1 always precedes Part 2. */
 export function getBibleProjectVideos(book:string):ReadonlyArray<BibleProjectResource>{
- return BIBLEPROJECT_VIDEO_LINKS[book]??[];
+ return [...(BIBLEPROJECT_VIDEO_LINKS[book]??[])].sort((a,b)=>(a.fromChapter??1)-(b.fromChapter??1));
+}
+/** Canonical New Testament listing; legitimately shared panoramas remain explicitly labeled. */
+export function getNewTestamentVideoCatalog():ReadonlyArray<{book:string;resource:BibleProjectResource}>{
+ return NEW_TESTAMENT.flatMap(([book])=>getBibleProjectVideos(book).map(resource=>({book,resource})));
 }
 export function getBibleProjectVideoForChapter(book:string,chapter:number):BibleProjectResource|undefined{
  return getBibleProjectVideos(book).find(item=>
