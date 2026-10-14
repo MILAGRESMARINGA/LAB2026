@@ -10,6 +10,12 @@ A organização `LAB2026GAME` está no plano **Free**. O Supabase declara que so
 
 **Consequência:** o fato de a tabela ter RLS e o CI estar verde não é respaldo para migrar sem cópia. O conector Supabase disponível ao ChatGPT não expõe operação de download de um backup de todos os schemas/usuários, nem prova de restauração. **Não afirmar que existe backup sem conferir arquivo restaurável.**
 
+## Linha de base SQL reproduzível (somente leitura)
+
+O arquivo `lab-app/scripts/sql/security-database-baseline.sql` foi **executado com sucesso** diretamente no Supabase LABGAME em 13/10/2026. Resultado: `plan_chapters=1189`, `unique_plan_chapters=1189`, `plan_days=365`, `max_daily_chapters=4`, `bible_chapters=1189`, `bible_verses=31101`, `video_resources=71`, `reading_groups=0`, `game_runs=0`, `public_tables=15`, `tables_with_rls=15`, **`excessive_table_grants=51` e `exposed_internal_trigger_grants=4`**.
+
+Reexecutar a consulta após a migração: conteúdo/RLS não pode diminuir; `excessive_table_grants` e `exposed_internal_trigger_grants` devem ser zero. Indicadores diferentes tornam a liberação bloqueada até investigação. A baseline é metadado de engenharia e não substitui backup de dados.
+
 ## 1. Executar backup local no Windows (apenas leitura do banco)
 
 **Pré-requisitos:**
