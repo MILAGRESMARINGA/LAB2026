@@ -53,7 +53,14 @@ export async function setGCCompetition(groupId:string,enabled:boolean):Promise<v
  if(error)throw error;
 }
 
+export type LabAnnualCycleAward={
+ run_id:string;cycle_number:number;bonus_xp:number;awarded_at:string;
+};
 export type LabScorecard={
+ /** Available after annual awards migration; absent on older backend versions. */
+ cycle_bonus_xp?:number;
+ completed_cycles?:number;
+ cycle_awards?:LabAnnualCycleAward[];
  chapters_confirmed:number;
  panoramas_confirmed:number;
  reading_xp:number;
