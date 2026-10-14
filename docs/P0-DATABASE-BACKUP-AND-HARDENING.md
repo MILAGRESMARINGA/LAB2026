@@ -12,7 +12,7 @@ A organização `LAB2026GAME` está no plano **Free**. O Supabase declara que so
 
 ## Linha de base SQL reproduzível (somente leitura)
 
-O arquivo `lab-app/scripts/sql/security-database-baseline.sql` foi **executado com sucesso** diretamente no Supabase LABGAME em 13/10/2026. Resultado: `plan_chapters=1189`, `unique_plan_chapters=1189`, `plan_days=365`, `max_daily_chapters=4`, `bible_chapters=1189`, `bible_verses=31101`, `video_resources=71`, `reading_groups=0`, `game_runs=0`, `public_tables=15`, `tables_with_rls=15`, **`excessive_table_grants=51` e `exposed_internal_trigger_grants=4`**.
+O arquivo `lab-app/scripts/sql/security-database-baseline.sql` foi **executado com sucesso** diretamente no Supabase LABGAME em 13/10/2026. Resultado: `plan_chapters=1189`, `unique_plan_chapters=1189`, `plan_days=365`, `max_daily_chapters=4`, `bible_chapters=1189`, `bible_verses=31101`, `video_resources=71`, `reading_groups=0`, `game_runs=0`, `public_tables=15`, `tables_with_rls=15`, **`excessive_table_grants=68` e `exposed_internal_trigger_grants=4`**.
 
 Reexecutar a consulta após a migração: conteúdo/RLS não pode diminuir; `excessive_table_grants` e `exposed_internal_trigger_grants` devem ser zero. Indicadores diferentes tornam a liberação bloqueada até investigação. A baseline é metadado de engenharia e não substitui backup de dados.
 
@@ -63,7 +63,7 @@ pwsh -NoProfile -File .\scripts\backup-labgame.ps1 -DbHost "HOST_DO_SESSION_POOL
 Arquivo: `lab-app/supabase/migrations/202610120001_lab_privileges_hardening.sql`.
 
 Operações efetuadas quando aplicada:
-- `REVOKE TRUNCATE, TRIGGER, REFERENCES` para `PUBLIC`, `anon`, `authenticated` nas 15 tabelas de LABGAME.
+- `REVOKE TRUNCATE, TRIGGER, REFERENCES, MAINTAIN` para `PUBLIC`, `anon`, `authenticated` nas 15 tabelas de LABGAME.
 - `REVOKE EXECUTE` público das funções internas `register_reading_group_owner()` e `rls_auto_enable()`.
 - Reforço dos default privileges de tabelas futuras (owner postgres).
 - Bloco `DO` de pós-condições; exceção aborta toda a transação quando executada atomicamente pelo mecanismo de migrações do Supabase.
