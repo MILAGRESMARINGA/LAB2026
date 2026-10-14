@@ -429,3 +429,19 @@ body.video-modal-open{overflow:hidden}
  .onboarding-journey{padding:14px 10px;max-width:100%}
 }
 @media(prefers-reduced-motion:reduce){.lab-quest-progress-track div,.lab-quest-feature-line span{transition:none}}
+
+
+/* Header: compact, legible counters on narrow phones. */
+.talents-counter{display:inline-flex;align-items:center;gap:6px;color:#f5cf86;font-weight:800;white-space:nowrap}
+@media(max-width:650px){
+ .game-header{min-height:68px;height:auto;gap:8px}
+ .header-status{gap:8px;flex-wrap:wrap;justify-content:flex-end;font-size:11px;max-width:56%}
+ .talents-counter{font-size:10px}
+}
+@media(max-width:380px){
+ .brandmark{gap:7px}
+ .brandmark strong{font-size:17px}
+ .brandmark small{font-size:6px}
+ .header-status{gap:6px}
+ .header-status .talents-counter{font-size:9px}
+}
