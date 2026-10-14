@@ -1,11 +1,12 @@
 import {useState} from "react";
 import {
  ArrowRight,Award,Bird,BookOpen,Check,CheckCircle2,Crown,Flame,
- Gift,Leaf,LockKeyhole,Sparkles,Star,Trophy
+ Gift,Leaf,LockKeyhole,Medal,Sparkles,Star,Trophy
 } from "lucide-react";
 import type {GameDay} from "../domain/game-plan";
 import {GAME_DAYS} from "../domain/game-plan";
 import type {LabGameState} from "../features/lab-game";
+import {individualMilestone,nextIndividualMilestone} from "../domain/progression-v3";
 import {
  earnedTalentMilestones,FRUIT_OF_THE_SPIRIT,isWeeklyMilestone,
  journeyWindow,nextTalentMilestone,SPIRITUAL_GIFTS_EXAMPLES
@@ -45,6 +46,8 @@ export function ChallengeJourney({plan,game,totalXP,preview=false,onStart,onRest
  const completedDays=Math.max(0,game?.completed_days??0);
  const bestDays=Math.max(0,game?.best_days??0);
  const milestones=earnedTalentMilestones(bestDays);
+ const personalBadge=individualMilestone(totalXP);
+ const nextBadge=nextIndividualMilestone(totalXP);
  const upcoming=nextTalentMilestone(bestDays);
  const checked=game?.checked??[];
  const done=game!==null&&(game.finished===true||completedDays>=activeDay||stage.chapters.every(ch=>checked.includes(ch.id)));
@@ -72,6 +75,15 @@ export function ChallengeJourney({plan,game,totalXP,preview=false,onStart,onRest
    <div><Flame size={17}/><strong>{completedDays}</strong><span>constância atual</span></div>
    <div><Award size={17}/><strong>{totalXP}</strong><span>XP validado</span></div>
    <div><Gift size={17}/><strong>{milestones}</strong><span>Talentos</span></div>
+  </div>
+  <div className={"lab-quest-personal-award "+(personalBadge?"unlocked tier-"+personalBadge.metal.toLowerCase():"pending")} aria-label="Conquista por pontuação individual">
+   <span className="lab-quest-award-icon"><Medal size={26} aria-hidden="true"/></span>
+   <div>
+    <span className="lab-quest-eyebrow">MÉRITO DE CONSTÂNCIA INDIVIDUAL</span>
+    <strong>{personalBadge?personalBadge.title:"Próxima medalha · 1.000 XP"}</strong>
+    <p>{personalBadge?"Medalha "+personalBadge.metal+" por XP pessoal confirmado. Seu desempenho não depende do GC.":"A medalha Alcance Supremo I será exibida após atingir 1.000 XP pessoais."}</p>
+    {nextBadge&&<small>Próximo nível: {nextBadge.minimum.toLocaleString("pt-BR")} XP</small>}
+   </div>
   </div>
   <div className="lab-quest-map-heading">
    <div><span className="lab-quest-eyebrow">A TRILHA</span><h2>Um dia de cada vez</h2></div>
