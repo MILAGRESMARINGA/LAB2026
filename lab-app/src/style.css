@@ -498,3 +498,14 @@ body.video-modal-open{overflow:hidden}
 .lab-formation-refs span{display:flex;align-items:center;gap:5px;border:1px solid #547068;border-radius:7px;padding:5px 8px;color:#d9ecc5;font-size:11px}
 .lab-formation-footnote{font-size:11px;line-height:1.65;color:#afc1bc;margin:0}
 @media(max-width:580px){.lab-formation-tracks{grid-template-columns:1fr}.lab-formation-tracks button{min-height:0;flex-direction:row;flex-wrap:wrap;align-items:center;padding:13px}.lab-formation-tracks small{margin-left:auto}.lab-formation-detail{padding:14px}.lab-formation-detail li{padding:11px 9px;gap:9px}}
+
+
+/* Distinct visual recognition when personal and GC goals coincide. */
+.gc-combined-award{display:flex;align-items:flex-start;gap:18px;margin:16px 0 22px;padding:21px;border:1px solid #a5c16b;border-radius:17px;background:linear-gradient(115deg,#2b402f,#223c3a);box-shadow:inset 0 1px 0 #bed78023}
+.gc-combined-emblem{display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;width:67px;height:67px;border:2px solid #d5e896;background:#426343;border-radius:19px;color:#e9f8bd}
+.gc-combined-emblem svg:last-child{position:absolute;right:-9px;bottom:-7px;color:#f7d48d;background:#2f4230;border-radius:50%;padding:2px;width:26px;height:26px}
+.gc-combined-award .eyebrow{color:#b9df91}
+.gc-combined-award h3{font-size:20px;line-height:1.3;margin:7px 0}
+.gc-combined-award p{font-size:13px;line-height:1.6;color:#dcf0d9;margin:0 0 7px}
+.gc-combined-award small{font-size:11px;line-height:1.5;color:#bdd0bb}
+@media(max-width:520px){.gc-combined-award{padding:14px;gap:12px}.gc-combined-emblem{width:49px;height:49px;border-radius:14px}.gc-combined-award h3{font-size:17px}}
