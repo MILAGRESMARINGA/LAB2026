@@ -5,7 +5,7 @@ WITH table_acl AS (
  FROM pg_class c
  JOIN pg_namespace n ON n.oid=c.relnamespace
  CROSS JOIN (VALUES ('anon'::text),('authenticated'::text)) r(role_name)
- CROSS JOIN (VALUES ('TRUNCATE'::text),('TRIGGER'::text),('REFERENCES'::text)) p(priv)
+ CROSS JOIN (VALUES ('TRUNCATE'::text),('TRIGGER'::text),('REFERENCES'::text), ('MAINTAIN'::text)) p(priv)
  WHERE n.nspname='public' AND c.relkind IN ('r','p')
   AND has_table_privilege(r.role_name,c.oid,p.priv)
 ), trigger_acl AS (
@@ -47,5 +47,5 @@ SELECT
   (SELECT rls_enabled FROM rls) AS tables_with_rls,
   (SELECT COUNT(*) FROM table_acl) AS excessive_table_grants,
   (SELECT COUNT(*) FROM trigger_acl) AS exposed_internal_trigger_grants;
--- Esperado antes do patch em 13/10: 1189,1189,365,4,1189,31101,71,0,0,15,15,51,4.
--- Depois: mesmos contadores de conteúdo/RLS; permissões excessivas=0 e execs trigger=0.
+-- Esperado antes do patch em 13/10: 1189,1189,365,4,1189,31101,71,0,0,15,15,68,4.
+-- Depois: mesmos contadores de conteúdo/RLS; permissões excessivas (incl. MAINTAIN)=0 e execs trigger=0.
