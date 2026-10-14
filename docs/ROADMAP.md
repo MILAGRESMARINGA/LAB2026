@@ -262,8 +262,9 @@ Visão e regras detalhadas: [LABGAME-3-PRODUCT-AND-PROGRESSION.md](LABGAME-3-PRO
 - [x] Tornar Jornada a home principal; ordem Jornada, Estudos, Bíblia, GCs, Perfil; leitura diária acessada pela Jornada (code/CI; QA manual pendente).
 - [x] Corrigir associação exata dos vídeos do NT e ordem canônica, retirando fallback para playlist genérica que começava por Mateus; na ausência de player específico, oferecer fonte original. Testes CI aprovados; homologação visual pendente.
 - [ ] Definir e homologar fonte de verdade para 1.000 XP coletivos sem misturar XP pessoal com somatório de integrantes fora do período.
-- [ ] **Decisão de produto pendente:** 10.000 XP por ciclo como bônus adicional ou alvo total; validar escalonamento proposto para anos posteriores.
-- [ ] Implementar créditos anuais em livro-caixa transacional, único por `run_id` e usuário, só após aprovação e testes em staging.
+- [x] **Decisão aprovada (14/10/2026):** bônus adicional de +10.000 XP no 1º ciclo concluído, +12.500 no 2º, +15.000 no 3º e incrementos de +2.500 por ciclo; regra independente de XP de capítulos/vídeos.
+- [x] Implementação SQL **preparada no GitHub**, ainda não aplicada: ledger `lab_game_cycle_awards`, idempotência por run, validação de 1.189 capítulos, scorecard com bônus, RLS e histórico de coroas.
+- [ ] **Gate obrigatório:** executar a migração em ambiente isolado/staging, testar concorrência/reenvios e duas contas, auditar RLS/permissões e reconciliar XP antes de qualquer execução em produção. Veja `docs/ANNUAL-CYCLE-AWARDS-RELEASE.md`.
 - [ ] Projetar conteúdos de novos convertidos, teologia sistemática e caráter cristão com revisão pastoral, direitos de uso e acessibilidade.
 - [ ] Testes de integração Supabase multiusuário, GC, RLS, concorrência, backup/restauração e homologação mobile antes de publicar produção.
 
@@ -272,3 +273,13 @@ Visão e regras detalhadas: [LABGAME-3-PRODUCT-AND-PROGRESSION.md](LABGAME-3-PRO
 - [x] Trilhas interativas na aba Estudos: **Primeiros passos na fé** (6 encontros), **Teologia Sistemática** (8 temas), **Vida e Caráter Cristão** (6 encontros), com referências bíblicas e introduções curtas.
 - [x] Estudos livres e sem atribuição de XP; revisão editorial completa e quizzes interativos permanecem pendentes.
 - [ ] Validar no celular a navegação, abertura do link original do vídeo, formação responsiva e legibilidade das medalhas.
+
+
+## Atualização — bônus por conclusão integral aprovado (14/10/2026)
+- [x] Migração versionada `lab-app/supabase/migrations/202610140001_annual_cycle_completion_awards.sql` escrita. Não executada no banco real.
+- [x] Ledger único por ciclo, fórmulas progressivas, leitura 1.189/365 validada dentro do servidor, extensão de `lab_game_scorecard`.
+- [x] Perfil mostra bônus/coroas **somente quando o servidor retorna eventos reais**; feedback da leitura final idem.
+- [x] Testes unitários + verificações estáticas de SQL e auditoria de staging somente leitura adicionados.
+- [ ] Integração real PostgreSQL/RLS em staging, rollback e auditoria de crédito único.
+- [ ] Revisar histórico pré-migração para eventuais ciclos completos sem bônus; backfill exige autorização separada.
+- [ ] Validar gates P0 de backup, segurança e QA antes da promoção à produção.
