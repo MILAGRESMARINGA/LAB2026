@@ -1,7 +1,7 @@
 import {describe,expect,it} from "vitest";
 import {
  GROUP_XP_MILESTONE,groupMilestones,combinedMilestone,individualMilestone,
- nextIndividualMilestone,proposedAnnualCycleAward
+ nextIndividualMilestone,approvedAnnualCycleAward,projectedCycleBonuses,proposedAnnualCycleAward
 } from "../src/domain/progression-v3";
 
 describe("LABGAME 3.0 — independent achievements",()=>{
@@ -45,6 +45,13 @@ describe("LABGAME 3.0 — independent achievements",()=>{
   expect(proposedAnnualCycleAward(1)).toEqual({cycle:1,bonusXp:10000,medal:"Coroa da Jornada · Ciclo 1"});
   expect(proposedAnnualCycleAward(2).bonusXp).toBe(12500);
   expect(proposedAnnualCycleAward(3).bonusXp).toBe(15000);
+  expect(approvedAnnualCycleAward(4).bonusXp).toBe(17500);
+  expect(projectedCycleBonuses(0)).toBe(0);
+  expect(projectedCycleBonuses(1)).toBe(10000);
+  expect(projectedCycleBonuses(2)).toBe(22500);
+  expect(projectedCycleBonuses(3)).toBe(37500);
+  expect(projectedCycleBonuses(4)).toBe(55000);
+  expect(()=>projectedCycleBonuses(-1)).toThrow("ciclos");
   expect(()=>proposedAnnualCycleAward(0)).toThrow("Ciclo");
   expect(()=>proposedAnnualCycleAward(Infinity)).toThrow("Ciclo");
  });
