@@ -27,7 +27,7 @@
 
 - Verificar funções `lab_game_confirm_chapter`, `lab_game_sync`, `lab_game_scorecard`, `lab_game_video_confirm` e `lab_game_restart_completed`.
 - Validar `SECURITY DEFINER SET search_path=''`, `GRANT EXECUTE` somente para authenticated, e tabela `lab_game_cycle_awards` com RLS e SELECT próprio.
-- Revisar o `CREATE TABLE` com FKs, índice, `UNIQUE(run_id)` e `UNIQUE(user_id,cycle_number)`. O trigger de RLS deve permanecer ativado.
+- Revisar o `CREATE TABLE` com FK composta `(run_id,user_id) → lab_game_runs(id,user_id)` e restrição adicional na tabela de runs para garantir o proprietário correto, índice, `PRIMARY KEY(run_id)` e `UNIQUE(user_id,cycle_number)`. RLS deve permanecer ativado.
 - Aprovar que o ciclo é contado por `status='completed'` (e nunca apenas por `finished_on` ou XP).
 
 ## Gate 2 — Testes transacionais em banco isolado/staging
