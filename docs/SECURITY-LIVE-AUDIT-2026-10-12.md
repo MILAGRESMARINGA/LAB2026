@@ -12,6 +12,14 @@
 - Funções `lab_game_*` privilegiam `authenticated`, não `anon`, e usam `search_path` fixo. Isto é boa prática, NÃO substitui testes de autorização de seus corpos.
 - CI LAB #171 passou testes, controles estáticos e build no SHA `5af7bc7e83f670ea9857772d82c0188519dcb48c`; o preview do mesmo SHA estava READY. Alterações posteriores exigem novo CI/READY.
 
+## Atualização de 13/10/2026 — Bloqueio de backup no plano Free
+
+A organização Supabase **LAB2026GAME** confirmou `tier_free`; não há backup diário automático garantido nesse plano. Referência: [Backups do Supabase](https://supabase.com/docs/guides/platform/backups). Sem snapshot verificável e teste de recuperação em staging, **não aplicar DDL no banco real**.
+
+Consulta de baseline versionada em `lab-app/scripts/sql/security-database-baseline.sql` e executada no banco real: 1.189 capítulos únicos/365 etapas/4 máximos diários, 31.101 versículos, 71 mídias, 15/15 tabelas RLS, **51 concessões excessivas** de tabela (`TRUNCATE/TRIGGER/REFERENCES`) e **4 concessões executáveis** nos dois helpers internos para roles públicos. Nenhum dado foi alterado.
+
+Backup local PowerShell preparado em `lab-app/scripts/backup-labgame.ps1` e procedimento em [P0 backup e permissões](P0-DATABASE-BACKUP-AND-HARDENING.md). **Estado: BACKUP REAL AINDA NÃO CRIADO/VERIFICADO; MIGRAÇÃO NÃO APLICADA.**
+
 ## Finding S-01 — Privilégios de tabela além do necessário
 **Severidade: ALTA (capacidade de dano caso esses papéis tenham uma via SQL); estado: CORREÇÃO PREPARADA, NÃO APLICADA.**
 
