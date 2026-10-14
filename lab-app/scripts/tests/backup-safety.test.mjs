@@ -26,6 +26,9 @@ test("backup artifacts are ignored by git and cannot be misrepresented as restor
   assert.ok(ignore.includes(pattern),pattern+" must be ignored");
  }
  assert.match(runbook,/restauração em banco ISOLADO/i);
- assert.match(runbook,/NÃO APLICADA/);
+ // This runbook is intentionally updated after the verified P0 ACL migration.
+ // Keep proof of the execution and never misrepresent the annual XP migration as applied.
+ assert.match(runbook,/HARDENING ACL APLICADO E VERIFICADO EM PRODUÇÃO/);
+ assert.match(runbook,/NÃO executada.*migração de bônus anual/i);
  assert.match(backup,/restore_drill_verified=\$false/);
 });
