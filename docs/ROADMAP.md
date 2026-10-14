@@ -244,3 +244,25 @@ O fato de GitHub CI e Vercel READY estarem verdes **não prova** que a migraçã
 - [ ] **Gate 4: executar smoke de RLS, GCs, ranking, leitor/XP e autenticação** com contas de teste e aprovar promoção do deployment.
 
 **Importante:** não foi executada operação de DDL/DML no Supabase durante esta rodada, e nenhuma alteração foi feita no CRM. O CI é evidência de qualidade de código, não de restauração de banco. Reconsultar status do CI após os últimos commits.
+
+
+## Novo marco — LABGAME 3.0, 14/10/2026
+
+Visão e regras detalhadas: [LABGAME-3-PRODUCT-AND-PROGRESSION.md](LABGAME-3-PRODUCT-AND-PROGRESSION.md). O roadmap anterior segue válido; este marco **não** libera alterações de dados nem pontuações de produção.
+
+### Progresso executado
+- [x] Definido modelo de conquistas pessoais independente de conquistas coletivas.
+- [x] Medalhas pessoais visuais de 1.000 / 2.500 / 5.000 / 10.000 XP confirmados, exibidas na Jornada.
+- [x] Insígnia visual para GC que alcançou 100% de assiduidade semanal, com no mínimo 3 participantes consentidos, sem bônus pessoal.
+- [x] Código de domínio puro e testes para validar metas e proteção contra XP coletivo inexistente.
+- [x] Documentada a proposta de ciclos de 365 etapas e premiações progressivas; os bônus anuais não foram creditados nem aplicados ao Supabase.
+- [x] Estruturada a visão de discipulado e teologia sistemática como trilhas permanentes e revisadas editorialmente.
+
+### Próximas implementações
+- [ ] Tornar Jornada a home principal; ordem Jornada, Estudos, Bíblia, GCs, Perfil; leitura diária acessada pela Jornada.
+- [ ] Corrigir recursos de vídeo por correspondência exata com cada livro do Novo Testamento; testar Mateus, Marcos, Lucas, João e toda a ordem canônica.
+- [ ] Definir e homologar fonte de verdade para 1.000 XP coletivos sem misturar XP pessoal com somatório de integrantes fora do período.
+- [ ] **Decisão de produto pendente:** 10.000 XP por ciclo como bônus adicional ou alvo total; validar escalonamento proposto para anos posteriores.
+- [ ] Implementar créditos anuais em livro-caixa transacional, único por `run_id` e usuário, só após aprovação e testes em staging.
+- [ ] Projetar conteúdos de novos convertidos, teologia sistemática e caráter cristão com revisão pastoral, direitos de uso e acessibilidade.
+- [ ] Testes de integração Supabase multiusuário, GC, RLS, concorrência, backup/restauração e homologação mobile antes de publicar produção.
