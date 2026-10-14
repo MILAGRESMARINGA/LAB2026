@@ -292,3 +292,12 @@ Visão e regras detalhadas: [LABGAME-3-PRODUCT-AND-PROGRESSION.md](LABGAME-3-PRO
 - [x] Conteúdo bíblico preservado em produção: 1.189 capítulos do plano, 365 dias, 31.101 versículos, 71 recursos de vídeo.
 - [ ] P0 geral ainda aberto: teste com duas contas reais em login/OTP/reset, XP, GCs e RLS; proteção de senha vazada (se disponível) e cópia externa criptografada/backup recorrente.
 - [ ] A migração do bônus anual **não foi aplicada**; testes transacionais em staging permanecem exigidos.
+
+
+## P0 — Homologação com duas contas (14/10/2026)
+- [x] Preparado verificador de **duas contas Auth reais** em `lab-app/scripts/p0-two-accounts-smoke.mjs`, seguro por padrão (somente leitura de dados; sem alteração de XP/GC na produção).
+- [x] Testes da trava anti-mutações em produção adicionados em `lab-app/scripts/tests/p0-two-accounts.test.mjs`.
+- [x] Roteiro completo de testes com login, Auth/SMTP, RLS, XP, GCs, convites, vídeo e recuperação em `docs/P0-TWO-ACCOUNTS-QA.md`.
+- [ ] **Executar** verificador com duas contas autenticadas e independentes; banco de produção ainda possui apenas 1 conta, sem grupos ou XP registrado.
+- [ ] **Executar** fluxos de escrita (GC, convite, capítulo e XP) somente em staging separado ou em condições de QA expressamente autorizadas; não apresentar simulação como teste real.
+- [ ] Finalizar SMTP de confirmação/recuperação, proteção de senhas vazadas e política de backup externo.
