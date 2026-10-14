@@ -445,3 +445,22 @@ body.video-modal-open{overflow:hidden}
  .header-status{gap:6px}
  .header-status .talents-counter{font-size:9px}
 }
+
+
+/* LABGAME 3.0: achievement signals use confirmed XP, never spiritual ranking. */
+.lab-quest-personal-award{display:flex;align-items:center;gap:14px;padding:17px 20px;background:#1c3034;border:1px solid #456362;border-radius:15px}
+.lab-quest-personal-award.unlocked{border-color:#947b45;background:#2e332e}
+.lab-quest-award-icon{width:48px;height:48px;min-width:48px;border:1px solid #6b7d69;border-radius:13px;display:flex;align-items:center;justify-content:center;background:#35453a;color:#c5df9b}
+.lab-quest-personal-award.tier-bronze .lab-quest-award-icon{color:#e6ae81;border-color:#986646;background:#49362d}
+.lab-quest-personal-award.tier-prata .lab-quest-award-icon{color:#d6e1e6;border-color:#a5bcc0;background:#3b4c50}
+.lab-quest-personal-award.tier-ouro .lab-quest-award-icon{color:#f8d277;border-color:#ae8836;background:#514321}
+.lab-quest-personal-award.tier-diamante .lab-quest-award-icon{color:#b1edfb;border-color:#85cfdc;background:#244950}
+.lab-quest-personal-award>div{min-width:0}
+.lab-quest-personal-award strong{display:block;font-size:15px;margin:5px 0;color:#f1f5d6}
+.lab-quest-personal-award p{font-size:12px;line-height:1.5;margin:0 0 4px;color:#b8cfbf}
+.lab-quest-personal-award small{color:#b6c8c2;font-size:11px}
+.gc-achievement{border:1px solid #b39a63;border-radius:14px;background:#38362b;padding:16px;display:flex;align-items:flex-start;gap:13px;margin:18px 0;color:#f8dea8}
+.gc-achievement>svg{flex-shrink:0}
+.gc-achievement strong{font-size:14px}
+.gc-achievement p{font-size:12px;line-height:1.55;color:#eadcbf;margin:6px 0 0}
+@media(max-width:500px){.lab-quest-personal-award{padding:14px;gap:10px}.lab-quest-personal-award strong{font-size:14px}}
