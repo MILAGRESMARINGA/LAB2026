@@ -12,7 +12,7 @@ const expectedTables=[
 ];
 
 test("hardening only revokes non-DML privileges and never alters or deletes application data",()=>{
- assert.match(migration,/REVOKE TRUNCATE, TRIGGER, REFERENCES ON TABLE/i);
+ assert.match(migration,/REVOKE TRUNCATE, TRIGGER, REFERENCES, MAINTAIN ON TABLE/i);
  assert.match(migration,/FROM PUBLIC, anon, authenticated;/i);
  assert.doesNotMatch(migration,/\b(?:DROP\s+TABLE|DELETE\s+FROM|TRUNCATE\s+TABLE|UPDATE\s+public\.)\b/i);
  assert.doesNotMatch(migration,/\bREVOKE\s+SELECT\b/i);
