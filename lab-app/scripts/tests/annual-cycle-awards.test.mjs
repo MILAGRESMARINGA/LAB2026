@@ -7,7 +7,9 @@ const migration=readFileSync(new URL("../../supabase/migrations/202610140001_ann
 
 test("ledger is unique per completed run, enforces escalating bonus, and has owner-only RLS",()=>{
  assert.match(migration,/CREATE TABLE public\.lab_game_cycle_awards\s*\(/i);
- assert.match(migration,/run_id uuid PRIMARY KEY REFERENCES public\.lab_game_runs/i);
+ assert.match(migration,/run_id uuid PRIMARY KEY/i);
+ assert.match(migration,/FOREIGN KEY \(run_id,user_id\) REFERENCES public\.lab_game_runs\(id,user_id\) ON DELETE CASCADE/i);
+ assert.match(migration,/lab_game_runs_run_owner_key UNIQUE \(id,user_id\)/i);
  assert.match(migration,/UNIQUE\s*\(user_id, cycle_number\)/i);
  assert.match(migration,/bonus_xp::bigint\s*=\s*10000::bigint\s*\+\s*\(cycle_number::bigint - 1\) \* 2500/i);
  assert.match(migration,/ALTER TABLE public\.lab_game_cycle_awards ENABLE ROW LEVEL SECURITY/i);
