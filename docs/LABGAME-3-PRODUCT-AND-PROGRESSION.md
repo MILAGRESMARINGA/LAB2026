@@ -31,6 +31,14 @@ Esses títulos refletem somente consistência no uso do app; não são títulos 
 - O GC necessita de **livro-caixa separado** para XP atribuídos exclusivamente a eventos elegíveis durante a participação no grupo, e sem duplicação. Definir regras de entrada/saída, consentimento, múltiplos GCs e temporadas antes de implantar. Pontuação coletiva não deve inflar XP individual; quando possível, o progresso de cada pessoa contribui para o GC sem transferir/debitar créditos da conta pessoal.
 - Medalha de 100% e medalha de 1.000 XP não são intercambiáveis: uma mede proporção de constância, outra mede volume de atividade verificada.
 
+## Conquista dupla — Alcance Supremo em Comunhão
+- **Implementação atual em interface:** quando o usuário atinge **1.000 XP pessoais confirmados** e seu GC obtém **100% de assiduidade na janela móvel dos últimos sete dias**, com pelo menos **3 participantes consentidos**, a tela do GC exibe a medalha visual **Alcance Supremo em Comunhão**.
+- A medalha combina **dois feitos independentes**, sem soma, débito, transferência ou premiação extra de XP entre pessoal e grupo.
+- O cálculo utiliza `lab_game_scorecard` (ou XP pessoal retornado por `lab_game_sync`) e `lab_game_group_summary`. A condição do GC é **semanal e dinâmica**; até termos eventos persistidos, não anunciamos uma medalha histórica permanente por uma semana antiga.
+- A variante alternativa com **1.000 XP coletivos** já está especificada na regra pura, mas o backend atual não disponibiliza uma contagem coletiva confiável: essa via **não aparecerá na UI** até existir um ledger autenticado e auditável.
+- A chama especial e a medalha são símbolos de empenho registrado no aplicativo, nunca classificação de maturidade espiritual.
+- A conquista dupla é acessível no **Perfil do GC** do participante, não nos perfis privados de terceiros sem autorização.
+
 ## Jornada sem fim — conclusão anual
 A integridade do ciclo permanece: **66 livros / 1.189 capítulos / 365 etapas**. O tempo de leitura anual é apenas um ciclo de uma jornada vitalícia.
 - Concluir: coroação **simbólica**, medalha com número do ciclo e histórico pessoal preservado.
