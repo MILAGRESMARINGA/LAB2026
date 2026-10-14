@@ -67,11 +67,18 @@ export function combinedMilestone(personalXp:number,group:GroupAchievementInput)
 
 export type AnnualCycleAwardProposal={cycle:number;bonusXp:number;medal:string};
 /**
- * NOT YET AN AWARD: illustrates an increasing completion reward.
- * Implement only after the owner approves the proposed formula.
- * The server must grant once per completed run ID, never from local state.
+ * APPROVED product rule (2026-10-14). This client-side projection cannot grant XP.
+ * The server-side migration ledger alone awards the bonus once per completed run.
+ * Keep future cycles independent from study/group XP and the existing chapter/video XP.
  */
-export function proposedAnnualCycleAward(cycle:number):AnnualCycleAwardProposal{
+export function approvedAnnualCycleAward(cycle:number):AnnualCycleAwardProposal{
  if(!Number.isSafeInteger(cycle)||cycle<1||cycle>100000)throw Error("Ciclo inválido");
  return {cycle,bonusXp:10000+(cycle-1)*2500,medal:"Coroa da Jornada · Ciclo "+cycle};
+}
+/** Previous reference kept for callers/tests; does not grant XP. */
+export const proposedAnnualCycleAward=approvedAnnualCycleAward;
+/** Total completion bonuses after N cycles (formula projection, not balance). */
+export function projectedCycleBonuses(completedCycles:number):number{
+ if(!Number.isSafeInteger(completedCycles)||completedCycles<0||completedCycles>100000)throw Error("Total de ciclos inválido");
+ return completedCycles*10000+(completedCycles*(completedCycles-1)/2)*2500;
 }
