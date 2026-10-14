@@ -1,6 +1,6 @@
 # LABGAME 3.0 — Jornada contínua, reconhecimento e formação cristã
 
-**Data:** 14/10/2026 · **Status:** visão de produto aprovada conceitualmente pelo pedido; regras quantitativas de bônus de conclusão ainda **PROPOSTAS**, dependentes de confirmação e migração revisada.
+**Data:** 14/10/2026 · **Status:** bônus adicional de +10.000 XP no primeiro ciclo e acréscimos de +2.500 XP por ciclo seguinte **APROVADOS pelo responsável**; migração e creditamento ainda **NÃO APLICADOS ao banco real**, dependentes de homologação em staging, aceite de segurança e restauração.
 **Escopo:** projeto LABGAME exclusivamente, branch `lab-rebuild-2026`, aplicativo `lab-app/`. Nenhuma alteração deste documento autoriza execução de SQL no Supabase de produção.
 
 ## Missão
@@ -44,7 +44,7 @@ A integridade do ciclo permanece: **66 livros / 1.189 capítulos / 365 etapas**.
 - Concluir: coroação **simbólica**, medalha com número do ciclo e histórico pessoal preservado.
 - No dia seguinte, permitir novo ciclo voluntário; não liberar etapas futuras ou duplicar XP no dia da conclusão.
 - XP vitalício não é apagado quando um novo ciclo começa.
-- **Proposta para aprovação:** bônus individual **adicional** de +10.000 XP ao terminar o 1º ciclo, +12.500 no 2º, +15.000 no 3º, +2.500 por ciclo subsequente. Esses números estão implementados **somente como cálculo ilustrativo puro**, não creditados. Atenção: o 1º ciclo já gera 11.890 XP por capítulos (fora os vídeos). Se 10.000 significar **total final** em vez de **bônus**, revisar esta regra antes de qualquer migração.
+- **Regra aprovada em 14/10/2026:** bônus individual **adicional** de +10.000 XP ao terminar o 1º ciclo, +12.500 no 2º, +15.000 no 3º, e +2.500 de incremento a cada novo ciclo. A leitura integral já rende 11.890 XP por capítulos (fora vídeos), portanto ao final do primeiro ciclo o saldo será **21.890 XP + XP de vídeos**, sem considerar pontuação histórica de tentativas anteriores. A migração SQL está **preparada, não aplicada ao Supabase**, e só pode ser promovida após homologação e gate de segurança.
 - Um `cycle_completion` terá chave de idempotência (`user_id`, `run_id`, `award_code`) e validação server-side de conclusão. O servidor deve aplicar bônus uma única vez em transação e reconciliar placar, evitando que reenvio, reload, múltiplas abas, dispositivo duplicado, erro ou reinício concedam bônus em dobro.
 - Não tentar lançar bônus pelo cliente. Histórico imutável, auditoria e migração versionada com ensaio em staging antes de tocar produção. Resolver fórmula e controle de abuso antes da implementação.
 
@@ -73,6 +73,16 @@ A integridade do ciclo permanece: **66 livros / 1.189 capítulos / 365 etapas**.
 - P1: corrigir mapeamento e ordem dos vídeos do Novo Testamento, sem repetição genérica indevida de Mateus; respeitar as licenças.
 - P1: consolidar medalhas pessoais e marco 100% do GC no frontend **sem SQL de produção**; testes e CI.
 - P2: especificar e validar livro-caixa de XP coletivo; temporadas, participação múltipla e histórico.
-- P2: confirmar semântica do bônus de 10.000 XP; projetar migração, idempotência e reconciliação antes de implantação.
+- P2: bônus de conclusão já aprovado e migração SQL preparada em `202610140001_annual_cycle_completion_awards.sql`; pendente validar em PostgreSQL isolado/staging, repetição/concorrência, idempotência, RLS, ledger e reconciliação antes de implantação.
 - P3: criar currículo editorial de discipulado e teologia sistemática, estudo com respostas comentadas e revisões espaçadas.
 - P3: artefatos de medalhas e temas originais com design tokens, progressão de acessibilidade e revisão UX com dispositivos reais.
+
+## Implementação do bônus anual — estado em 14/10/2026
+- **Regra formal aprovada:** `bonus_xp(ciclo) = 10000 + (ciclo-1)*2500` (somente ciclos concluídos).
+- **Código preparado:** migração `lab-app/supabase/migrations/202610140001_annual_cycle_completion_awards.sql` cria livro-caixa próprio com unicidade por `run_id`, RLS e função `lab_game_confirm_chapter` transacional. Exige conferência integral dos 1.189 capítulos da versão 1.
+- **Proteção contra duplicação:** trava `lab_game_stats` por usuário através de `lab_game_sync`, valida status do ciclo no servidor, conta somente ciclos concluídos, insere uma única vez por `run_id` e credita o bônus na mesma transação.
+- **Contabilidade:** `lab_game_scorecard` somará leitura (10/capítulo) + vídeos (5/panorama elegível) + bônus de conclusão registrados. Exporá `cycle_bonus_xp`, `completed_cycles` e `cycle_awards` com histórico individual; o Perfil só exibe recompensas confirmadas pelo servidor.
+- **Histórico anterior:** nenhuma premiação retroativa automática. Ciclos completos anteriores à migração, se houver, requerem inventário, verificação e decisão explícita de backfill em migração separada.
+- **GC:** bônus individual não altera XP coletivo, assiduidade da liga nem insígnias coletivas.
+- **Restrição atual:** teste de SQL contra banco isolado/staging e revisão do security engineer **ainda não executados**. Projeto de produção permanece inalterado.
+- **Aceite:** seguir `docs/ANNUAL-CYCLE-AWARDS-RELEASE.md` e validar `lab-app/scripts/sql/annual-cycle-awards-post-migration-check.sql`, além do gate P0 anterior.
