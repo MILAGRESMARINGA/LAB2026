@@ -17,6 +17,23 @@ describe("Matemática e consultas dos rankings LABGAME",()=>{
   expect(score.total_xp).toBe(score.chapters_confirmed*score.chapter_rate+score.panoramas_confirmed*score.video_rate);
   expect(rpc).toHaveBeenCalledWith("lab_game_scorecard");
  });
+ it("separa bônus anual de XP de leitura e vídeo, apenas após confirmação do servidor",async()=>{
+  const response={
+   chapters_confirmed:1189,panoramas_confirmed:0,reading_xp:11890,
+   video_xp:0,cycle_bonus_xp:10000,completed_cycles:1,
+   cycle_awards:[{run_id:"cycle-one",cycle_number:1,bonus_xp:10000,awarded_at:"2026-10-14T00:00:00Z"}],
+   total_xp:21890,recorded_xp:21890,balanced:true,
+   current_streak:0,best_streak:365,total_completed_days:365,
+   chapter_rate:10,video_rate:5
+  };
+  rpc.mockResolvedValue({data:response,error:null});
+  const score=await loadGameScorecard();
+  expect(score.total_xp).toBe(score.reading_xp+score.video_xp+(score.cycle_bonus_xp??0));
+  expect(score.cycle_awards?.[0]?.cycle_number).toBe(1);
+  expect(score.cycle_awards?.[0]?.bonus_xp).toBe(10000);
+  expect(score.balanced).toBe(true);
+  expect(rpc).toHaveBeenCalledWith("lab_game_scorecard");
+ });
  it("consulta perfil coletivo só pelo ID do GC",async()=>{
   const response={
    group_id:"00000000-0000-0000-0000-000000000001",
