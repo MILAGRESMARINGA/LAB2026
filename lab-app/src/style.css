@@ -473,3 +473,28 @@ body.video-modal-open{overflow:hidden}
 .video-player-external p{color:#c0d3d6;font-size:13px;line-height:1.6;margin:0;max-width:490px}
 .video-player-external a{display:inline-flex;gap:8px;align-items:center;justify-content:center;padding:12px 18px;min-height:48px;background:#abd74f;color:#1c312a;border-radius:11px;text-decoration:none;font-size:12px;font-weight:900;text-align:center;max-width:100%}
 .video-player-external a:focus-visible{outline:3px solid #d5eeaa;outline-offset:3px}
+
+
+/* Continuous Christian formation: clear educational modules, separate from XP. */
+.lab-formation{display:grid;gap:16px;margin:26px 0;border-top:1px solid #48605b;padding-top:28px}
+.lab-formation-intro h2{font-size:23px;margin:8px 0 10px}
+.lab-formation-intro p{line-height:1.65;font-size:14px;color:#bdcfd0;margin:0}
+.lab-formation-tracks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.lab-formation-tracks button{min-width:0;min-height:115px;text-align:left;display:flex;flex-direction:column;align-items:flex-start;gap:9px;padding:17px 14px;background:#21353d;color:#dceceb;border:1px solid #4b6467;border-radius:13px}
+.lab-formation-tracks button.active{background:#2a4439;border-color:#acd969}
+.lab-formation-tracks button:focus-visible{outline:3px solid #bce56a;outline-offset:3px}
+.lab-formation-tracks svg{color:#b3dc71;flex-shrink:0}
+.lab-formation-tracks strong{font-size:14px;line-height:1.4}
+.lab-formation-tracks small{font-size:11px;color:#abc3bd}
+.lab-formation-detail{border:1px solid #486961;border-radius:15px;background:#1b3138;padding:23px}
+.lab-formation-detail h3{font-size:21px;margin:8px 0}
+.lab-formation-detail>p{color:#c4d6d1;font-size:13px;line-height:1.65}
+.lab-formation-detail ol{list-style:none;padding:0;margin:16px 0 0;display:grid;gap:10px}
+.lab-formation-detail li{display:flex;align-items:flex-start;gap:12px;padding:13px;background:#233941;border:1px solid #405b60;border-radius:11px}
+.lab-formation-number{width:31px;min-width:31px;height:31px;border-radius:9px;background:#38503c;color:#d8ecb2;font-size:12px;font-weight:850;display:flex;align-items:center;justify-content:center}
+.lab-formation-detail li strong{font-size:14px;line-height:1.4}
+.lab-formation-detail li p{font-size:12px;color:#b7cdd0;line-height:1.55;margin:6px 0 9px}
+.lab-formation-refs{display:flex;flex-wrap:wrap;gap:6px}
+.lab-formation-refs span{display:flex;align-items:center;gap:5px;border:1px solid #547068;border-radius:7px;padding:5px 8px;color:#d9ecc5;font-size:11px}
+.lab-formation-footnote{font-size:11px;line-height:1.65;color:#afc1bc;margin:0}
+@media(max-width:580px){.lab-formation-tracks{grid-template-columns:1fr}.lab-formation-tracks button{min-height:0;flex-direction:row;flex-wrap:wrap;align-items:center;padding:13px}.lab-formation-tracks small{margin-left:auto}.lab-formation-detail{padding:14px}.lab-formation-detail li{padding:11px 9px;gap:9px}}
