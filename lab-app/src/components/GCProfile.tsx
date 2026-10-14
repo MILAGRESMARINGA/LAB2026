@@ -1,5 +1,6 @@
 import {useCallback,useEffect,useState} from "react";
-import {Award,BookOpen,Flame,RefreshCw,ShieldCheck,Trophy,Users,UserRound} from "lucide-react";
+import {Award,BookOpen,Flame,Medal,RefreshCw,ShieldCheck,Trophy,Users,UserRound} from "lucide-react";
+import {groupMilestones} from "../domain/progression-v3";
 import {getGameRanking,loadGroupSummary,type GCGroupSummary,type LabRankingEntry} from "../features/lab-game";
 import type {ReadingGroup} from "../features/groups";
 type Props={group:ReadingGroup;userId:string;onPersonalProfile:()=>void};
@@ -21,6 +22,7 @@ export function GCProfile({group,userId,onPersonalProfile}:Props){
  },[group.id]);
  useEffect(()=>{void refresh()},[refresh]);
  const percent=Number(summary?.compliance_pct??0);
+ const perfectWeek=summary?groupMilestones({consentingMembers:summary.consenting_members,completedMemberDays7:summary.completed_member_days_7,compliancePct:percent}).perfectWeek:false;
  return <article className="gc-profile" aria-label={"Perfil do grupo "+group.name}>
   <div className="gc-profile-top">
    <div className="gc-profile-symbol"><Users size={29}/></div>
@@ -42,6 +44,7 @@ export function GCProfile({group,userId,onPersonalProfile}:Props){
     <div><BookOpen size={21}/><strong>{summary.completed_member_days_7}</strong><span>Dias completos/7d</span></div>
     <div><Trophy size={21}/><strong>{percent.toLocaleString("pt-BR",{maximumFractionDigits:1})}%</strong><span>Assiduidade</span></div>
    </div>
+   {perfectWeek&&<div className="gc-achievement" role="status"><Medal size={22} aria-hidden="true"/><div><strong>Constância coletiva · 100%</strong><p>Seu GC alcançou 100% de leituras completas na janela semanal entre os integrantes participantes do ranking. Esta insígnia coletiva não altera o XP individual.</p></div></div>}
    <div className="gc-profile-formula">
     <h3>Como a classificação do GC é calculada?</h3>
     <p><strong>{summary.completed_member_days_7}</strong> dias completos ÷ (7 × <strong>{summary.consenting_members}</strong> participantes que consentiram) × 100 = <strong>{percent.toLocaleString("pt-BR",{maximumFractionDigits:1})}%</strong>.</p>
