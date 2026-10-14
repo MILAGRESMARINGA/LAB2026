@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useMemo,useState} from "react";
-import {ArrowLeft,ArrowRight,Award,BookOpen,CalendarDays,Check,CheckCircle2,Compass,Flame,Library,LockKeyhole,BookMarked,LogIn,LogOut,Play,ExternalLink,Sparkles,Target,Trophy,Users,UserRound,Video} from "lucide-react";
+import {ArrowLeft,ArrowRight,Award,BookOpen,CalendarDays,Check,CheckCircle2,Compass,Flame,Library,LockKeyhole,BookMarked,LogIn,LogOut,Play,ExternalLink,Sparkles,Target,Trophy,Crown,Users,UserRound,Video} from "lucide-react";
 import {createGamePlan,GAME_DAYS,verifyGamePlan} from "./domain/game-plan";
 import {categoryOfBook,STUDY_BLOCKS,BIBLEPROJECT_PLAYLISTS,BIBLEPROJECT_OFFICIAL_COLLECTIONS,getBibleProjectVideos,getBibleProjectVideoForChapter} from "./domain/studies";
 import {CANON,OLD_TESTAMENT,NEW_TESTAMENT,totalChapters} from "./domain/canon";
@@ -167,10 +167,20 @@ export default function App(){
  <div className="scorecard-breakdown">
   <div><BookOpen size={20}/><strong>{scorecard?.reading_xp??0}</strong><span>XP de leitura</span><small>{scorecard?.chapters_confirmed??0} capítulos × 10 XP</small></div>
   <div><Video size={20}/><strong>{scorecard?.video_xp??0}</strong><span>XP extra por vídeo</span><small>{scorecard?.panoramas_confirmed??0} panoramas × 5 XP</small></div>
-  <div><Trophy size={20}/><strong>{totalXP}</strong><span>XP acumulado</span><small>Leitura + vídeos</small></div>
+  {scorecard?.cycle_bonus_xp!==undefined&&<div><Crown size={20}/><strong>{scorecard.cycle_bonus_xp.toLocaleString("pt-BR")}</strong><span>Bônus anuais</span><small>{scorecard.completed_cycles??0} ciclo(s) premiado(s)</small></div>}
+  <div><Trophy size={20}/><strong>{totalXP.toLocaleString("pt-BR")}</strong><span>XP acumulado</span><small>Leitura + vídeos + bônus confirmados</small></div>
  </div>
  <p className="small-caption">Seu recorde é de {bestDays} dias consecutivos. Uma falha reinicia a tentativa, mas mantém o recorde e o XP acumulado. Os vídeos não substituem os capítulos da leitura.</p>
  {scorecard&&!scorecard.balanced&&<p role="alert" className="feedback-message">A pontuação registrada diverge do histórico. O total acima foi recalculado a partir das atividades confirmadas.</p>}
+  {scorecard?.cycle_awards&&scorecard.cycle_awards.length>0&&<div className="lab-cycle-awards" aria-label="Histórico de coroas de leitura anual">
+   <h3><Crown size={21}/> Minhas coroas da jornada</h3>
+   <p className="muted">Cada coroa confirma uma leitura integral do cânon protestante, registrada pelo servidor.</p>
+   <div className="lab-cycle-awards-list">{scorecard.cycle_awards.map(award=><div className="lab-cycle-award" key={award.run_id}>
+    <span className="lab-cycle-award-icon"><Crown size={22}/></span>
+    <div><strong>Coroa {award.cycle_number} · Bíblia completa</strong><small>{new Date(award.awarded_at).toLocaleDateString("pt-BR")}</small></div>
+    <b>+{award.bonus_xp.toLocaleString("pt-BR")} XP</b>
+   </div>)}</div>
+  </div>}
  </section>
  <h2>Meus marcos</h2><div className="milestone-list">{[1,7,30,100,180,365].map(goal=><div className={"milestone "+(bestDays>=goal?"earned":"")} key={goal}><Award size={19}/><span>{goal===365?"Bíblia completa":goal+" dias seguidos"}</span><strong>{bestDays>=goal?"CONQUISTADO":"BLOQUEADO"}</strong></div>)}</div><form className="profile-form" onSubmit={e=>{e.preventDefault();void saveProfile()}}><h2>Identidade no GC</h2><label htmlFor="display-name">Nome exibido</label><input id="display-name" value={profileName} minLength={2} maxLength={60} required onChange={e=>setProfileName(e.target.value)}/><label className="toggle-rank"><input type="checkbox" checked={optIn} onChange={e=>setOptIn(e.target.checked)}/> Quero aparecer nos rankings privados dos meus GCs.</label><button className="secondary-cta" disabled={busy} type="submit">SALVAR PERFIL</button></form><button className="logout-button" type="button" onClick={()=>void signOut()}><LogOut size={16}/> Sair da conta</button>{message&&<p role="status" className="feedback-message">{message}</p>}</>}<InstallApp/></section>}
   </main>
