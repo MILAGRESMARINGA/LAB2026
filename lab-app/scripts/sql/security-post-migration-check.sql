@@ -8,7 +8,7 @@ WITH
   VALUES ('anon'::text), ('authenticated'::text)
  ),
  privileges(privilege_name) AS (
-  VALUES ('TRUNCATE'::text), ('TRIGGER'::text), ('REFERENCES'::text)
+  VALUES ('TRUNCATE'::text), ('TRIGGER'::text), ('REFERENCES'::text), ('MAINTAIN'::text)
  ),
  tables(table_name) AS (
   VALUES
