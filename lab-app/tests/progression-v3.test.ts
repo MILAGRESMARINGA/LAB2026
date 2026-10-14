@@ -1,6 +1,6 @@
 import {describe,expect,it} from "vitest";
 import {
- GROUP_XP_MILESTONE,groupMilestones,individualMilestone,
+ GROUP_XP_MILESTONE,groupMilestones,combinedMilestone,individualMilestone,
  nextIndividualMilestone,proposedAnnualCycleAward
 } from "../src/domain/progression-v3";
 
@@ -28,6 +28,18 @@ describe("LABGAME 3.0 — independent achievements",()=>{
   expect(groupMilestones({consentingMembers:3,completedMemberDays7:21,compliancePct:100}).thousandXp).toBe(false);
   expect(groupMilestones({consentingMembers:3,completedMemberDays7:0,compliancePct:0,groupXp:1000}).thousandXp).toBe(true);
   expect(groupMilestones({consentingMembers:2,completedMemberDays7:0,compliancePct:0,groupXp:1000}).thousandXp).toBe(false);
+ });
+ it("unlocks a dual-achievement badge only when independent personal and group goals both qualify",()=>{
+  const fullWeek={consentingMembers:3,completedMemberDays7:21,compliancePct:100};
+  expect(combinedMilestone(999,fullWeek)).toBeNull();
+  expect(combinedMilestone(1000,{...fullWeek,completedMemberDays7:20,compliancePct:95.2})).toBeNull();
+  expect(combinedMilestone(1000,{consentingMembers:2,completedMemberDays7:14,compliancePct:100})).toBeNull();
+  expect(combinedMilestone(1000,fullWeek)).toEqual({
+   code:"alcance-supremo-comunhao",title:"Alcance Supremo em Comunhão",achievedBy:"perfect-week"
+  });
+  expect(combinedMilestone(1100,{consentingMembers:3,completedMemberDays7:0,compliancePct:0,groupXp:1000})?.achievedBy).toBe("group-xp");
+  expect(combinedMilestone(1200,{...fullWeek,groupXp:1000})?.achievedBy).toBe("both");
+  expect(combinedMilestone(Number.NaN,fullWeek)).toBeNull();
  });
  it("proposes increasing annual bonuses without crediting them to user accounts",()=>{
   expect(proposedAnnualCycleAward(1)).toEqual({cycle:1,bonusXp:10000,medal:"Coroa da Jornada · Ciclo 1"});
