@@ -17,6 +17,7 @@ import {GCProfile} from "./components/GCProfile";
 import {InstallApp,NetworkStatus} from "./components/InstallApp";
 import {BibleProjectPlayer} from "./components/BibleProjectPlayer";
 import type {BibleProjectResource} from "./domain/bibleproject";
+import {readOnboardingProgress,saveOnboardingProgress} from "./domain/onboarding";
 type Tab="today"|"bible"|"journey"|"studies"|"groups"|"profile";
 const tabs=[{id:"today",label:"Hoje",icon:BookOpen},{id:"bible",label:"Bíblia",icon:BookMarked},{id:"journey",label:"Jornada",icon:Compass},{id:"studies",label:"Estudos",icon:Library},{id:"groups",label:"GCs",icon:Users},{id:"profile",label:"Perfil",icon:UserRound}] as const;
 const plan=createGamePlan();
@@ -32,8 +33,8 @@ export default function App(){
  const [scorecard,setScorecard]=useState<LabScorecard|null>(null);
  const [loading,setLoading]=useState(false),[busy,setBusy]=useState(false);
  const [message,setMessage]=useState("");
- const [introStep,setIntroStep]=useState(0),[preferredMode,setPreferredMode]=useState<"individual"|"grupo">("individual");
- const [viewAuth,setViewAuth]=useState(false);
+ const [introStep,setIntroStep]=useState(()=>readOnboardingProgress().step),[preferredMode,setPreferredMode]=useState<"individual"|"grupo">(()=>readOnboardingProgress().mode);
+ const [viewAuth,setViewAuth]=useState(()=>readOnboardingProgress().viewAuth);
  const [passwordRecoveryMode,setPasswordRecoveryMode]=useState(false);
  const [newPassword,setNewPassword]=useState("");
  const [recoveryNotice,setRecoveryNotice]=useState("");
@@ -50,6 +51,7 @@ export default function App(){
  const [selectedStudy,setSelectedStudy]=useState(STUDY_BLOCKS[0].id);
  const [selectedBook,setSelectedBook]=useState<string>("Gênesis");
  const [showStages,setShowStages]=useState(28);
+ useEffect(()=>{saveOnboardingProgress({step:introStep,mode:preferredMode,viewAuth})},[introStep,preferredMode,viewAuth]);
  const refreshScorecard=useCallback(async()=>{try{setScorecard(await loadGameScorecard())}catch(e){setMessage(describeError(e))}},[]);
  const refreshGame=useCallback(async()=>{setLoading(true);try{const state=await loadGameState();setGame(state);setProfileName(state.display_name||"Leitor LAB");setOptIn(Boolean(state.leaderboard_opt_in));setMessage("")}catch(e){setMessage(describeError(e))}finally{setLoading(false)}},[]);
  useEffect(()=>{
