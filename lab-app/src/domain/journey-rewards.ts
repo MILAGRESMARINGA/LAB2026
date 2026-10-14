@@ -23,7 +23,7 @@ export function earnedTalentMilestones(bestDays:number):number {
 export function journeyWindow(currentDay:number,windowSize=7):number[] {
  const size=Math.max(1,Math.min(GAME_DAYS,Math.floor(windowSize)||7));
  const safeDay=Math.max(1,Math.min(GAME_DAYS,Number.isFinite(currentDay)?Math.floor(currentDay):1));
- const start=Math.min(GAME_DAYS-size,Math.max(1,safeDay-2));
+ const start=Math.min(GAME_DAYS-size+1,Math.max(1,safeDay-2));
  return Array.from({length:size},(_,i)=>start+i);
 }
 
