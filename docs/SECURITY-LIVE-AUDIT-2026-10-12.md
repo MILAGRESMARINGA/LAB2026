@@ -69,3 +69,17 @@ O Security Advisor lista funções `lab_game_confirm_chapter`, `lab_game_sync`, 
 5. Revisar performance, criar lockfile e adotar `npm ci`/auditoria de dependências; documentação de retenção LGPD, incidentes e backup testado.
 
 **Estado global:** Auditoria estática e inventário EFETUADOS; riscos de produção NÃO CORRIGIDOS até aplicação e teste real. Não alegar "seguro" somente por build/CI positivo.
+
+## Atualização operacional — 14/10/2026 (posterior à auditoria original)
+
+**P0 banco — ACL CORRIGIDA; P0 fim a fim AINDA ABERTO.**
+
+- Backup custom local `LABGAME-full-20261014-040633.dump` reportado pelo usuário, restaurado no `labgame_restore_test` com PostgreSQL 17. Resultado: **APROVADO 20/20**, contagens e chaves de aplicação; restauração de serviços gerenciados Auth/Storage não homologada integralmente.
+- Antes da mudança o Supabase apresentava **68 permissões administrativas excessivas** e **4 EXECUTE** indevidos nos helpers.
+- Aplicada via mecanismo de migrações Supabase a migração `lab_privileges_hardening_p0`, versão **20261014195640**, no projeto **LABGAME aze...**, não CRM. Ferramenta retornou `success: true`.
+- Pós-migração verificado diretamente: **68→0**, **4→0**, `security-post-migration-check.sql` retornou **zero linhas**. Confirmados **15/15 RLS**, **15 PK**, **17 FK**, **1.189 capítulos**, **31.101 versículos**, **71 mídias** e **1 usuário**, preservados.
+- Reconsulta Security Advisor: **avisos de EXECUTE anônimo de helpers desapareceram**. Permanecem 13 RPCs `SECURITY DEFINER` intencionalmente acessíveis por `authenticated` (todas com `auth.uid()` e `search_path` fixo; necessário testar autorizações reais), info de RLS sem policy no plano interno (intencional), e aviso **Leaked Password Protection Disabled**.
+- **Pendente para encerramento formal do P0:** teste fim a fim com duas contas independentes e consentimento GC, proteção de senhas vazadas quando disponível, verificação de hash e backup externo criptografado/recorrente, e restauração dos componentes gerenciados do Supabase. Sem relatar QA como aprovado.
+- **Fora deste escopo:** migração de bônus anual do LABGAME 3.0 não foi executada em produção.
+
+Este registro atualiza o estado histórico das seções anteriores, que permanecem como evidências de 12–13/10.
