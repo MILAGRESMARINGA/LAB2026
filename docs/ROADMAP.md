@@ -217,7 +217,7 @@ Documentação e testes: `docs/AUTH-PROFILES-AND-SCORING.md`; `lab-app/tests/acc
 - [ ] Configurar branch protection formal no GitHub, lockfile/`npm ci`, auditoria automatizada de dependências, SAST, SBOM, staging Supabase, backup/restore e E2E cross-user.
 
 ### Riscos bloqueantes identificados
-- [x] Inventário de ACL PostgreSQL comprovou `TRUNCATE/TRIGGER/REFERENCES` excessivos para `anon`/`authenticated`, inclusive em tabelas de GC e Bíblia.
+- [x] Inventário de ACL PostgreSQL comprovou `TRUNCATE/TRIGGER/REFERENCES/MAINTAIN` excessivos para `anon`/`authenticated`, inclusive em tabelas de GC e Bíblia.
 - [x] Migração corretiva **PREPARADA NO GITHUB**: `lab-app/supabase/migrations/202610120001_lab_privileges_hardening.sql` com `REVOKE` não destrutivo, default-grants mais restritos e pós-condições transacionais; script de aceite SQL separado.
 - [ ] **BLOQUEIO P0 — NÃO APLICADA AO BANCO REAL:** revisar com security/database engineers, confirmar backup/staging, aplicar ao Supabase LABGAME, executar `scripts/sql/security-post-migration-check.sql`, reconsultar Security Advisor e fazer smoke.
 - [x] Confirmados dois helper triggers `SECURITY DEFINER` com `EXECUTE` herdado por papéis públicos; correção de `REVOKE` incluída na migração.
