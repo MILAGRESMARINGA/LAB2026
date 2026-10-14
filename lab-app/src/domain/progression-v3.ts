@@ -45,6 +45,26 @@ export function groupMilestones(data:GroupAchievementInput):GroupMilestones {
  return {perfectWeek,thousandXp};
 }
 
+/** A visual recognition when personal dedication and verified GC effort coincide.
+ * It NEVER mints XP, never transfers personal XP to the GC and has no spiritual meaning.
+ * It is current-week only until historical GC awards are stored by a server ledger.
+ */
+export type CombinedMilestone={
+ code:"alcance-supremo-comunhao";
+ title:"Alcance Supremo em Comunhão";
+ achievedBy:"perfect-week"|"group-xp"|"both";
+};
+export function combinedMilestone(personalXp:number,group:GroupAchievementInput):CombinedMilestone|null {
+ if(!Number.isFinite(personalXp)||personalXp<1000)return null;
+ const verified=groupMilestones(group);
+ if(!verified.perfectWeek&&!verified.thousandXp)return null;
+ return {
+  code:"alcance-supremo-comunhao",
+  title:"Alcance Supremo em Comunhão",
+  achievedBy:verified.perfectWeek&&verified.thousandXp?"both":verified.perfectWeek?"perfect-week":"group-xp"
+ };
+}
+
 export type AnnualCycleAwardProposal={cycle:number;bonusXp:number;medal:string};
 /**
  * NOT YET AN AWARD: illustrates an increasing completion reward.
