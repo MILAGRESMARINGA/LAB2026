@@ -1,8 +1,8 @@
 # P0 — Backup e endurecimento de privilégios do banco LABGAME
 
-**Status:** BACKUP PENDENTE; migração ACL PREPARADA NO GITHUB, NÃO APLICADA.
+**Status atualizado em 14/10/2026:** BACKUP LOCAL RESTAURADO E VALIDADO 20/20 (estrutura e contagens); HARDENING ACL APLICADO E VERIFICADO EM PRODUÇÃO (68→0 concessões, 4→0 acessos internos). P0 OPERACIONAL AINDA ABERTO: smoke com contas de teste, backup externo, verificação de recuperação completa dos serviços gerenciados e proteção contra senhas vazadas.
 **Projeto EXCLUSIVO:** LABGAME, Supabase `azejfxvaamgkmfmwdzjn`, organização `LAB2026GAME` (`tier_free`). Não operar no projeto CRMIMOBI.
-**Última inspeção:** 13/10/2026; ambiente Postgres 17.11, projeto HEALTHY.
+**Última inspeção:** 14/10/2026; ambiente Postgres 17.11, projeto HEALTHY.
 
 ## Por que precisamos de um backup manual?
 
@@ -88,10 +88,23 @@ A **primeira alternativa** para erro de permissão é corrigir o GRANT mínimo i
 - [x] Levantamento ACL real, aviso sobre backups no plano Free.
 - [x] Script local de backup com confirmação de projeto, SHA-256 e inventário de conteúdo.
 - [x] Migração SQL e verificação pós-condições no repositório, CI de teste estático.
-- [ ] **Backup real gerado e identificado pelo responsável**.
-- [ ] **Teste de restauração comprovado no staging/banco isolado**.
-- [ ] **Executar migração no Supabase LABGAME**.
-- [ ] Consultar advisors e testar GCs/XP/auth com identidades de teste reais.
-- [ ] Planejar backups automáticos off-site e monitoramento.
+- [x] **Backup local criado e identificado pelo responsável:** `LABGAME-full-20261014-040633.dump` (nome reportado no PowerShell; hash SHA-256 não rechecado por este assistente).
+- [x] **Restauração real no banco isolado:** `labgame_restore_test`, 20/20 testes de contagem, PK, FK e RLS passaram. Este escopo não afirma restauração integral de Auth/Storage do serviço Supabase.
+- [x] **Migração no Supabase LABGAME aplicada:** `20261014195640 lab_privileges_hardening_p0`; ACL administrativa 68→0, EXECUTE indevido de helpers 4→0.
+- [x] Auditoria SQL de pós-condições executada (0 violações); advisors atualizados, sem aviso de função de gatilho executável por anon.
+- [ ] Testar autenticação, leitura/XP, GCs/convites/leaderboard, vídeos e recuperação de senha com duas identidades reais de teste. Zero grupos/runs até a checagem impede validar essas jornadas apenas por consultas.
+- [ ] Habilitar proteção de senhas vazadas no Supabase Auth, se disponível no plano, e validar cadastro/recuperação.
+- [ ] Confirmar hash do backup, política de cópia externa criptografada e recorrência do backup; testar recuperação de Auth/Storage gerenciados em staging compatível.
 
 **Não marcar o P0 como resolvido antes das etapas pendentes.**
+
+
+## Evidências registradas — 14/10/2026
+- Backup restaurado no PostgreSQL local 17; contagens de 16 relações e verificações estruturais consolidadas pelo usuário em **APROVADO 20/20**.
+- Estado antes da migração: **15/15 RLS**, 1.189 capítulos, 31.101 versículos, 71 recursos, **68 grants** administrativos e **4 EXECUTE** de helpers.
+- Migração via conector oficial no projeto `azejfxvaamgkmfmwdzjn`: **success=true**, versão `20261014195640`.
+- Estado depois: **15/15 RLS**, 1.189 capítulos, 31.101 versículos, 71 recursos, **0 grants** excessivos e **0 EXECUTE** indevido nos helpers; 15 PKs e 17 FKs preservadas.
+- Arquivo `lab-app/scripts/sql/security-post-migration-check.sql` rodado no banco real: retornou **zero linhas**.
+- RPCs `SECURITY DEFINER` necessárias ao app: 13 executáveis por `authenticated`, nenhuma por `anon`; todas possuem `search_path` fixo e referência a `auth.uid()`. Não substitui teste direto multi-conta.
+- Advisors remanescentes: 13 funções autenticadas/necessárias (revisar autorização efetiva), 1 RLS sem policy no plano interno (intencional) e aviso de **Leaked Password Protection Disabled**. Referências: documentação de segurança no relatório `SECURITY-LIVE-AUDIT-2026-10-12.md`.
+- **NÃO executada:** migração de bônus anual `202610140001_annual_cycle_completion_awards.sql`, ainda depende de testes próprios em staging.
