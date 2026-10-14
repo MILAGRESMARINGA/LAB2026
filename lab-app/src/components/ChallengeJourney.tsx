@@ -46,9 +46,9 @@ export function ChallengeJourney({plan,game,totalXP,preview=false,onStart,onRest
  const bestDays=Math.max(0,game?.best_days??0);
  const milestones=earnedTalentMilestones(bestDays);
  const upcoming=nextTalentMilestone(bestDays);
- const done=Boolean(game)&&stage.chapters.every(ch=>game.checked.includes(ch.id));
- const finished=Boolean(game?.finished);
  const checked=game?.checked??[];
+ const done=game!==null&&stage.chapters.every(ch=>checked.includes(ch.id));
+ const finished=Boolean(game?.finished);
  const chaptersDone=stage.chapters.filter(ch=>checked.includes(ch.id)).length;
  const currentPct=Math.round(chaptersDone/stage.chapters.length*100);
  const showDetail=(next:Detail)=>{
