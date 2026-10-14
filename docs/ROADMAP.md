@@ -228,3 +228,19 @@ Documentação e testes: `docs/AUTH-PROFILES-AND-SCORING.md`; `lab-app/tests/acc
 
 ### Política de veracidade operacional
 O fato de GitHub CI e Vercel READY estarem verdes **não prova** que a migração esteja aplicada ou que SMTP, ACLs, permissões cross-user e autenticação em Android/iOS estejam homologadas. Somente marcar caixas como concluídas mediante evidências de execução reais.
+
+## P0 — Pré-requisitos para endurecimento do banco (13/10/2026)
+
+**Decisão operacional:** usuário autorizou prosseguir para a etapa seguinte; a aplicação no banco real permanece bloqueada até prova de backup/restauração.
+
+- [x] Confirmado por consulta ao Supabase que a organização LAB2026GAME está no plano `tier_free`. A documentação oficial do provedor não garante backups diários automáticos no Free.
+- [x] Revalidada a migração de segurança preparada `202610120001_lab_privileges_hardening.sql` e a lista de 12 migrações já aplicadas. A migração de ACL ainda não consta do Supabase.
+- [x] Criado o script **Windows PowerShell** `lab-app/scripts/backup-labgame.ps1`: somente leitura (pg_dump), destino travado para o projeto LABGAME, sem credenciais no Git, backup custom, inventário de `auth.users`, plano, Bíblia, GCs, scorecard e SHA-256.
+- [x] Atualizados `.gitignore` e proteção em CI com parser PowerShell + testes estáticos para evitar publicação acidental de arquivos de backup ou script não revisado.
+- [x] Criado o [runbook P0 de backup/restauração](P0-DATABASE-BACKUP-AND-HARDENING.md); atualizado [runbook de incidentes](OPERATIONS-INCIDENTS.md) para refletir o plano Free e limites reais do provedor.
+- [ ] **Gate 1: ainda falta executar `pg_dump` com o acesso do responsável no Windows** e confirmar arquivo legível, SHA-256, cópia privada.
+- [ ] **Gate 2: ainda falta validar recuperação de conteúdo em banco isolado**; `pg_restore --list` não equivale a restauração comprovada.
+- [ ] **Gate 3: somente então executar a migração no projeto LABGAME**, consultar advisors e confirmar zero permissões perigosas remanescentes pela consulta em `lab-app/scripts/sql/security-post-migration-check.sql`.
+- [ ] **Gate 4: executar smoke de RLS, GCs, ranking, leitor/XP e autenticação** com contas de teste e aprovar promoção do deployment.
+
+**Importante:** não foi executada operação de DDL/DML no Supabase durante esta rodada, e nenhuma alteração foi feita no CRM. O CI é evidência de qualidade de código, não de restauração de banco. Reconsultar status do CI após os últimos commits.
