@@ -2,7 +2,7 @@
 
 **Versão:** 1.0 · **Data:** 2026-10-12 · **Owner:** security-engineer. Auditoria preliminar estática, **não é teste de intrusão ou certificado de conformidade**.
 
-> **Alerta de auditoria real — 12/10/2026:** catálogo PostgreSQL revelou `TRUNCATE/TRIGGER/REFERENCES` atribuídos a papéis de cliente e EXECUTE público de duas funções internas. O mínimo privilégio **AINDA NÃO** foi alcançado no banco. Migração corretiva preparada em `lab-app/supabase/migrations/202610120001_lab_privileges_hardening.sql`, **NÃO APLICADA**; ver `docs/SECURITY-LIVE-AUDIT-2026-10-12.md`.
+> **Alerta de auditoria real — 12/10/2026:** catálogo PostgreSQL revelou `TRUNCATE/TRIGGER/REFERENCES/MAINTAIN` atribuídos a papéis de cliente e EXECUTE público de duas funções internas. O mínimo privilégio **AINDA NÃO** foi alcançado no banco. Migração corretiva preparada em `lab-app/supabase/migrations/202610120001_lab_privileges_hardening.sql`, **NÃO APLICADA**; ver `docs/SECURITY-LIVE-AUDIT-2026-10-12.md`.
 
 ## Ativos e fronteiras
 
