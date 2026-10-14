@@ -52,7 +52,7 @@ describe("Trilha de desafios e Talentos",()=>{
   expect(html).toContain("O Galardão");
   expect(html).toContain("INICIAR NOVO CICLO");
   expect(html).not.toContain("INICIAR LEITURA");
-  expect(html).toContain("Etapa 365");
+  expect(html).toContain("ETAPA 365");
  });
  it("converte somente sequência confirmada em marcos visuais, sem XP extra",()=>{
   expect(earnedTalentMilestones(0)).toBe(0);
