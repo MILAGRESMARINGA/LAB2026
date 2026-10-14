@@ -1,11 +1,11 @@
 import {useCallback,useEffect,useState} from "react";
 import {Award,BookOpen,Flame,Medal,RefreshCw,ShieldCheck,Trophy,Users,UserRound} from "lucide-react";
-import {groupMilestones} from "../domain/progression-v3";
+import {combinedMilestone,groupMilestones} from "../domain/progression-v3";
 import {getGameRanking,loadGroupSummary,type GCGroupSummary,type LabRankingEntry} from "../features/lab-game";
 import type {ReadingGroup} from "../features/groups";
-type Props={group:ReadingGroup;userId:string;onPersonalProfile:()=>void};
+type Props={group:ReadingGroup;userId:string;personalXp?:number|null;onPersonalProfile:()=>void};
 const errorText=(e:unknown)=>e instanceof Error?e.message:"Não foi possível abrir o perfil do GC";
-export function GCProfile({group,userId,onPersonalProfile}:Props){
+export function GCProfile({group,userId,personalXp,onPersonalProfile}:Props){
  const [summary,setSummary]=useState<GCGroupSummary|null>(null);
  const [ranking,setRanking]=useState<LabRankingEntry[]>([]);
  const [loading,setLoading]=useState(true);
@@ -22,7 +22,9 @@ export function GCProfile({group,userId,onPersonalProfile}:Props){
  },[group.id]);
  useEffect(()=>{void refresh()},[refresh]);
  const percent=Number(summary?.compliance_pct??0);
- const perfectWeek=summary?groupMilestones({consentingMembers:summary.consenting_members,completedMemberDays7:summary.completed_member_days_7,compliancePct:percent}).perfectWeek:false;
+ const achievementSource=summary?{consentingMembers:summary.consenting_members,completedMemberDays7:summary.completed_member_days_7,compliancePct:percent}:null;
+ const perfectWeek=achievementSource?groupMilestones(achievementSource).perfectWeek:false;
+ const combined=achievementSource&&personalXp!=null?combinedMilestone(personalXp,achievementSource):null;
  return <article className="gc-profile" aria-label={"Perfil do grupo "+group.name}>
   <div className="gc-profile-top">
    <div className="gc-profile-symbol"><Users size={29}/></div>
@@ -45,6 +47,14 @@ export function GCProfile({group,userId,onPersonalProfile}:Props){
     <div><Trophy size={21}/><strong>{percent.toLocaleString("pt-BR",{maximumFractionDigits:1})}%</strong><span>Assiduidade</span></div>
    </div>
    {perfectWeek&&<div className="gc-achievement" role="status"><Medal size={22} aria-hidden="true"/><div><strong>Constância coletiva · 100%</strong><p>Seu GC alcançou 100% de leituras completas na janela semanal entre os integrantes participantes do ranking. Esta insígnia coletiva não altera o XP individual.</p></div></div>}
+   {combined&&<div className="gc-combined-award" role="status" aria-label="Conquista combinada por esforço individual e coletivo">
+    <div className="gc-combined-emblem"><Flame size={25} aria-hidden="true"/><Medal size={21} aria-hidden="true"/></div>
+    <div><span className="eyebrow">META DUPLA · CONQUISTA DE EQUIPE</span>
+     <h3>{combined.title}</h3>
+     <p>Você alcançou pelo menos 1.000 XP pessoais e seu GC completou 100% da leitura na semana. Dois méritos independentes, uma medalha visual de celebração.</p>
+     <small>A conquista acompanha os resultados da semana atual. Não concede XP adicional e não mede espiritualidade.</small>
+    </div>
+   </div>}
    <div className="gc-profile-formula">
     <h3>Como a classificação do GC é calculada?</h3>
     <p><strong>{summary.completed_member_days_7}</strong> dias completos ÷ (7 × <strong>{summary.consenting_members}</strong> participantes que consentiram) × 100 = <strong>{percent.toLocaleString("pt-BR",{maximumFractionDigits:1})}%</strong>.</p>
