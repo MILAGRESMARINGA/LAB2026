@@ -7,9 +7,15 @@
 -- SECURITY: these rows can be read by their owner only. Only server-owned RPC
 -- functions below can write awards and update the existing lifetime XP balance.
 
+-- A composite FK prevents an award row from ever being attached to somebody
+-- else's run, including if a privileged migration makes an application mistake.
+ALTER TABLE public.lab_game_runs
+  ADD CONSTRAINT lab_game_runs_run_owner_key UNIQUE (id,user_id);
+
 CREATE TABLE public.lab_game_cycle_awards (
-  run_id uuid PRIMARY KEY REFERENCES public.lab_game_runs(id) ON DELETE CASCADE,
+  run_id uuid PRIMARY KEY,
   user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  FOREIGN KEY (run_id,user_id) REFERENCES public.lab_game_runs(id,user_id) ON DELETE CASCADE,
   cycle_number integer NOT NULL CHECK (cycle_number BETWEEN 1 AND 100000),
   award_code text NOT NULL DEFAULT 'annual_bible_completion'
     CHECK (award_code = 'annual_bible_completion'),
