@@ -16,7 +16,7 @@
 
 A organização Supabase **LAB2026GAME** confirmou `tier_free`; não há backup diário automático garantido nesse plano. Referência: [Backups do Supabase](https://supabase.com/docs/guides/platform/backups). Sem snapshot verificável e teste de recuperação em staging, **não aplicar DDL no banco real**.
 
-Consulta de baseline versionada em `lab-app/scripts/sql/security-database-baseline.sql` e executada no banco real: 1.189 capítulos únicos/365 etapas/4 máximos diários, 31.101 versículos, 71 mídias, 15/15 tabelas RLS, **51 concessões excessivas** de tabela (`TRUNCATE/TRIGGER/REFERENCES`) e **4 concessões executáveis** nos dois helpers internos para roles públicos. Nenhum dado foi alterado.
+Consulta de baseline versionada em `lab-app/scripts/sql/security-database-baseline.sql` e executada no banco real: 1.189 capítulos únicos/365 etapas/4 máximos diários, 31.101 versículos, 71 mídias, 15/15 tabelas RLS, **68 concessões excessivas** de tabela (`TRUNCATE/TRIGGER/REFERENCES/MAINTAIN`) e **4 concessões executáveis** nos dois helpers internos para roles públicos. Nenhum dado foi alterado.
 
 Backup local PowerShell preparado em `lab-app/scripts/backup-labgame.ps1` e procedimento em [P0 backup e permissões](P0-DATABASE-BACKUP-AND-HARDENING.md). **Estado: BACKUP REAL AINDA NÃO CRIADO/VERIFICADO; MIGRAÇÃO NÃO APLICADA.**
 
@@ -27,7 +27,7 @@ O catálogo confirma privilégios `TRUNCATE`, `TRIGGER` e `REFERENCES` concedido
 
 **Cuidado técnico:** PostgREST não disponibiliza necessariamente operações `TRUNCATE` como um endpoint normal; a detecção de permissões excessivas não é prova de exploração. Contudo, `TRUNCATE` ignora RLS e concessões desnecessárias violam o mínimo privilégio. Não permitir abertura pública do serviço com ACLs não revisadas.
 
-**Correção:** `lab-app/supabase/migrations/202610120001_lab_privileges_hardening.sql` remove somente `TRUNCATE/TRIGGER/REFERENCES` dos papéis de cliente, preserva DML necessário e não altera dados. Inclui teste pós-condição e defaults do owner `postgres`.
+**Correção:** `lab-app/supabase/migrations/202610120001_lab_privileges_hardening.sql` remove somente `TRUNCATE/TRIGGER/REFERENCES/MAINTAIN` dos papéis de cliente, preserva DML necessário e não altera dados. Inclui teste pós-condição e defaults do owner `postgres`.
 
 **Verificação:** rodar SQL de `lab-app/scripts/sql/security-post-migration-check.sql` após aplicar, conferir zero violações; fazer smoke de GCs e leitor com contas teste.
 
