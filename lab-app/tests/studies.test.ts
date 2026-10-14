@@ -1,7 +1,7 @@
 import {describe,it,expect} from "vitest";
 import {CANON,OLD_TESTAMENT,NEW_TESTAMENT} from "../src/domain/canon";
 import {categoryOfBook,STUDY_BLOCKS} from "../src/domain/studies";
-import {BIBLEPROJECT_VIDEO_LINKS,BIBLEPROJECT_PLAYLISTS,getBibleProjectVideos,getBibleProjectVideoForChapter,getBibleProjectPlaylist} from "../src/domain/bibleproject";
+import {BIBLEPROJECT_VIDEO_LINKS,BIBLEPROJECT_PLAYLISTS,getBibleProjectVideos,getBibleProjectVideoForChapter,getBibleProjectPlaylist,getNewTestamentVideoCatalog} from "../src/domain/bibleproject";
 
 describe("conteúdo pedagógico sem alteração do cânon",()=>{
  it("classifica os 66 livros sem lacunas",()=>{for(const [book] of CANON)expect(()=>categoryOfBook(book)).not.toThrow()});
@@ -31,6 +31,24 @@ describe("Panoramas BibleProject pt-BR",()=>{
   expect(getBibleProjectVideoForChapter("Gênesis",12)?.url).toContain("/videos/genesis-12-50/");
   expect(getBibleProjectVideoForChapter("João",12)?.url).toContain("/videos/joao-1-12/");
   expect(getBibleProjectVideoForChapter("João",13)?.url).toContain("/videos/joao-13-21/");
+ });
+ it("mantém a ordem canônica do NT e não substitui os livros por Mateus",()=>{
+  const catalog=getNewTestamentVideoCatalog();
+  expect(catalog[0].book).toBe("Mateus");
+  expect(catalog.at(-1)?.book).toBe("Apocalipse");
+  const positions=NEW_TESTAMENT.map(([book])=>catalog.findIndex(entry=>entry.book===book));
+  expect(positions.every(index=>index>=0)).toBe(true);
+  expect(positions).toEqual([...positions].sort((a,b)=>a-b));
+  const mateusUrls=new Set(getBibleProjectVideos("Mateus").map(video=>video.url));
+  for(const [book] of NEW_TESTAMENT){
+   if(book==="Mateus")continue;
+   expect(getBibleProjectVideos(book).every(video=>!mateusUrls.has(video.url)),book).toBe(true);
+  }
+  for(const book of ["Mateus","Lucas","João","Atos","Romanos","Apocalipse"]){
+   const videos=getBibleProjectVideos(book);
+   expect(videos).toHaveLength(2);
+   expect(videos[0].toChapter).toBeLessThan(videos[1].fromChapter!);
+  }
  });
  it("mantém panoramas compartilhados de livros agrupados",()=>{
   expect(getBibleProjectVideos("1 Reis")[0].url).toBe(getBibleProjectVideos("2 Reis")[0].url);
