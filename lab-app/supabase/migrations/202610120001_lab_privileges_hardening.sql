@@ -1,11 +1,11 @@
 -- LABGAME 2026-10-12: reduce API-role privileges without touching rows or game logic.
--- Security review: table TRUNCATE bypasses RLS. TRIGGER/REFERENCES are also
+-- Security review: table TRUNCATE bypasses RLS. TRIGGER/REFERENCES/MAINTAIN are also
 -- administrative privileges unsuitable for app users, even on public data.
 -- Database target: LABGAME only (azejfxvaamgkmfmwdzjn); never run on CRM.
 -- Apply through Supabase migration after human approval, backup verification
 -- and read-only checks. This migration neither drops objects nor changes data.
 
-REVOKE TRUNCATE, TRIGGER, REFERENCES ON TABLE
+REVOKE TRUNCATE, TRIGGER, REFERENCES, MAINTAIN ON TABLE
   public.reading_completions,
   public.reading_groups,
   public.reading_group_members,
@@ -35,7 +35,7 @@ FROM PUBLIC, anon, authenticated;
 -- these privileges through existing default-grant rules. RLS and narrow DML
 -- policies/grants must still be reviewed for every newly created table.
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
-  REVOKE TRUNCATE, TRIGGER, REFERENCES ON TABLES FROM anon, authenticated;
+  REVOKE TRUNCATE, TRIGGER, REFERENCES, MAINTAIN ON TABLES FROM anon, authenticated;
 
 -- Fail atomically if these privileges remain granted (including inherited ACL).
 DO $verify$
@@ -53,7 +53,7 @@ BEGIN
     'lab_bible_verses'
   ] LOOP
     FOREACH userrole IN ARRAY ARRAY['anon','authenticated'] LOOP
-      FOREACH permission IN ARRAY ARRAY['TRUNCATE','TRIGGER','REFERENCES'] LOOP
+      FOREACH permission IN ARRAY ARRAY['TRUNCATE','TRIGGER','REFERENCES','MAINTAIN'] LOOP
         IF has_table_privilege(userrole, 'public.' || tablename, permission) THEN
           RAISE EXCEPTION 'LABGAME privilege still exposed: % % %',
             userrole, permission, tablename;
