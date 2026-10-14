@@ -525,3 +525,11 @@ body.video-modal-open{overflow:hidden}
 .lab-cycle-award>b{white-space:nowrap;color:#f3d28a;font-size:14px}
 @media(max-width:650px){.personal-scorecard .scorecard-breakdown{grid-template-columns:1fr}}
 @media(max-width:390px){.lab-cycle-award{gap:9px;padding:11px}.lab-cycle-award-icon{width:37px;height:37px}.lab-cycle-award>b{font-size:12px}}
+
+
+/* Annual finish banner only appears after a matching server ledger event. */
+.lab-cycle-victory{display:flex;align-items:center;gap:14px;margin:18px auto;padding:18px 20px;border-radius:15px;border:1px solid #bfa56d;background:#3a3529;max-width:450px;text-align:left}
+.lab-cycle-victory>svg{color:#f7d78d;flex-shrink:0}
+.lab-cycle-victory strong{color:#fff0c5;font-size:17px}
+.lab-cycle-victory p{color:#eadcbb;font-size:12px;margin:6px 0 0;line-height:1.5}
+@media(max-width:460px){.lab-cycle-victory{padding:13px;gap:10px}}
