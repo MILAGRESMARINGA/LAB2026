@@ -43,6 +43,17 @@ describe("Trilha de desafios e Talentos",()=>{
   expect(html).toContain("Próxima etapa amanhã");
   expect(html).not.toContain("INICIAR LEITURA");
  });
+ it("na conclusão de 365 dias a coroa não libera nova leitura sem ação voluntária",()=>{
+  const completedGame:LabGameState={...game,day:365,completed_days:365,best_days:365,finished:true,checked:[]};
+  const html=renderToStaticMarkup(createElement(ChallengeJourney,{
+   plan,game:completedGame,totalXP:11900,onStart:()=>{},onRestart:()=>{}
+  }));
+  expect(html).toContain("Toda a Bíblia");
+  expect(html).toContain("O Galardão");
+  expect(html).toContain("INICIAR NOVO CICLO");
+  expect(html).not.toContain("INICIAR LEITURA");
+  expect(html).toContain("Etapa 365");
+ });
  it("converte somente sequência confirmada em marcos visuais, sem XP extra",()=>{
   expect(earnedTalentMilestones(0)).toBe(0);
   expect(earnedTalentMilestones(6)).toBe(0);
