@@ -464,3 +464,12 @@ body.video-modal-open{overflow:hidden}
 .gc-achievement strong{font-size:14px}
 .gc-achievement p{font-size:12px;line-height:1.55;color:#eadcbf;margin:6px 0 0}
 @media(max-width:500px){.lab-quest-personal-award{padding:14px;gap:10px}.lab-quest-personal-award strong{font-size:14px}}
+
+
+/* Exact-book video fallback: never misrepresent a playlist opener as requested book. */
+.video-player-external{margin:16px 0;padding:26px 19px;text-align:center;border:1px solid #56747b;background:#1c333b;border-radius:15px;display:flex;align-items:center;flex-direction:column;gap:12px}
+.video-player-external>svg{color:#c7e884}
+.video-player-external h3{font-size:18px;margin:0}
+.video-player-external p{color:#c0d3d6;font-size:13px;line-height:1.6;margin:0;max-width:490px}
+.video-player-external a{display:inline-flex;gap:8px;align-items:center;justify-content:center;padding:12px 18px;min-height:48px;background:#abd74f;color:#1c312a;border-radius:11px;text-decoration:none;font-size:12px;font-weight:900;text-align:center;max-width:100%}
+.video-player-external a:focus-visible{outline:3px solid #d5eeaa;outline-offset:3px}
