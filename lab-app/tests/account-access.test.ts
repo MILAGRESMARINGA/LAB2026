@@ -11,6 +11,7 @@ import {
  authErrorMessage,signIn,signUp,resendSignUpConfirmation,validateRegistration
 } from "../src/features/auth";
 import {AccountAccess} from "../src/components/AccountAccess";
+import {PUBLIC_APP_ORIGIN} from "../src/lib/auth-urls";
 
 describe("Cadastro e login reais do LABGAME",()=>{
  beforeEach(()=>{
@@ -33,7 +34,7 @@ describe("Cadastro e login reais do LABGAME",()=>{
   expect(signUpMock).toHaveBeenCalledWith({
    email:"pessoa@example.com",password:"MinhaSenha123",
    options:{
-    emailRedirectTo:"https://labgame-biblia.vercel.app/auth/callback",
+    emailRedirectTo:PUBLIC_APP_ORIGIN+"/auth/callback",
     data:{display_name:"Leitor de Teste",preferred_mode:"grupo"}
    }
   });
@@ -50,7 +51,7 @@ describe("Cadastro e login reais do LABGAME",()=>{
   await resendSignUpConfirmation("Leitor@EXAMPLE.com");
   expect(resendMock).toHaveBeenCalledWith({
    type:"signup",email:"leitor@example.com",
-   options:{emailRedirectTo:"https://labgame-biblia.vercel.app/auth/callback"}
+   options:{emailRedirectTo:PUBLIC_APP_ORIGIN+"/auth/callback"}
   });
   expect(authErrorMessage(new Error("Invalid login credentials"))).toContain("incorretos");
   expect(authErrorMessage(new Error("Email not confirmed"))).toContain("Confirme");
