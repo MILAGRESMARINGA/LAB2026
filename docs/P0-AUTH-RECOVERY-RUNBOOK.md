@@ -2,7 +2,8 @@
 
 **Projeto Supabase exclusivo:** `LABGAME` — ref `azejfxvaamgkmfmwdzjn`.
 **Repositório/branch:** `MILAGRESMARINGA/LAB2026` / `lab-rebuild-2026`.
-**Domínio público único:** `https://labgame-biblia.vercel.app`.
+**Domínio de produção (inalterado):** `https://labgame-biblia.vercel.app`.
+**Domínio estável de homologação LABGAME 3.0:** `https://labgame-biblia-git-lab-rebuild-2026-antonios-projects-0bf892e8.vercel.app`.
 
 ## Diagnóstico com evidências
 
@@ -19,12 +20,45 @@
 5. `vercel.json`: rewrite SPA já configurado para entregar o React nas duas rotas. `VITE_PUBLIC_APP_URL` cadastrado na Vercel para preview e produção.
 6. `supabase/email-templates/`: HTML pronto para **Confirm signup** e **Reset Password** com link de token hash no fragmento (evita token nos logs HTTP) e código `{{ .Token }}`.
 
+## Atualização 15/10/2026 — retorno correto à mesma versão do LABGAME
+
+**Falha identificada:** as versões anteriores de `lab-app/supabase/email-templates/confirm-signup.html` e `reset-password.html` continham literalmente `https://labgame-biblia.vercel.app/auth/...`. Além disso, `VITE_PUBLIC_APP_URL` estava compartilhado entre produção e preview, fazendo o app de testes voltar ao domínio antigo.
+
+**Correção já implementada:**
+1. O arquivo `src/lib/auth-urls.ts` mapeia explicitamente o domínio de preview da branch e URLs efêmeras de deploy do projeto para o **alias estável da branch**. Não confia em `redirectTo` recebido por parâmetros de URL, nem permite que sites arbitrários se façam passar pela branch.
+2. Vercel: variável `VITE_PUBLIC_APP_URL` de `preview` restrita à branch `lab-rebuild-2026`, com o alias estável. O valor existente de produção não foi alterado.
+3. Os dois templates agora usam `href="{{ .RedirectTo }}#token_hash={{ .TokenHash }}&amp;type=email"` e a equivalente para `type=recovery`. A variável `{{ .RedirectTo }}` é fornecida pelo Supabase a partir da URL enviada por `signUp`, `resend` ou `resetPasswordForEmail`, **somente se permitida na allowlist**. Os códigos `{{ .Token }}` permanecem disponíveis para confirmação diretamente no app.
+4. `AuthFlow.tsx` já utiliza `PUBLIC_APP_ORIGIN` para links de sucesso, erro e retorno. O código OTP para recuperação usa rota relativa `/auth/reset-password` para manter a sessão na origem da PWA.
+
+**Ação no painel ainda obrigatória (não executada pelo conector de banco):**
+
+[Supabase LABGAME → Authentication → URL Configuration](https://supabase.com/dashboard/project/azejfxvaamgkmfmwdzjn/auth/url-configuration)
+
+Manter `Site URL = https://labgame-biblia.vercel.app` para o ambiente de produção; adicionar estas duas URLs **exatas**, SEM curingas `*.vercel.app`:
+
+- `https://labgame-biblia-git-lab-rebuild-2026-antonios-projects-0bf892e8.vercel.app/auth/callback`
+- `https://labgame-biblia-git-lab-rebuild-2026-antonios-projects-0bf892e8.vercel.app/auth/reset-password`
+
+Manter também as duas rotas análogas do domínio de produção para não interromper usuários da versão pública.
+
+[Supabase LABGAME → Authentication → Email Templates](https://supabase.com/dashboard/project/azejfxvaamgkmfmwdzjn/auth/templates)
+
+Copiar e **salvar** o HTML atual de `lab-app/supabase/email-templates/confirm-signup.html` em **Confirm signup**, e de `reset-password.html` em **Reset Password**. Conferir a variável literal `{{ .RedirectTo }}`, `{{ .TokenHash }}` e `{{ .Token }}`. Alteração do arquivo versionado no GitHub **não publica template no Supabase**.
+
+**Testar em e-mail real:** abrir a branch estável e solicitar recuperação com uma conta de teste. O link de e-mail deve abrir **a mesma branch**, finalizar a recuperação e oferecer retorno nela. Validar também o formulário de confirmação com uma conta nova. Endereço de preview protegido pela Vercel pode exigir sessão/autorização nesse ambiente; nesse caso não desabilitar proteção cegamente.
+
+**Atenção:** a entrega de e-mail/SMTP ainda não foi homologada. É possível o Supabase registrar HTTP 200 sem comprovar que o provedor enviou a mensagem. Não classificar P0 de Auth como resolvido até receber e utilizar o e-mail real.
+
+**Referências Supabase:** [Email Templates](https://supabase.com/docs/guides/auth/auth-email-templates), [Redirect URLs](https://supabase.com/docs/guides/auth/redirect-urls).
+
+---
+
 ## Ação administrativa obrigatória no Supabase
 
 A conexão atual com o Supabase dá acesso a SQL, migrações e logs, **não à edição de Site URL, SMTP, provedores Auth nem modelos de e-mail**. Essas mudanças são operacionais e precisam ser feitas no painel por quem administra o projeto. Não colocar senha de SMTP, API key ou token de administrador em GitHub/ChatGPT.
 
 1. Acessar [Authentication → URL Configuration](https://supabase.com/dashboard/project/azejfxvaamgkmfmwdzjn/auth/url-configuration).
-2. Alterar **Site URL** para `https://labgame-biblia.vercel.app`.
+2. **Manter** Site URL de produção como `https://labgame-biblia.vercel.app`; para testes, não substituir a Site URL pelo preview. Adicionar à allowlist as duas rotas exatas do preview listadas na atualização de 15/10.
 3. Incluir exatamente estas **Redirect URLs**:
    - `https://labgame-biblia.vercel.app`
    - `https://labgame-biblia.vercel.app/auth/callback`
