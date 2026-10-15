@@ -4,6 +4,7 @@ const {resetPasswordForEmail,updateUser}=vi.hoisted(()=>({
 }));
 vi.mock("../src/lib/supabase",()=>({supabase:{auth:{resetPasswordForEmail,updateUser}}}));
 import {requestPasswordReset,updateAccountPassword} from "../src/features/auth";
+import {PUBLIC_APP_ORIGIN} from "../src/lib/auth-urls";
 describe("Recuperação de acesso LABGAME",()=>{
  beforeEach(()=>{
   resetPasswordForEmail.mockReset();
@@ -18,7 +19,7 @@ describe("Recuperação de acesso LABGAME",()=>{
  it("envia recuperação à rota fixa do LABGAME",async()=>{
   resetPasswordForEmail.mockResolvedValue({error:null});
   await requestPasswordReset("Leitor@EXAMPLE.COM");
-  expect(resetPasswordForEmail).toHaveBeenCalledWith("leitor@example.com",{redirectTo:"https://labgame-biblia.vercel.app/auth/reset-password"});
+  expect(resetPasswordForEmail).toHaveBeenCalledWith("leitor@example.com",{redirectTo:PUBLIC_APP_ORIGIN+"/auth/reset-password"});
  });
  it("exige senha de pelo menos oito caracteres",async()=>{
   await expect(updateAccountPassword("1234567")).rejects.toThrow("8 caracteres");
