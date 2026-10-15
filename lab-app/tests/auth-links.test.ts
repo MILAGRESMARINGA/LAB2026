@@ -5,10 +5,11 @@ import {
 } from "../src/lib/auth-urls";
 import {isAuthPage} from "../src/components/AuthFlow";
 describe("P0: links de confirmação e recuperação",()=>{
- it("nunca reutiliza localhost nem URLs temporárias da Vercel",()=>{
-  expect(PUBLIC_APP_ORIGIN).toBe("https://labgame-biblia.vercel.app");
-  expect(confirmationRedirectUrl()).toBe("https://labgame-biblia.vercel.app/auth/callback");
-  expect(recoveryRedirectUrl()).toBe("https://labgame-biblia.vercel.app/auth/reset-password");
+ it("usa a origem canônica do ambiente nos links de confirmação e recuperação",()=>{
+  expect([ "https://labgame-biblia.vercel.app",LAB_REBUILD_APP_ORIGIN]).toContain(PUBLIC_APP_ORIGIN);
+  expect(confirmationRedirectUrl()).toBe(PUBLIC_APP_ORIGIN+"/auth/callback");
+  expect(recoveryRedirectUrl()).toBe(PUBLIC_APP_ORIGIN+"/auth/reset-password");
+  expect(PUBLIC_APP_ORIGIN).not.toContain("localhost");
  });
  it("usa sempre o alias estável da branch de desenvolvimento e nunca o site antigo",()=>{
   const previous="https://labgame-biblia.vercel.app";
