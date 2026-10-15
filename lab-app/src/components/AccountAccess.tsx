@@ -42,7 +42,7 @@ export function AccountAccess({initialMode="login",preferredMode="individual",ti
     const result=await signUp(email,password,name,participation);
     if(result.emailConfirmationRequired){
      setWaitingEmail(true);
-     setMessage("Cadastro recebido! Para ativar sua conta, abra o e-mail de confirmação. Confira também Spam e Promoções.");
+     setMessage("Se este for um novo cadastro, confira o e-mail de confirmação. Se já tem conta, volte ao login ou recupere sua senha.");
     }else{
      setMessage("Conta criada. Você já está conectado ao LABGAME.");
      onLogin?.();
@@ -78,7 +78,7 @@ export function AccountAccess({initialMode="login",preferredMode="individual",ti
  const resend=async()=>{
   if(busy)return;
   setBusy(true);setError("");setMessage("");
-  try{if(mode==="reset")await requestPasswordReset(email);else await resendSignUpConfirmation(email);setMessage("Novo e-mail solicitado. Aguarde alguns minutos e confira a caixa de spam.")}
+  try{if(mode==="reset")await requestPasswordReset(email);else await resendSignUpConfirmation(email);setMessage("Solicitação recebida. Se a conta precisar de confirmação e o envio estiver disponível, confira a caixa de entrada e o spam. Se já usa o LABGAME, tente entrar ou recuperar a senha.")}
   catch(e){setError(authErrorMessage(e))}
   finally{setBusy(false)}
  };
@@ -87,21 +87,22 @@ export function AccountAccess({initialMode="login",preferredMode="individual",ti
    <div className="lab-emblem small"><UserRound size={30}/></div>
    <span className="eyebrow">CONTA E PERFIL LABGAME</span>
    <h2>{title}</h2>
-   <p className="muted">{waitingEmail?(mode==="reset"?"Verifique seu e-mail para recuperar a conta.":"Sua conta precisa ser confirmada antes de entrar."):mode==="signup"?"Crie uma conta para salvar sua leitura, ganhar XP e entrar em GCs.":mode==="reset"?"Recupere o acesso usando o e-mail de sua conta.":"Entre para acessar seu perfil, conquistas e grupos."}</p>
+   <p className="muted">{waitingEmail?(mode==="reset"?"Se sua conta existir, confira o e-mail para recuperá-la.":"Se este for um cadastro novo, procure a confirmação. Se já tem conta, entre com sua senha."):mode==="signup"?"Crie uma conta para salvar sua leitura, ganhar XP e entrar em GCs.":mode==="reset"?"Recupere o acesso usando o e-mail de sua conta.":"Entre para acessar seu perfil, conquistas e grupos."}</p>
   </div>
   {!supabase&&<p className="feedback-message" role="alert">A conexão de contas está indisponível nesta publicação. Tente mais tarde.</p>}
   {waitingEmail?<div className="signup-confirmation">
    <CheckCircle2 size={45}/>
-   <h3>{mode==="reset"?"Recupere sua senha":"Confirme seu e-mail"}</h3>
-   <p>{mode==="reset"?"Se o endereço estiver cadastrado, enviamos instruções para":"Se o cadastro foi aceito, enviamos a confirmação para"} <strong>{email.trim().toLowerCase()}</strong>. Confira a caixa de entrada e a pasta de spam.</p>
-   <p>O e-mail pode incluir um código de seis dígitos. Digite-o aqui para continuar sem sair do aplicativo.</p>
+   <h3>{mode==="reset"?"Recupere sua senha":"Confira seu e-mail"}</h3>
+   <p>{mode==="reset"?"Se o endereço estiver cadastrado, enviamos instruções para":"Se este for um cadastro novo, as instruções de confirmação poderão ser enviadas para"} <strong>{email.trim().toLowerCase()}</strong>. Confira a caixa de entrada e a pasta de spam.</p>
+   <p>Se receber um código de seis dígitos, digite-o abaixo. Uma confirmação não é enviada novamente para contas já ativadas.</p>
    <form className="account-code-form" onSubmit={e=>{e.preventDefault();void confirmCode()}}>
     <label htmlFor={prefix+"otp"}>Código recebido por e-mail</label>
     <input id={prefix+"otp"} type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} placeholder="000000" value={otpCode} onChange={e=>setOtpCode(e.target.value.replace(/\D/g,"").slice(0,6))}/>
     <button className="primary-cta" type="submit" disabled={busy||otpCode.length!==6}>{mode==="reset"?"VALIDAR CÓDIGO E TROCAR SENHA":"VALIDAR CÓDIGO DE CONFIRMAÇÃO"}</button>
    </form>
    <button type="button" className="secondary-cta" disabled={busy} onClick={()=>void resend()}><Mail size={17}/> REENVIAR E-MAIL</button>
-   <button type="button" className="subtle-button" onClick={()=>changeMode("login")}>VOLTAR AO LOGIN <LogIn size={17}/></button>
+   <button type="button" className="subtle-button" onClick={()=>changeMode("login")}>JÁ TENHO CONTA · ENTRAR <LogIn size={17}/></button>
+   {mode!=="reset"&&<button type="button" className="subtle-button" onClick={()=>changeMode("reset")}>ESQUECI MINHA SENHA <KeyRound size={17}/></button>}
   </div>:<>
    {mode!=="reset"&&<div className="account-mode-tabs" role="group" aria-label="Escolher cadastro ou login">
     <button type="button" className={mode==="login"?"active":""} aria-pressed={mode==="login"} onClick={()=>changeMode("login")}><LogIn size={16}/> ENTRAR</button>
