@@ -1,6 +1,6 @@
 import {describe,expect,it} from "vitest";
 import {
- PUBLIC_APP_ORIGIN,confirmationRedirectUrl,recoveryRedirectUrl,recoveryAfterOtpPath,
+ PUBLIC_APP_ORIGIN,LAB_REBUILD_APP_ORIGIN,resolvePublicAppOrigin,confirmationRedirectUrl,recoveryRedirectUrl,recoveryAfterOtpPath,
  authRouteFromPath,authRedirectError
 } from "../src/lib/auth-urls";
 import {isAuthPage} from "../src/components/AuthFlow";
@@ -9,6 +9,18 @@ describe("P0: links de confirmação e recuperação",()=>{
   expect(PUBLIC_APP_ORIGIN).toBe("https://labgame-biblia.vercel.app");
   expect(confirmationRedirectUrl()).toBe("https://labgame-biblia.vercel.app/auth/callback");
   expect(recoveryRedirectUrl()).toBe("https://labgame-biblia.vercel.app/auth/reset-password");
+ });
+ it("usa sempre o alias estável da branch de desenvolvimento e nunca o site antigo",()=>{
+  const previous="https://labgame-biblia.vercel.app";
+  const branchHost=new URL(LAB_REBUILD_APP_ORIGIN).hostname;
+  expect(resolvePublicAppOrigin(previous,branchHost)).toBe(LAB_REBUILD_APP_ORIGIN);
+  expect(resolvePublicAppOrigin(previous,"labgame-biblia-clucu9isf-antonios-projects-0bf892e8.vercel.app"))
+   .toBe(LAB_REBUILD_APP_ORIGIN);
+  expect(resolvePublicAppOrigin(previous,"labgame-biblia.vercel.app")).toBe(previous);
+  expect(resolvePublicAppOrigin(previous,"localhost")).toBe(previous);
+  expect(resolvePublicAppOrigin(previous,"attacker.example")).toBe(previous);
+  expect(resolvePublicAppOrigin("http://unsafe.example","attacker.example")).toBe(previous);
+  expect(resolvePublicAppOrigin("https://unsafe.example/path","attacker.example")).toBe(previous);
  });
  it("preserva a mesma origem após código OTP, inclusive em preview/PWA",()=>{
   const path=recoveryAfterOtpPath();
