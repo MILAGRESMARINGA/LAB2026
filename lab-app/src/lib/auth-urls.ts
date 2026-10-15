@@ -1,18 +1,33 @@
 /**
- * One canonical public origin for all Supabase email links.
- * Never derive links from a Vercel preview, localhost, or a WebView origin.
+ * Auth links have one stable origin per release channel:
+ * production stays on the published domain; LABGAME 3.0 preview stays on the
+ * branch alias, even when opened from a short-lived Vercel deployment URL.
+ * Never trust an arbitrary query parameter, Referer or unrecognized host.
  */
-export const PUBLIC_APP_ORIGIN=(()=>{
- const configured=(import.meta.env.VITE_PUBLIC_APP_URL||"https://labgame-biblia.vercel.app").trim();
+export const PRODUCTION_APP_ORIGIN="https://labgame-biblia.vercel.app";
+export const LAB_REBUILD_APP_ORIGIN="https://labgame-biblia-git-lab-rebuild-2026-antonios-projects-0bf892e8.vercel.app";
+
+export function resolvePublicAppOrigin(configured:string|undefined,hostname:string|undefined):string{
+ const current=(hostname||"").toLowerCase();
+ const branchHost=new URL(LAB_REBUILD_APP_ORIGIN).hostname;
+ const isBranch=current===branchHost;
+ const isKnownPreview=/^labgame-biblia-[a-z0-9]+-antonios-projects-0bf892e8\.vercel\.app$/.test(current);
+ if(isBranch||isKnownPreview)return LAB_REBUILD_APP_ORIGIN;
  try{
-  const url=new URL(configured);
-  if(url.protocol!=="https:"||url.username||url.password||url.search||url.hash)
-   throw new Error("Public URL must be HTTPS");
-  return url.origin;
+  const origin=new URL((configured||PRODUCTION_APP_ORIGIN).trim());
+  if(origin.protocol!=="https:"||origin.username||origin.password||
+    origin.search||origin.hash||origin.pathname!=="/")
+   throw Error("Invalid auth origin");
+  return origin.origin;
  }catch{
-  return "https://labgame-biblia.vercel.app";
+  return PRODUCTION_APP_ORIGIN;
  }
-})();
+}
+
+export const PUBLIC_APP_ORIGIN=resolvePublicAppOrigin(
+ import.meta.env.VITE_PUBLIC_APP_URL,
+ typeof window==="undefined"?undefined:window.location.hostname
+);
 export const confirmationRedirectUrl=()=>PUBLIC_APP_ORIGIN+"/auth/callback";
 export const recoveryRedirectUrl=()=>PUBLIC_APP_ORIGIN+"/auth/reset-password";
 /**
