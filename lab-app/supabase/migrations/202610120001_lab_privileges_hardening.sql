@@ -26,10 +26,20 @@ FROM PUBLIC, anon, authenticated;
 -- Internal functions are invoked by the PostgreSQL trigger subsystem.
 -- They do not need direct execution privileges on PostgREST roles.
 -- Keep the owner role's EXECUTE so existing triggers continue to work.
-REVOKE EXECUTE ON FUNCTION
-  public.register_reading_group_owner(),
-  public.rls_auto_enable()
-FROM PUBLIC, anon, authenticated;
+-- Some legacy deployments created rls_auto_enable() manually; a fresh
+-- installation does not contain it. Revoke only on functions that exist.
+DO $privileges$
+BEGIN
+ IF to_regprocedure('public.register_reading_group_owner()') IS NOT NULL THEN
+  REVOKE EXECUTE ON FUNCTION public.register_reading_group_owner()
+  FROM PUBLIC, anon, authenticated;
+ END IF;
+ IF to_regprocedure('public.rls_auto_enable()') IS NOT NULL THEN
+  REVOKE EXECUTE ON FUNCTION public.rls_auto_enable()
+  FROM PUBLIC, anon, authenticated;
+ END IF;
+END;
+$privileges$;
 
 -- Prevent future tables created by the postgres migration owner from inheriting
 -- these privileges through existing default-grant rules. RLS and narrow DML
@@ -62,12 +72,15 @@ BEGIN
     END LOOP;
   END LOOP;
 
-  IF has_function_privilege('anon','public.register_reading_group_owner()','EXECUTE')
-   OR has_function_privilege('authenticated','public.register_reading_group_owner()','EXECUTE')
-   OR has_function_privilege('anon','public.rls_auto_enable()','EXECUTE')
-   OR has_function_privilege('authenticated','public.rls_auto_enable()','EXECUTE')
-  THEN
-    RAISE EXCEPTION 'LABGAME internal trigger functions still exposed to API roles';
+  IF to_regprocedure('public.register_reading_group_owner()') IS NOT NULL THEN
+    IF has_function_privilege('anon','public.register_reading_group_owner()','EXECUTE')
+       OR has_function_privilege('authenticated','public.register_reading_group_owner()','EXECUTE')
+    THEN RAISE EXCEPTION 'LABGAME group-owner trigger exposed to API roles'; END IF;
+  END IF;
+  IF to_regprocedure('public.rls_auto_enable()') IS NOT NULL THEN
+    IF has_function_privilege('anon','public.rls_auto_enable()','EXECUTE')
+       OR has_function_privilege('authenticated','public.rls_auto_enable()','EXECUTE')
+    THEN RAISE EXCEPTION 'LABGAME RLS trigger exposed to API roles'; END IF;
   END IF;
 END;
 $verify$;
