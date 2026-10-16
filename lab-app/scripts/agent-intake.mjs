@@ -51,7 +51,9 @@ export async function execute(env=process.env,fetcher=fetch){
  if(!/^[a-z\d](?:[a-z\d-]{0,37})$/i.test(username))return {status:"untrusted"};
  const permission=await call("/collaborators/"+encodeURIComponent(username)+"/permission");
  if(!isTrustedIssue(issue,permission.permission))return {status:"untrusted"};
- // Classify only the quoted request, never our standard policy boilerplate.\n const userRequest=String(issue.body).split("\n## Política")[0];\n if(classifyTask(issue.title+"\n"+userRequest)==="approval_required"||
+ // Classify only the quoted request, never our standard policy boilerplate.
+ const userRequest=String(issue.body).split("\n## Política")[0];
+ if(classifyTask(issue.title+"\n"+userRequest)==="approval_required"||
     (issue.labels??[]).some(label=>label.name==="lab-approval-required")){
   await call("/issues/"+number+"/comments","POST",{
    body:"LABGame: solicitação registrada, mas exige aprovação humana para operações de risco. Nenhuma execução, migração ou compra foi iniciada."
