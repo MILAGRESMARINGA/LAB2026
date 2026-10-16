@@ -65,7 +65,7 @@ export function videoKeyFromUrl(url:string):string{
  if(parts.length!==3||parts[0]!=="pt-br"||!["videos","guides"].includes(parts[1]))throw Error("Caminho de vídeo inválido");
  return parts.slice(-2).join(":");
 }
-export function embeddedPlayer(resource:BibleProjectResource,_book:string):{src:string;exact:true}|{src:null;exact:false}{
+export function embeddedPlayer(resource:BibleProjectResource,book:string):{src:string;exact:true}|{src:null;exact:false}{
  const matchesBook=getBibleProjectVideos(book).some(item=>item.url===resource.url);
  if(!matchesBook)return {src:null,exact:false};
  const key=videoKeyFromUrl(resource.url);
