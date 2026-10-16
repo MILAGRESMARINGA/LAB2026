@@ -64,9 +64,6 @@ CREATE POLICY "Preferences update private" ON public.lab_notification_preference
  FOR UPDATE TO authenticated USING (user_id=(SELECT auth.uid()))
  WITH CHECK (user_id=(SELECT auth.uid()));
 
--- Strong non-destructive defaults for future public tables.
-ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON TABLES FROM anon,authenticated;
-
 -- Clearing the JOURNEY is distinct from starting another annual cycle:
 -- account, private profile, Bible favorites and GC membership remain.
 -- Chapter/video checks and annual awards are erased through ON DELETE CASCADE.
