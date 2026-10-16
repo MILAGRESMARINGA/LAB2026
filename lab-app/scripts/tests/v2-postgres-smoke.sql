@@ -49,6 +49,7 @@ CREATE TABLE public.reading_group_members(
 \i supabase/migrations/202610160103_lab_v2_gc_rankings.sql
 \i supabase/migrations/202610160104_lab_v2_video_xp.sql
 \i supabase/migrations/202610160105_lab_v2_study_rewards.sql
+\i supabase/migrations/202610160108_lab_v2_terminal_state.sql
 
 INSERT INTO auth.users(id) VALUES
 ('11111111-1111-4111-8111-111111111111'),
@@ -487,3 +488,5 @@ SELECT 'LAB V2 CROSS-MONTH SAFETY PASSED' AS result;
 
 -- Final full-year crown/constancy and irreversible reset gates.
 \i scripts/tests/v2-annual-awards-smoke.sql
+
+\i scripts/tests/v2-terminal-state-smoke.sql
