@@ -38,7 +38,7 @@ test("P0 release requires an explicit marker and verified PG17 restore before mi
  assert.match(config,/\[functions\.account-delete\][\s\S]*?verify_jwt = true/);
  assert.ok(workflow.indexOf("db push --linked --yes") < workflow.indexOf("Deploy only account deletion and fail-closed study generation"));
  assert.ok(workflow.indexOf("Confirm explicit trigger") < workflow.indexOf("pg_dump --schema=public"));
- assert.ok(workflow.indexOf("Fail closed before any Supabase CLI access") < workflow.indexOf("npx --yes supabase@latest link"));
+ assert.ok(workflow.indexOf("Fail closed before any Supabase CLI access") < workflow.indexOf("npx --yes supabase@2.121.0 link"));
  assert.equal(workflow.includes('--password "$SUPABASE_DB_PASSWORD"'),false);
 
 });
