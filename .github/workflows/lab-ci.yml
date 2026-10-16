@@ -98,3 +98,38 @@ jobs:
         env:
           PGPASSWORD: labv2_ci_local_only
         run: psql -h 127.0.0.1 -p 5432 -U postgres -d labgame_v2_ci -v ON_ERROR_STOP=1 -f scripts/tests/v2-postgres-smoke.sql
+
+
+  supabase-local-auth:
+    name: Free local Supabase Auth + two-account RLS E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: lab-app
+    steps:
+      - name: Checkout test commit (no production secrets)
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install LAB client SDK
+        run: npm install --no-audit --no-fund
+      - name: Boot disposable Supabase locally (Auth, REST, Postgres)
+        run: |
+          npx --yes supabase@latest start --exclude realtime,storage,functions,studio,analytics,pooler > /tmp/labgame-supabase-start.log 2>&1 || {
+            echo "Local Supabase failed to initialize; safe migration/error lines:";
+            grep -Ei 'migration|error|failed|fatal' /tmp/labgame-supabase-start.log | tail -30 || true;
+            exit 1;
+          }
+          npx --yes supabase@latest status -o env > /tmp/labgame-supabase-ci.env
+      - name: Exercise two real local Auth sessions and RLS
+        env:
+          LAB_SUPABASE_LOCAL_ENV_FILE: /tmp/labgame-supabase-ci.env
+        run: node scripts/tests/local-supabase-auth.mjs
+      - name: Tear down ephemeral test stack
+        if: always()
+        run: npx --yes supabase@latest stop --no-backup || true
