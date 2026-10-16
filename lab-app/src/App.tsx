@@ -25,17 +25,21 @@ import {FormationLibrary} from "./components/FormationLibrary";
 import {ProfileSettings} from "./components/ProfileSettings";
 import {DailyInAppPopup} from "./components/DailyInAppPopup";
 import {earnedTalentMilestones} from "./domain/journey-rewards";
+import {chooseJourneyVersion} from "./domain/journey-version";
 type Tab="today"|"bible"|"journey"|"studies"|"groups"|"profile";
 const tabs=[{id:"journey",label:"Jornada",icon:Compass},{id:"studies",label:"Estudos",icon:Library},{id:"bible",label:"Bíblia",icon:BookMarked},{id:"groups",label:"GCs",icon:Users},{id:"profile",label:"Perfil",icon:UserRound}] as const;
 const plan=createGamePlan();
 const validPlan=verifyGamePlan(plan);
-const v2Enabled=import.meta.env.VITE_LAB_V2_READY==="true";
+const v2FeatureEnabled=import.meta.env.VITE_LAB_V2_READY==="true";
 const describeError=(e:unknown)=>e instanceof Error?e.message:"Não foi possível concluir a operação.";
 export default function App(){
  const authQuery=typeof window==="undefined"?null:new URLSearchParams(window.location.search).get("auth");
  const authRoute=typeof window==="undefined"?"none":authRouteFromPath(window.location.pathname);
  const [tab,setTab]=useState<Tab>(()=>authQuery?"profile":"journey");
  const [user,setUser]=useState<{id:string;email:string}|null>(null);
+ const [variantDecision,setVariantDecision]=useState<{userId:string;mode:"v1"|"v2"}|null>(null);
+ const journeyVariant: "loading"|"v1"|"v2" = !v2FeatureEnabled?"v1":user&&variantDecision?.userId===user.id?variantDecision.mode:"loading";
+ const v2Enabled=v2FeatureEnabled&&journeyVariant==="v2";
  const [authLoading,setAuthLoading]=useState(Boolean(supabase));
  const [game,setGame]=useState<LabGameState|null>(null);
  const [scorecard,setScorecard]=useState<LabScorecard|null>(null);
@@ -66,7 +70,7 @@ export default function App(){
  const [showStages,setShowStages]=useState(28);
  useEffect(()=>{saveOnboardingProgress({step:introStep,mode:preferredMode,viewAuth})},[introStep,preferredMode,viewAuth]);
  const refreshScorecard=useCallback(async()=>{try{setScorecard(await loadGameScorecard())}catch(e){setMessage(describeError(e))}},[]);
- const refreshGame=useCallback(async()=>{if(v2Enabled)return;setLoading(true);try{const state=await loadGameState();setGame(state);setProfileName(state.display_name||"Leitor LAB");setOptIn(Boolean(state.leaderboard_opt_in));setMessage("")}catch(e){setMessage(describeError(e))}finally{setLoading(false)}},[]);
+ const refreshGame=useCallback(async()=>{if(v2Enabled||journeyVariant==="loading")return;setLoading(true);try{const state=await loadGameState();setGame(state);setProfileName(state.display_name||"Leitor LAB");setOptIn(Boolean(state.leaderboard_opt_in));setMessage("")}catch(e){setMessage(describeError(e))}finally{setLoading(false)}},[v2Enabled,journeyVariant]);
  useEffect(()=>{
   const client=supabase;if(!client)return;
   let active=true;
@@ -88,7 +92,25 @@ export default function App(){
   });
   return()=>{active=false;subscription.unsubscribe()};
  },[]);
- useEffect(()=>{if(!user){setGame(null);setScorecard(null);setV2Game(null);setGroups([]);return}if(passwordRecoveryMode)return;
+ useEffect(()=>{
+  if(!user||!v2FeatureEnabled){setVariantDecision(null);return}
+  let active=true;
+  const userId=user.id;
+  void Promise.all([
+   supabase!.from("lab_game_runs").select("id").eq("user_id",userId).limit(1),
+   supabase!.from("lab_v2_runs").select("id").eq("user_id",userId).limit(1)
+  ]).then(([legacy,v2])=>{
+   if(!active)return;
+   setVariantDecision({userId,mode:chooseJourneyVersion({
+    featureEnabled:v2FeatureEnabled,
+    hasLegacyRun:Boolean(legacy.data?.length),
+    hasV2Run:Boolean(v2.data?.length),
+    lookupFailed:Boolean(legacy.error||v2.error)
+   })});
+  }).catch(()=>{if(active)setVariantDecision({userId,mode:"v1"})});
+  return()=>{active=false};
+ },[user?.id]);
+ useEffect(()=>{if(!user){setGame(null);setScorecard(null);setV2Game(null);setGroups([]);return}if(passwordRecoveryMode||journeyVariant==="loading")return;
   if(v2Enabled){
    let active=true;
    void Promise.resolve(supabase!.from("lab_game_stats").select("display_name,leaderboard_opt_in")
@@ -97,7 +119,7 @@ export default function App(){
    return()=>{active=false};
   }
   void refreshGame();void refreshScorecard();
- },[user?.id,refreshGame,refreshScorecard,passwordRecoveryMode]);
+ },[user?.id,refreshGame,refreshScorecard,passwordRecoveryMode,journeyVariant]);
  useEffect(()=>{
   if(!user||(tab!=="groups"&&tab!=="profile"))return;
   let active=true;
@@ -192,7 +214,7 @@ export default function App(){
        <button type="button" className="subtle-button" onClick={()=>setViewAuth(false)}><ArrowLeft size={17}/> Voltar à apresentação</button>
       </>}
        {message&&<p role="status" className="feedback-message">{message}</p>}
-     </section>:<>{v2Enabled?<JourneyV2Panel key={user.id+"-"+v2Epoch} userId={user.id} onState={handleV2State}/>:game?<ChallengeJourney plan={plan} game={game} totalXP={totalXP} onStart={()=>{setLastConfirmed(null);setTab("today");setLessonOpen(true)}} onRestart={()=>void restartChallenge()} onExploreBible={()=>goTab("bible")}/>:<section className="game-panel"><p className="muted" role="status">{loading?"Carregando seu desafio...":message||"Aguardando a sincronização da leitura."}</p></section>}{message&&game&&<p role="status" className="feedback-message">{message}</p>}
+     </section>:<>{journeyVariant==="loading"?<section className="game-panel"><p role="status" className="muted">Verificando a versão da sua Jornada...</p></section>:v2Enabled?<JourneyV2Panel key={user.id+"-"+v2Epoch} userId={user.id} onState={handleV2State}/>:game?<ChallengeJourney plan={plan} game={game} totalXP={totalXP} onStart={()=>{setLastConfirmed(null);setTab("today");setLessonOpen(true)}} onRestart={()=>void restartChallenge()} onExploreBible={()=>goTab("bible")}/>:<section className="game-panel"><p className="muted" role="status">{loading?"Carregando seu desafio...":message||"Aguardando a sincronização da leitura."}</p></section>}{message&&game&&<p role="status" className="feedback-message">{message}</p>}
       <section className="connections-panel"><span className="eyebrow">CONEXÕES DA PALAVRA</span><h3>Estude além do capítulo</h3><p>Explore temas, contextos e conexões entre livros sem alterar a regra da leitura diária.</p><button className="secondary-cta" onClick={()=>goTab("studies")}>EXPLORAR ESTUDOS <ArrowRight size={17}/></button></section></>}
    </div>}
    {tab==="bible"&&<BibleLibrary signedIn={Boolean(user)} onVideo={openVideo}/>}
