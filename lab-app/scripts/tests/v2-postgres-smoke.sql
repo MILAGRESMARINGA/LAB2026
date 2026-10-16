@@ -811,19 +811,19 @@ VALUES
   'curated','published','Fixture: camada 3','{"title":"Fixture"}'::jsonb);
 
 INSERT INTO auth.users(id) VALUES
- ('77777777-7777-4777-8777-777777777777'),
- ('88888888-8888-4888-8888-888888888888'),
- ('99999999-9999-4999-8999-999999999999');
+ ('c7777777-c777-4c77-8c77-c77777777777'),
+ ('c8888888-c888-4c88-8c88-c88888888888'),
+ ('c9999999-c999-4c99-8c99-c99999999999');
 INSERT INTO public.lab_game_stats(user_id,display_name,leaderboard_opt_in)
 VALUES
- ('77777777-7777-4777-8777-777777777777','Study Fixture',false),
- ('88888888-8888-4888-8888-888888888888','Layer 2 Fixture',false),
- ('99999999-9999-4999-8999-999999999999','Layer 3 Fixture',false);
+ ('c7777777-c777-4c77-8c77-c77777777777','Study Fixture',false),
+ ('c8888888-c888-4c88-8c88-c88888888888','Layer 2 Fixture',false),
+ ('c9999999-c999-4c99-8c99-c99999999999','Layer 3 Fixture',false);
 INSERT INTO public.lab_v2_runs(id,user_id,plan_length,status,started_at)
 VALUES
- ('a7777777-7777-4777-8777-777777777777','77777777-7777-4777-8777-777777777777',365,'active',statement_timestamp()-interval '1 day'),
- ('a8888888-8888-4888-8888-888888888888','88888888-8888-4888-8888-888888888888',365,'active',statement_timestamp()-interval '1 day'),
- ('a9999999-9999-4999-8999-999999999999','99999999-9999-4999-8999-999999999999',365,'active',statement_timestamp()-interval '1 day');
+ ('a7777777-7777-4777-8777-777777777777','c7777777-c777-4c77-8c77-c77777777777',365,'active',statement_timestamp()-interval '1 day'),
+ ('a8888888-8888-4888-8888-888888888888','c8888888-c888-4c88-8c88-c88888888888',365,'active',statement_timestamp()-interval '1 day'),
+ ('a9999999-9999-4999-8999-999999999999','c9999999-c999-4c99-8c99-c99999999999',365,'active',statement_timestamp()-interval '1 day');
 INSERT INTO public.lab_v2_stages(run_id,day_number,activated_at,completed_at)
 VALUES
  ('a7777777-7777-4777-8777-777777777777',1,statement_timestamp()-interval '1 hour',statement_timestamp()-interval '10 minutes');
@@ -842,7 +842,7 @@ VALUES
  ('a7777777-7777-4777-8777-777777777777',1,'43:1',statement_timestamp()-interval '10 minutes');
 
 SET ROLE authenticated;
-SELECT set_config('app.test_user','77777777-7777-4777-8777-777777777777',false);
+SELECT set_config('app.test_user','c7777777-c777-4c77-8c77-c77777777777',false);
 DO $study_rls$
 BEGIN
  IF (SELECT count(DISTINCT (journey_day,chapter_refs)) FROM public.lab_v2_study_content
@@ -895,7 +895,7 @@ END $study_reward$;
 RESET ROLE;
 
 SET ROLE authenticated;
-SELECT set_config('app.test_user','88888888-8888-4888-8888-888888888888',false);
+SELECT set_config('app.test_user','c8888888-c888-4c88-8c88-c88888888888',false);
 DO $study_layer2$
 BEGIN
  IF (SELECT count(*) FROM public.lab_v2_study_content WHERE layer=2)<>1
@@ -903,7 +903,7 @@ BEGIN
  IF EXISTS(SELECT 1 FROM public.lab_v2_study_content WHERE layer=3)
  THEN RAISE EXCEPTION 'FAIL: Layer 3 unlocked before 90 completed days'; END IF;
 END $study_layer2$;
-SELECT set_config('app.test_user','99999999-9999-4999-8999-999999999999',false);
+SELECT set_config('app.test_user','c9999999-c999-4c99-8c99-c99999999999',false);
 DO $study_layer3$
 BEGIN
  IF (SELECT count(*) FROM public.lab_v2_study_content WHERE layer=3)<>1
