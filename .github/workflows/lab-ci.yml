@@ -54,7 +54,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Verify pinned Supabase CLI without production credentials
+      - name: Verify pinned Supabase CLI and release commands without credentials
         shell: bash
         run: |
           set -euo pipefail
@@ -63,7 +63,13 @@ jobs:
             echo "Expected Supabase CLI 2.121.0, got an unexpected version."
             exit 1
           fi
-          echo "Supabase CLI 2.121.0 verified without linking to a project."
+          functions_help="$(npx --yes supabase@2.121.0 functions deploy --help)"
+          db_help="$(npx --yes supabase@2.121.0 db push --help)"
+          grep -q -- '--project-ref' <<<"$functions_help"
+          grep -q -- '--dry-run' <<<"$db_help"
+          echo "Pinned Supabase CLI 2.121.0 and release flags verified without linking to a project."
+      - name: Parse production release workflow without credentials
+        run: ruby -e 'require "yaml"; YAML.load_file("../.github/workflows/p0-backup-restore-gate.yml")'
       - name: Install dependencies (temporary until lockfile is committed)
         run: npm install --no-audit --no-fund
       - name: Parse database backup PowerShell syntax without executing it
