@@ -85,7 +85,8 @@ export function ProfileSettings({accountEmail,onReset,onDeleted}:Props){
   }catch(e){setMessage(e instanceof Error?e.message:"A operação não foi concluída.");
   }finally{setSaving(false)}
  };
- const canConfirm=ack&&password.length>0&&
+ const accountDeletionReady=import.meta.env.VITE_ACCOUNT_DELETION_READY==="true";
+ const canConfirm=ready&&(open!=="delete"||accountDeletionReady)&&ack&&password.length>0&&
   (open==="reset"?phrase==="ZERAR JORNADA":
    open==="delete"?phrase==="EXCLUIR CONTA"&&confirmEmail.trim().toLowerCase()===accountEmail.toLowerCase():false);
  const field=(key:keyof MemberProfile,label:string,opts?:{type?:string;placeholder?:string;maxLength?:number})=>
@@ -196,7 +197,8 @@ export function ProfileSettings({accountEmail,onReset,onDeleted}:Props){
       {saving?"PROCESSANDO...":open==="reset"?"CONFIRMAR REINÍCIO":"EXCLUIR DEFINITIVAMENTE"}
      </button>
     </div>
-    {!ready&&<p className="ps-unavailable">Operação não disponível no servidor até a homologação das migrações e da exclusão segura.</p>}
+    {!ready&&<p className="ps-unavailable">Operação não disponível até a homologação da migração de segurança.</p>}
+    {open==="delete"&&!accountDeletionReady&&<p className="ps-unavailable">A exclusão ainda está bloqueada enquanto a função de exclusão não for implantada e homologada no Supabase. Não envie senha para outro canal.</p>}
    </div>
   </div>}
  </section>;
