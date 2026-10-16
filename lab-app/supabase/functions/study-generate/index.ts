@@ -41,6 +41,17 @@ function authToken(request: Request): string | null {
   return match?.[1] ?? null;
 }
 
+function defaultNamedKey(raw: string | undefined): string {
+  if (!raw) return "";
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" && typeof parsed.default === "string"
+      ? parsed.default
+      : "";
+  } catch {
+    return "";
+  }
+}
 function extractOutputText(payload: unknown): string | null {
   if (!payload || typeof payload !== "object") return null;
   const value = payload as Record<string, unknown>;
@@ -119,7 +130,9 @@ function createResponsesProvider(apiKey: string) {
   };
 }
 
-function createRepository(client: ReturnType<typeof createClient>) {
+// The generated database type does not include these additive RPCs. Keep the
+// untyped boundary inside this adapter instead of weakening handler contracts.
+function createRepository(client: any) {
   return {
     async prepare(userId: string, journeyDay: number, layer: number) {
       const { data, error } = await client.rpc("lab_v2_prepare_study_generation", {
@@ -243,8 +256,8 @@ Deno.serve(async (request: Request) => {
   const bearer = authToken(request);
   if (!bearer) return jsonResponse(401, { error: "authentication_required" }, origin);
   const url = Deno.env.get("SUPABASE_URL") ?? "";
-  const publicKey = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? "";
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SECRET_KEY") ?? "";
+  const publicKey = defaultNamedKey(Deno.env.get("SUPABASE_PUBLISHABLE_KEYS")) || Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || Deno.env.get("SUPABASE_ANON_KEY") || "";
+  const serviceKey = defaultNamedKey(Deno.env.get("SUPABASE_SECRET_KEYS")) || Deno.env.get("SUPABASE_SECRET_KEY") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
   if (!url || !publicKey || !serviceKey) {
     return jsonResponse(503, { error: "study_generation_unavailable" }, origin);
   }

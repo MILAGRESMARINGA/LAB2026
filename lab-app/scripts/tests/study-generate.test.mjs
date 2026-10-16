@@ -137,6 +137,24 @@ test("missing provider secret fails closed before rate reservation", async () =>
   assert.equal(modelCalls, 0);
 });
 
+test("incomplete reading stage rejects cache lookup and model generation", async () => {
+  const { repository, calls } = fakeRepository({
+    async prepare() { calls.prepare++; return { status: "reading_required" }; },
+    async getPublished() { calls.getPublished++; throw new Error("must not read cache before completion"); },
+    async reserve() { calls.reserve++; throw new Error("must not reserve before completion"); },
+  });
+  let modelCalls = 0;
+  const result = await handlerFor(repository, {
+    available: true,
+    async generate() { modelCalls++; },
+  })(request());
+  assert.equal(result.status, 403);
+  assert.equal(result.body.error, "study_reading_required");
+  assert.equal(calls.getPublished, 0);
+  assert.equal(calls.reserve, 0);
+  assert.equal(modelCalls, 0);
+});
+
 test("mock provider generation validates citations, applies fixed cap, and caches output", async () => {
   const { repository, calls } = fakeRepository();
   let providerInput;

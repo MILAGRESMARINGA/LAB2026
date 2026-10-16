@@ -27,7 +27,7 @@ REVOKE ALL ON public.lab_v2_study_generation_requests
   FROM PUBLIC, anon, authenticated, service_role;
 
 CREATE TABLE public.lab_v2_study_generation_global_buckets (
-  window_start timestamptz PRIMARY KEY,
+  window_start date PRIMARY KEY,
   request_count smallint NOT NULL CHECK (request_count BETWEEN 1 AND 10)
 );
 ALTER TABLE public.lab_v2_study_generation_global_buckets ENABLE ROW LEVEL SECURITY;
@@ -36,7 +36,7 @@ REVOKE ALL ON public.lab_v2_study_generation_global_buckets
 
 CREATE TABLE public.lab_v2_study_generation_user_buckets (
   user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  window_start timestamptz NOT NULL,
+  window_start date NOT NULL,
   request_count smallint NOT NULL CHECK (request_count BETWEEN 1 AND 3),
   PRIMARY KEY (user_id, window_start)
 );
@@ -86,9 +86,11 @@ BEGIN
 
   IF NOT EXISTS (
     SELECT 1 FROM public.lab_v2_stages s
-     WHERE s.run_id = v_run.id AND s.day_number = p_journey_day
+     WHERE s.run_id = v_run.id
+       AND s.day_number = p_journey_day
+       AND s.completed_at IS NOT NULL
   ) THEN
-    RETURN jsonb_build_object('status', 'unavailable');
+    RETURN jsonb_build_object('status', 'reading_required');
   END IF;
 
   SELECT l.* INTO v_layer
@@ -176,7 +178,7 @@ SET search_path = ''
 AS $fn$
 DECLARE
   v_now timestamptz := statement_timestamp();
-  v_bucket timestamptz;
+  v_bucket date;
   v_expected_key text;
   v_context jsonb;
   v_request public.lab_v2_study_generation_requests%ROWTYPE;
@@ -284,27 +286,24 @@ BEGIN
        AND idempotency_key = v_request.idempotency_key;
   END IF;
 
-  v_bucket := pg_catalog.date_trunc('hour', v_now AT TIME ZONE 'UTC') AT TIME ZONE 'UTC';
+  v_bucket := (v_now AT TIME ZONE 'UTC')::date;
   PERFORM pg_catalog.pg_advisory_xact_lock(
     pg_catalog.hashtextextended(
-      'lab-study-global:' || pg_catalog.to_char(
-        v_bucket AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS'
-      ), 2113
+      'lab-study-global:' || pg_catalog.to_char(v_bucket::timestamp, 'YYYY-MM-DD'), 2113
     )
   );
   PERFORM pg_catalog.pg_advisory_xact_lock(
     pg_catalog.hashtextextended(
-      'lab-study-user:' || p_user_id::text || ':' || pg_catalog.to_char(
-        v_bucket AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS'
-      ), 2114
+      'lab-study-user:' || p_user_id::text || ':' ||
+      pg_catalog.to_char(v_bucket::timestamp, 'YYYY-MM-DD'), 2114
     )
   );
 
   DELETE FROM public.lab_v2_study_generation_global_buckets
-   WHERE window_start < v_bucket - interval '24 hours';
+   WHERE window_start < v_bucket - 1;
   DELETE FROM public.lab_v2_study_generation_user_buckets
    WHERE user_id = p_user_id
-     AND window_start < v_bucket - interval '24 hours';
+     AND window_start < v_bucket - 1;
 
   SELECT b.request_count::integer INTO v_global_count
     FROM public.lab_v2_study_generation_global_buckets b
@@ -318,7 +317,9 @@ BEGIN
    FOR UPDATE;
   v_user_count := COALESCE(v_user_count, 0);
 
-  v_retry := GREATEST(1, ceil(extract(epoch FROM (v_bucket + interval '1 hour' - v_now)))::integer);
+  v_retry := GREATEST(1, ceil(extract(epoch FROM (
+    ((v_bucket + 1)::timestamp AT TIME ZONE 'UTC') - v_now
+  )))::integer);
   IF v_global_count >= 10 THEN
     RETURN pg_catalog.jsonb_build_object(
       'status', 'rate_limited', 'scope', 'global', 'retry_after_seconds', v_retry
@@ -551,13 +552,13 @@ GRANT EXECUTE ON FUNCTION public.lab_v2_fail_study_generation(uuid, uuid)
 COMMENT ON TABLE public.lab_v2_study_generation_requests IS
   'Server-only idempotency records and short generation leases. Account deletion cascades requests.';
 COMMENT ON TABLE public.lab_v2_study_generation_global_buckets IS
-  'Server-only UTC-hour global generation cap: ten cache-miss provider calls per hour.';
+  'Server-only UTC-day global generation cap: ten cache-miss provider calls per day.';
 COMMENT ON TABLE public.lab_v2_study_generation_user_buckets IS
-  'Server-only UTC-hour per-user generation cap: three cache-miss provider calls per hour.';
+  'Server-only UTC-day per-user generation cap: three cache-miss provider calls per day.';
 COMMENT ON FUNCTION public.lab_v2_prepare_study_generation(uuid, smallint, smallint) IS
   'Authenticated user id is verified by the Edge Function; returns only active plan chapters and ALM1911 verse text for an unlocked layer.';
 COMMENT ON FUNCTION public.lab_v2_reserve_study_generation(uuid, text, text, smallint, smallint, text[], text) IS
-  'Service-role-only atomic idempotency, global/per-user rate cap and cache-key lease; cache hits are free.';
+  'Service-role-only atomic idempotency, daily global/per-user rate cap and cache-key lease; cache hits are free.';
 COMMENT ON FUNCTION public.lab_v2_publish_study_generation(uuid, uuid, text, text, smallint, text[], smallint, text, text, jsonb, text) IS
   'Service-role-only idempotent publication of model output to the append-only study cache.';
 

@@ -232,6 +232,7 @@ export function makeStudyCacheKey(day, refs, layer, version = STUDY_CONTENT_VERS
 
 export function mapRepositoryStatus(status) {
   if (status === "layer_locked") return { status: 403, code: "study_layer_locked" };
+  if (status === "reading_required") return { status: 403, code: "study_reading_required" };
   if (status === "invalid_request" || status === "invalid_content" || status === "invalid_chapter_refs") return { status: 400, code: "invalid_study_request" };
   if (status === "source_unavailable" || status === "unavailable" || status === "not_eligible") {
     return { status: 404, code: "study_unavailable" };
