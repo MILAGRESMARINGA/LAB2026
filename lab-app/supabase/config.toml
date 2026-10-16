@@ -38,3 +38,7 @@ enabled = false
 [inbucket]
 enabled = true
 port = 55324
+
+[functions.study-generate]
+# The Edge handler also resolves the bearer token with Supabase Auth.
+verify_jwt = true

@@ -1,0 +1,11 @@
+# LABGAME study generation
+
+The authenticated `study-generate` Supabase Edge Function is cache-first. It resolves the caller's bearer token through Supabase Auth, asks a service-role-only RPC for the active plan and Almeida 1911 verse data, and accepts only ordered chapter subsets from that verified day. The layer thresholds remain enforced in PostgreSQL (0, 30, and 90 completed stages).
+
+Before any model call, the function searches published content for the exact day, layer, and chapter set. A cache hit returns the stored study without acquiring a generation reservation or calling the provider. Cache misses require `OPENAI_API_KEY`; when that secret is absent, the endpoint returns the nonsecret `study_generation_unavailable` response and does not reserve quota. This repository does not configure the key and CI never invokes production or the live provider.
+
+Generated output uses a strict JSON schema, a 64 KB maximum retrieved prompt, a 1,200-token maximum output, a 25-second request timeout, and `store:false`. The default provider model is `gpt-6-luna`. A server validator rejects malformed output, non-Bible citations, references outside the retrieved chapters/verses, and explicit deterministic or Calvinist assertions. The prompt treats retrieved verse text as untrusted data, ignores instructions inside it, and forbids author quotations or citations because no human-author source corpus is retrieved by this endpoint.
+
+Migration `202610160112_lab_v2_study_generation_limits.sql` creates RLS-protected operational tables with no direct Data API grants. Service-role-only RPCs validate the active run and chapter subset, reserve idempotency keys under an advisory lock, and enforce three cache-miss generations per user and ten globally per UTC hour. Generated study rows are published as append-only versions in the existing cache table. Failed leases are released; expired leases can be recovered after two minutes.
+
+Validation runs through `npm run verify:engineering`, `npm test`, the PostgreSQL 16/17 smoke suite, and `deno check`. These checks use deterministic provider mocks and disposable databases. They do not prove live inference, production migration, or Edge Function deployment.

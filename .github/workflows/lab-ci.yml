@@ -67,6 +67,12 @@ jobs:
         run: npm test
       - name: Check TypeScript and build Vite
         run: npm run build
+      - name: Set up Deno for Edge Function type checking
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check study generation Edge Function without secrets
+        run: deno check supabase/functions/study-generate/index.ts
 
   v2-postgres:
     name: V2 isolated PostgreSQL ${{ matrix.postgres }} integration and RLS

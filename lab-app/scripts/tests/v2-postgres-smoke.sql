@@ -728,6 +728,7 @@ SELECT 'LAB SERVER-SIDE READING SPEED GUARDS PASSED' AS result;
 -- Versioned study cache and fair GC XP score. This is still the disposable PG16/17 fixture.
 \i supabase/migrations/202610160110_lab_v2_study_content_cache.sql
 \i supabase/migrations/202610160111_lab_v2_gc_fair_xp_ranking.sql
+\i supabase/migrations/202610160112_lab_v2_study_generation_limits.sql
 
 DO $study_seed$
 DECLARE n integer;
@@ -1035,3 +1036,250 @@ BEGIN
 END $fair_score$;
 RESET ROLE;
 SELECT 'LAB FAIR GC AVERAGE XP AND THREE-CATEGORY CONSISTENCY PASSED' AS result;
+
+
+-- Authenticated study generation is server-only, cache-first, idempotent, and
+-- capped at three requests per user and ten requests globally per UTC hour.
+INSERT INTO public.lab_bible_verses(edition,chapter_id,verse_number,verse_text)
+VALUES
+ ('ALM1911','1:2',1,'Fixture de teste do capítulo 1:2.'),
+ ('ALM1911','1:3',1,'Fixture de teste do capítulo 1:3.'),
+ ('ALM1911','43:2',1,'Fixture de teste do capítulo 43:2.'),
+ ('ALM1911','1:4',1,'Fixture de teste do capítulo 1:4.'),
+ ('ALM1911','1:5',1,'Fixture de teste do capítulo 1:5.'),
+ ('ALM1911','19:2',1,'Fixture de teste do capítulo 19:2.')
+ON CONFLICT (edition,chapter_id,verse_number) DO NOTHING;
+
+INSERT INTO auth.users(id)
+VALUES
+ ('d1000000-0000-4000-8000-000000000001'),
+ ('d2000000-0000-4000-8000-000000000001'),
+ ('d3000000-0000-4000-8000-000000000001')
+ON CONFLICT (id) DO NOTHING;
+INSERT INTO auth.users(id)
+SELECT ('e0000000-0000-4000-8000-' || lpad(to_hex(g),12,'0'))::uuid
+  FROM generate_series(1,7) AS g
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.lab_v2_runs(id,user_id,plan_length,status)
+VALUES
+ ('f1000000-0000-4000-8000-000000000001','d1000000-0000-4000-8000-000000000001',365,'active'),
+ ('f2000000-0000-4000-8000-000000000001','d2000000-0000-4000-8000-000000000001',365,'active'),
+ ('f3000000-0000-4000-8000-000000000001','d3000000-0000-4000-8000-000000000001',365,'active')
+ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.lab_v2_runs(id,user_id,plan_length,status)
+SELECT ('f0000000-0000-4000-8000-' || lpad(to_hex(g),12,'0'))::uuid,
+       ('e0000000-0000-4000-8000-' || lpad(to_hex(g),12,'0'))::uuid,
+       365,'active'
+  FROM generate_series(1,7) AS g
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.lab_v2_stages(run_id,day_number,activated_at,completed_at)
+VALUES
+ ('f1000000-0000-4000-8000-000000000001',1,statement_timestamp()-interval '2 hours',NULL)
+ON CONFLICT (run_id,day_number) DO NOTHING;
+INSERT INTO public.lab_v2_stages(run_id,day_number,activated_at,completed_at)
+SELECT 'f2000000-0000-4000-8000-000000000001',g,
+       statement_timestamp()-interval '2 hours',statement_timestamp()-interval '1 hour'
+  FROM generate_series(1,30) AS g
+ON CONFLICT (run_id,day_number) DO NOTHING;
+INSERT INTO public.lab_v2_stages(run_id,day_number,activated_at,completed_at)
+SELECT 'f3000000-0000-4000-8000-000000000001',g,
+       statement_timestamp()-interval '2 hours',statement_timestamp()-interval '1 hour'
+  FROM generate_series(1,90) AS g
+ON CONFLICT (run_id,day_number) DO NOTHING;
+INSERT INTO public.lab_v2_stages(run_id,day_number,activated_at,completed_at)
+SELECT ('f0000000-0000-4000-8000-' || lpad(to_hex(g),12,'0'))::uuid,
+       d,statement_timestamp()-interval '2 hours',NULL
+  FROM generate_series(1,7) AS g
+ CROSS JOIN generate_series(1,3) AS d
+ON CONFLICT (run_id,day_number) DO NOTHING;
+
+UPDATE public.lab_v2_release_controls SET enabled=true WHERE singleton=true;
+
+DO $study_generation_privileges$
+BEGIN
+  IF has_table_privilege('authenticated','public.lab_v2_study_generation_requests','SELECT')
+     OR has_table_privilege('service_role','public.lab_v2_study_generation_requests','SELECT')
+     OR has_table_privilege('authenticated','public.lab_v2_study_generation_global_buckets','SELECT')
+     OR has_table_privilege('service_role','public.lab_v2_study_generation_user_buckets','SELECT') THEN
+    RAISE EXCEPTION 'FAIL: generation control tables are directly readable';
+  END IF;
+  IF has_function_privilege('authenticated',
+       'public.lab_v2_prepare_study_generation(uuid,smallint,smallint)','EXECUTE')
+     OR NOT has_function_privilege('service_role',
+       'public.lab_v2_prepare_study_generation(uuid,smallint,smallint)','EXECUTE')
+     OR has_function_privilege('authenticated',
+       'public.lab_v2_reserve_study_generation(uuid,text,text,smallint,smallint,text[],text)','EXECUTE')
+     OR NOT has_function_privilege('service_role',
+       'public.lab_v2_reserve_study_generation(uuid,text,text,smallint,smallint,text[],text)','EXECUTE') THEN
+    RAISE EXCEPTION 'FAIL: study generation RPC grants are not service-role-only';
+  END IF;
+END $study_generation_privileges$;
+
+SET ROLE service_role;
+DO $study_generation_layers$
+DECLARE
+  locked jsonb;
+  layer2 jsonb;
+  layer3 jsonb;
+BEGIN
+  SELECT public.lab_v2_prepare_study_generation(
+    'd1000000-0000-4000-8000-000000000001',1,2
+  ) INTO locked;
+  SELECT public.lab_v2_prepare_study_generation(
+    'd2000000-0000-4000-8000-000000000001',1,2
+  ) INTO layer2;
+  SELECT public.lab_v2_prepare_study_generation(
+    'd3000000-0000-4000-8000-000000000001',1,3
+  ) INTO layer3;
+  IF locked->>'status'<>'layer_locked'
+     OR layer2->>'status'<>'prepared'
+     OR layer3->>'status'<>'prepared' THEN
+    RAISE EXCEPTION 'FAIL: progressive study layer gate failed (% / % / %)',locked,layer2,layer3;
+  END IF;
+  IF layer2->'chapter_refs' IS DISTINCT FROM '["1:1","19:1","43:1"]'::jsonb
+     OR jsonb_array_length(layer2->'chapters')<>3 THEN
+    RAISE EXCEPTION 'FAIL: preparation did not return verified plan refs and Bible data: %',layer2;
+  END IF;
+END $study_generation_layers$;
+
+DO $study_generation_cache_and_limits$
+DECLARE
+  cached_reservation jsonb;
+  repeated_reservation jsonb;
+  cache_read jsonb;
+  one jsonb;
+  two jsonb;
+  three jsonb;
+  four jsonb;
+  global_result jsonb;
+  content jsonb;
+  reservation_id uuid;
+  user_id uuid;
+  study_day smallint;
+  refs text[];
+  cache_key text;
+  cache_version constant text := '2026-10-ai-v1';
+  idx integer;
+BEGIN
+  content := jsonb_build_object(
+    'title','Estudo de teste cacheado',
+    'summary','Resumo de teste suficientemente longo para verificar a publicação segura.',
+    'context','Contexto de teste fundamentado nos capítulos recuperados do plano.',
+    'exegesis','Exegese de teste com tamanho suficiente e sem citação humana não recuperada.',
+    'theological_connection',NULL,
+    'pentecostal_arminian_lens','A graça de Deus capacita uma resposta humana real e responsável.',
+    'application','Responda hoje com fé, serviço e uma prática concreta de santificação.',
+    'reflection_questions','[]'::jsonb,
+    'prayer','Senhor, ensina-me a responder à tua graça com fé e obediência.',
+    'references','[]'::jsonb,
+    'study_groups','[]'::jsonb
+  );
+  cache_key := 'bible-annual:1:1:1,43:1:L1:' || cache_version;
+  SELECT public.lab_v2_reserve_study_generation(
+    'd2000000-0000-4000-8000-000000000001',
+    'test-cache-idempotency-key-0001',cache_key,1,1,ARRAY['1:1','43:1']::text[],cache_version
+  ) INTO cached_reservation;
+  IF cached_reservation->>'status'<>'reserved' THEN
+    RAISE EXCEPTION 'FAIL: expected generation reservation, got %',cached_reservation;
+  END IF;
+  reservation_id := (cached_reservation->>'reservation_id')::uuid;
+  SELECT public.lab_v2_reserve_study_generation(
+    'd2000000-0000-4000-8000-000000000001',
+    'test-cache-idempotency-key-0001',cache_key,1,1,ARRAY['1:1','43:1']::text[],cache_version
+  ) INTO repeated_reservation;
+  IF repeated_reservation->>'status'<>'in_progress' THEN
+    RAISE EXCEPTION 'FAIL: repeated idempotency key was not held: %',repeated_reservation;
+  END IF;
+
+  SELECT public.lab_v2_publish_study_generation(
+    'd2000000-0000-4000-8000-000000000001',reservation_id,cache_key,
+    'ai-' || repeat('a',64),1,ARRAY['1:1','43:1']::text[],1,cache_version,
+    'Estudo de teste cacheado',content,'gpt-6-luna'
+  ) INTO cache_read;
+  IF cache_read->>'status'<>'published' THEN
+    RAISE EXCEPTION 'FAIL: generated content did not publish: %',cache_read;
+  END IF;
+  SELECT public.lab_v2_reserve_study_generation(
+    'd2000000-0000-4000-8000-000000000001',
+    'test-cache-hit-idempotency-key-0002',cache_key,1,1,ARRAY['1:1','43:1']::text[],cache_version
+  ) INTO cache_read;
+  IF cache_read->>'status'<>'cache_hit' THEN
+    RAISE EXCEPTION 'FAIL: published study did not return a cache hit: %',cache_read;
+  END IF;
+
+  cache_key := 'bible-annual:1:1:1:L1:' || cache_version;
+  SELECT public.lab_v2_reserve_study_generation(
+    'd1000000-0000-4000-8000-000000000001',
+    'test-user-limit-key-00000001',cache_key,1,1,ARRAY['1:1']::text[],cache_version
+  ) INTO one;
+  IF one->>'status'<>'reserved' THEN RAISE EXCEPTION 'FAIL: first user reservation failed: %',one; END IF;
+  cache_key := 'bible-annual:1:19:1:L1:' || cache_version;
+  SELECT public.lab_v2_reserve_study_generation(
+    'd1000000-0000-4000-8000-000000000001',
+    'test-user-limit-key-00000002',cache_key,1,1,ARRAY['19:1']::text[],cache_version
+  ) INTO two;
+  IF two->>'status'<>'reserved' THEN RAISE EXCEPTION 'FAIL: second user reservation failed: %',two; END IF;
+  cache_key := 'bible-annual:1:43:1:L1:' || cache_version;
+  SELECT public.lab_v2_reserve_study_generation(
+    'd1000000-0000-4000-8000-000000000001',
+    'test-user-limit-key-00000003',cache_key,1,1,ARRAY['43:1']::text[],cache_version
+  ) INTO three;
+  IF three->>'status'<>'reserved' THEN RAISE EXCEPTION 'FAIL: third user reservation failed: %',three; END IF;
+  cache_key := 'bible-annual:1:1:1,19:1:L1:' || cache_version;
+  SELECT public.lab_v2_reserve_study_generation(
+    'd1000000-0000-4000-8000-000000000001',
+    'test-user-limit-key-00000004',cache_key,1,1,ARRAY['1:1','19:1']::text[],cache_version
+  ) INTO four;
+  IF four->>'status'<>'rate_limited' OR four->>'scope'<>'user' THEN
+    RAISE EXCEPTION 'FAIL: fourth same-hour user request was not rate-limited: %',four;
+  END IF;
+  PERFORM public.lab_v2_fail_study_generation(
+    'd1000000-0000-4000-8000-000000000001',(one->>'reservation_id')::uuid
+  );
+  PERFORM public.lab_v2_fail_study_generation(
+    'd1000000-0000-4000-8000-000000000001',(two->>'reservation_id')::uuid
+  );
+  PERFORM public.lab_v2_fail_study_generation(
+    'd1000000-0000-4000-8000-000000000001',(three->>'reservation_id')::uuid
+  );
+
+  -- One DO statement fixes statement_timestamp() for every attempt; six more
+  -- cache misses fill the global UTC-hour bucket to ten.
+  FOR idx IN 1..6 LOOP
+    user_id := ('e0000000-0000-4000-8000-' || lpad(to_hex(idx),12,'0'))::uuid;
+    CASE idx
+      WHEN 1 THEN study_day:=1; refs:=ARRAY['1:1']::text[];
+      WHEN 2 THEN study_day:=1; refs:=ARRAY['19:1']::text[];
+      WHEN 3 THEN study_day:=1; refs:=ARRAY['43:1']::text[];
+      WHEN 4 THEN study_day:=1; refs:=ARRAY['1:1','19:1']::text[];
+      WHEN 5 THEN study_day:=1; refs:=ARRAY['19:1','43:1']::text[];
+      WHEN 6 THEN study_day:=1; refs:=ARRAY['1:1','19:1','43:1']::text[];
+    END CASE;
+    cache_key := 'bible-annual:' || study_day::text || ':'
+      || array_to_string(refs,',') || ':L1:' || cache_version;
+    SELECT public.lab_v2_reserve_study_generation(
+      user_id,
+      'global-limit-idempotency-' || lpad(idx::text,2,'0'),
+      cache_key,study_day,1,refs,cache_version
+    ) INTO global_result;
+    IF global_result->>'status'<>'reserved' THEN
+      RAISE EXCEPTION 'FAIL: global request % did not reserve (%): %',idx,cache_key,global_result;
+    END IF;
+    PERFORM public.lab_v2_fail_study_generation(user_id,(global_result->>'reservation_id')::uuid);
+  END LOOP;
+
+  user_id := 'e0000000-0000-4000-8000-000000000007';
+  study_day := 2;
+  refs := ARRAY['1:2']::text[];
+  cache_key := 'bible-annual:2:1:2:L1:' || cache_version;
+  SELECT public.lab_v2_reserve_study_generation(
+    user_id,'global-limit-idempotency-07',cache_key,study_day,1,refs,cache_version
+  ) INTO global_result;
+  IF global_result->>'status'<>'rate_limited' OR global_result->>'scope'<>'global' THEN
+    RAISE EXCEPTION 'FAIL: eleventh global same-hour request was not rejected: %',global_result;
+  END IF;
+END $study_generation_cache_and_limits$;
+RESET ROLE;
+SELECT 'LAB STUDY GENERATION AUTH, CACHE, IDEMPOTENCY, LAYERS AND RATE LIMITS PASSED' AS result;

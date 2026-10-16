@@ -11,6 +11,7 @@
 - [Modelo de ameaças e segurança](./SECURITY-THREAT-MODEL.md): STRIDE, LGPD, RLS, segredos, cadeia de dependências.
 - [Auditoria de segurança ao vivo de 12/10](./SECURITY-LIVE-AUDIT-2026-10-12.md): findings confirmados, migração preparada e status NÃO APLICADO.
 - [Arquitetura e governança da IA](./AI-ARCHITECTURE-AND-GOVERNANCE.md): RAG, origens, exegese, JSON, revisão teológica, fine-tuning.
+- [Geração de estudos](./STUDY-GENERATION.md): endpoint autenticado cache-first, citações validadas, camadas e limites do provedor.
 - [Plano de testes e releases](./TEST-AND-RELEASE-PLAN.md): CI, smoke, E2E, SQL, dependências, rollback.
 - [Operações e incidentes](./OPERATIONS-INCIDENTS.md): resposta, continuidade e backup.
 - [Roadmap](./ROADMAP.md): entregas reais e pendências.
@@ -27,7 +28,7 @@
 - [ADR 0004 — Gates de qualidade e segurança](./adr/0004-quality-and-security-gates.md)
 
 ## Agentes, contratos e validação
-- [Handoff e política de veto](../.agents/WORKFLOW.md), [manifesto dos oito agentes](../.agents/manifest.json) e [descrições](../.agents/README.md). A CI valida contratos e testes; não há runtime de LLM conectado.
+- [Handoff e política de veto](../.agents/WORKFLOW.md), [manifesto dos oito agentes](../.agents/manifest.json) e [descrições](../.agents/README.md). A CI valida contratos e testes; o endpoint de estudos está implementado em fail-closed, sem chave de provedor e sem deploy/live inference.
 - `cd lab-app && npm run verify:engineering && npm test && npm run build`.
 - Workflow do GitHub: [LAB CI](../.github/workflows/lab-ci.yml).
 - Ferramentas do produto: código em `lab-app/`. O diretório `project/` é um CRM legado, **fora de escopo** e não deve ser aplicado ao banco LABGAME.
@@ -36,4 +37,4 @@
 Nenhuma chave administrativa, SMTP, Resend ou OpenAI em `VITE_*`, nos commits ou nas capturas. Nunca publicar dumps de produção em issues/PRs. Consultar threat model para reporte reservado.
 
 ## Mudanças pendentes de aprovação operacional
-SMTP real e templates, staging Supabase, lockfile/revisão de dependências, RLS multiusuário, revisões de menores/LGPD, CSP enforce após telemetria, motor RAG e publicação nativa.
+SMTP real e templates, staging Supabase, lockfile/revisão de dependências, RLS multiusuário, revisões de menores/LGPD, CSP enforce após telemetria, chave do provedor e publicação nativa.
