@@ -154,7 +154,7 @@ async function requestAgentReview(agent, contract, gateTable) {
 
 async function main() {
   if (!process.env.OPENAI_API_KEY) {
-    finishWithoutCalls("SKIPPED", "OPENAI_API_KEY is unavailable to this workflow. No key is logged or inspected.");
+    finishWithoutCalls("SKIPPED", "OPENAI_API_KEY is unavailable to this workflow. No key value is logged.");
     return;
   }
   if (process.env.GITHUB_REF !== "refs/heads/lab-rebuild-2026") {

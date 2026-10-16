@@ -36,7 +36,7 @@
 | Edge Functions | NENHUMA |
 | Homologação P0 pública | BLOQUEADA pelos gates anteriores |
 
-## Próximos passos sem custo
+## Próximos passos após os gates
 
 1. Rodar os scripts em docs/P0-BACKUP-RESTORE-GATE.md no computador do responsável; manter dump e banco restaurado fora do GitHub.
 2. Ensaiar as migrations pendentes na cópia e comparar estrutura/contagens.
