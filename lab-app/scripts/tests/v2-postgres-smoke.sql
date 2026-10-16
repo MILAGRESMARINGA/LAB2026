@@ -189,18 +189,18 @@ SELECT public.lab_v2_confirm(:'new_run'::uuid,365,'66:22');
 DO $test$
 DECLARE s jsonb;c integer;
 BEGIN
- SELECT public.lab_v2_sync(:'new_run'::uuid) INTO s;
- SELECT COUNT(*) INTO c FROM public.lab_v2_cycle_awards WHERE run_id=:'new_run'::uuid;
+ SELECT public.lab_v2_sync((SELECT id FROM public.lab_v2_runs WHERE user_id=auth.uid() AND status='completed' LIMIT 1)) INTO s;
+ SELECT COUNT(*) INTO c FROM public.lab_v2_cycle_awards WHERE run_id=(SELECT id FROM public.lab_v2_runs WHERE user_id=auth.uid() AND status='completed' LIMIT 1);
  IF s->>'status'<>'completed' OR (s->>'run_xp')::integer<>21890 OR c<>1 OR
    s->'cycle_award'->>'perfect_constancy'<>'true' THEN
   RAISE EXCEPTION 'FAIL: V2 annual bonus/perfect badge: % count %',s,c;
  END IF;
 END $test$;
 -- Repeated RPC confirmations cannot issue another completed-cycle award.
-SELECT public.lab_v2_confirm(:'new_run'::uuid,365,'66:22');
+SELECT public.lab_v2_confirm((SELECT id FROM public.lab_v2_runs WHERE user_id=auth.uid() AND status='completed' LIMIT 1),365,'66:22');
 DO $test$
 BEGIN
- IF (SELECT COUNT(*) FROM public.lab_v2_cycle_awards WHERE run_id=:'new_run'::uuid)<>1
+ IF (SELECT COUNT(*) FROM public.lab_v2_cycle_awards WHERE run_id=(SELECT id FROM public.lab_v2_runs WHERE user_id=auth.uid() AND status='completed' LIMIT 1))<>1
  THEN RAISE EXCEPTION 'FAIL: annual crown duplicated'; END IF;
 END $test$;
 -- Explicit verified reset removes V1+V2 historical XP, awards and all lives.
