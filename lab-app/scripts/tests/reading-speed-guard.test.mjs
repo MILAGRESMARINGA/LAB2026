@@ -62,3 +62,13 @@ test("CI proves immediate rejection, delayed success, XP idempotence and local-o
  assert.match(localV2,/Backdate only a local isolated fixture/);
  assert.match(localV2,/lab_v2_begin_chapter/);
 });
+
+test("internal timer rows are inspected only after resetting the authenticated role",()=>{
+ for(const table of ["lab_game_chapter_read_sessions","lab_v2_chapter_read_sessions"]){
+  const query=pgSmoke.indexOf("SELECT count(*) INTO starts FROM public."+table);
+  assert.notEqual(query,-1,table+" count must be covered");
+  const reset=pgSmoke.lastIndexOf("RESET ROLE;",query);
+  const setAuthenticated=pgSmoke.lastIndexOf("SET ROLE authenticated;",query);
+  assert.ok(reset>setAuthenticated,table+" is private and its count must run as superuser");
+ }
+});

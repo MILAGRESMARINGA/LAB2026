@@ -630,7 +630,7 @@ SET ROLE authenticated;
 SELECT public.lab_game_confirm_chapter('1:1');
 SELECT public.lab_game_confirm_chapter('1:1');
 DO $speed$
-DECLARE xp integer;checks integer;starts integer;
+DECLARE xp integer;checks integer;
 BEGIN
  SELECT total_xp INTO xp FROM public.lab_game_stats WHERE user_id=auth.uid();
  SELECT count(*) INTO checks FROM public.lab_game_chapter_checks
@@ -638,11 +638,15 @@ BEGIN
  IF xp<>10 OR checks<>1 THEN
   RAISE EXCEPTION 'FAIL: V1 confirmation did not award exactly once (XP %, checks %)',xp,checks;
  END IF;
+END $speed$;
+RESET ROLE;
+DO $speed_v1_sessions$
+DECLARE starts integer;
+BEGIN
  SELECT count(*) INTO starts FROM public.lab_game_chapter_read_sessions
   WHERE run_id=current_setting('app.speed_v1_run',true)::uuid;
  IF starts<>0 THEN RAISE EXCEPTION 'FAIL: V1 reading session was not consumed'; END IF;
-END $speed$;
-RESET ROLE;
+END $speed_v1_sessions$;
 
 -- The release remains enabled only in this disposable PostgreSQL fixture.
 SET ROLE authenticated;
@@ -669,22 +673,29 @@ BEGIN
 END $speed$;
 UPDATE public.lab_v2_chapter_read_sessions SET started_at=statement_timestamp()-interval '2 minutes'
  WHERE run_id=:'speed_v2_run'::uuid AND day_number=1 AND chapter_id='19:1';
+SET ROLE authenticated;
 SELECT public.lab_v2_confirm(:'speed_v2_run'::uuid,1,'19:1');
 SELECT public.lab_v2_confirm(:'speed_v2_run'::uuid,1,'19:1');
 DO $speed$
-DECLARE score jsonb;checks integer;starts integer;
+DECLARE score jsonb;checks integer;
 BEGIN
  SELECT public.lab_v2_sync(current_setting('app.speed_v2_run',true)::uuid) INTO score;
  SELECT count(*) INTO checks FROM public.lab_v2_chapter_checks
   WHERE run_id=current_setting('app.speed_v2_run',true)::uuid
     AND day_number=1 AND chapter_id='19:1';
- SELECT count(*) INTO starts FROM public.lab_v2_chapter_read_sessions
-  WHERE run_id=current_setting('app.speed_v2_run',true)::uuid;
- IF checks<>1 OR starts<>0 OR (score->>'run_xp')::integer<>10 THEN
-  RAISE EXCEPTION 'FAIL: V2 confirmation did not award exactly once (score %, checks %, sessions %)',
-    score,checks,starts;
+ IF checks<>1 OR (score->>'run_xp')::integer<>10 THEN
+  RAISE EXCEPTION 'FAIL: V2 confirmation did not award exactly once (score %, checks %)',
+    score,checks;
  END IF;
 END $speed$;
+RESET ROLE;
+DO $speed_v2_sessions$
+DECLARE starts integer;
+BEGIN
+ SELECT count(*) INTO starts FROM public.lab_v2_chapter_read_sessions
+  WHERE run_id=current_setting('app.speed_v2_run',true)::uuid;
+ IF starts<>0 THEN RAISE EXCEPTION 'FAIL: V2 reading session was not consumed'; END IF;
+END $speed_v2_sessions$;
 DO $speed$
 BEGIN
  IF EXISTS(
