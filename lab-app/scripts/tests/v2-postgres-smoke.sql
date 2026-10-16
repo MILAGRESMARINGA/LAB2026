@@ -253,6 +253,7 @@ ON CONFLICT(user_id) DO UPDATE SET leaderboard_opt_in=true;
 INSERT INTO public.reading_groups(name,owner_id,competition_opt_in)
  VALUES('GC Integracao','11111111-1111-4111-8111-111111111111',true)
  RETURNING id AS gc_id \gset
+SELECT set_config('app.test_group_id', :'gc_id',false);
 INSERT INTO public.reading_group_members(group_id,user_id,role) VALUES
  (:'gc_id'::uuid,'11111111-1111-4111-8111-111111111111','leader'),
  (:'gc_id'::uuid,'22222222-2222-4222-8222-222222222222','member'),
@@ -273,7 +274,7 @@ SELECT set_config('app.test_user','44444444-4444-4444-8444-444444444444',false);
 DO $test$
 BEGIN
  BEGIN
-  PERFORM public.lab_v2_group_summary((SELECT id FROM public.reading_groups LIMIT 1));
+  PERFORM public.lab_v2_group_summary(current_setting('app.test_group_id')::uuid);
   RAISE EXCEPTION 'FAIL: non-member viewed private GC';
  EXCEPTION WHEN OTHERS THEN
   IF SQLERRM NOT LIKE 'Acesso ao GC não autorizado%' THEN RAISE; END IF;
