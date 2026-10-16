@@ -46,7 +46,7 @@ ALTER TABLE public.lab_notification_preferences ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.lab_member_profiles,public.lab_notification_preferences
  FROM PUBLIC,anon,authenticated;
 GRANT SELECT,INSERT,UPDATE ON TABLE public.lab_member_profiles,public.lab_notification_preferences TO authenticated;
-REVOKE TRUNCATE,TRIGGER,REFERENCES,MAINTAIN ON TABLE public.lab_member_profiles,public.lab_notification_preferences
+REVOKE TRUNCATE,TRIGGER,REFERENCES ON TABLE public.lab_member_profiles,public.lab_notification_preferences
  FROM PUBLIC,anon,authenticated;
 
 CREATE POLICY "Profile read private" ON public.lab_member_profiles
