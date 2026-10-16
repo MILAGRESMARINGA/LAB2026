@@ -483,3 +483,6 @@ BEGIN
  THEN RAISE EXCEPTION 'FAIL: crossing midnight consumed a life before 24+6 hours'; END IF;
 END $period$;
 SELECT 'LAB V2 CROSS-MONTH SAFETY PASSED' AS result;
+
+-- Final full-year crown/constancy and irreversible reset gates.
+\i scripts/tests/v2-annual-awards-smoke.sql
