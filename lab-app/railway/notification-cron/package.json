@@ -1,0 +1,13 @@
+{
+  "name": "labgame-railway-notification-cron",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "start": "node run.mjs",
+    "test": "node --test ../../scripts/tests/railway-notification-cron.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
