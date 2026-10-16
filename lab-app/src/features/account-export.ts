@@ -42,7 +42,8 @@ export async function buildAccountExport():Promise<{
   "lab_game_stats","lab_member_profiles","lab_notification_preferences",
   "lab_game_runs","lab_game_video_rewards","lab_game_video_sessions",
   "lab_game_cycle_awards","lab_v2_runs","lab_v2_cycle_awards",
-  "lab_v2_monthly_lives","reading_group_members","reading_completions"
+  "lab_v2_monthly_lives","lab_notification_deliveries",
+  "reading_group_members","reading_completions"
  ]){
   tables[table]=await pageTable({table,filter:"user_id"},user.id);
  }
