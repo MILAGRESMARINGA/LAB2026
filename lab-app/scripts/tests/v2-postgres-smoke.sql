@@ -426,6 +426,7 @@ INSERT INTO public.lab_v2_runs(user_id,plan_length,status,started_at)
  VALUES('55555555-5555-4555-8555-555555555555',365,'active',
         TIMESTAMPTZ '2026-10-30 17:00:00+00')
  RETURNING id AS month_run \gset
+SELECT set_config('app.month_run', :'month_run',false);
 INSERT INTO public.lab_v2_stages(run_id,day_number,activated_at)
  VALUES(:'month_run'::uuid,1,TIMESTAMPTZ '2026-10-30 17:00:00+00');
 SELECT set_config('app.test_user','55555555-5555-4555-8555-555555555555',false);
@@ -458,7 +459,7 @@ BEGIN
  SELECT used_lives INTO november FROM public.lab_v2_monthly_lives
  WHERE user_id=auth.uid() AND month_start=DATE '2026-11-01';
  SELECT status,finished_at INTO state_,ended FROM public.lab_v2_runs
- WHERE id=:'month_run'::uuid;
+ WHERE id=current_setting('app.month_run')::uuid;
  IF october<>3 OR november IS NOT NULL OR state_<>'failed' OR
     ended<>TIMESTAMPTZ '2026-11-03 23:00:00+00'
  THEN RAISE EXCEPTION 'FAIL: month rollover resurrected a failed stage (% % % %)',
@@ -470,6 +471,7 @@ INSERT INTO public.lab_v2_runs(user_id,plan_length,status,started_at)
  VALUES('66666666-6666-4666-8666-666666666666',365,'active',
         TIMESTAMPTZ '2026-11-01 01:00:00+00')
  RETURNING id AS crossing_run \gset
+SELECT set_config('app.crossing_run', :'crossing_run',false);
 INSERT INTO public.lab_v2_stages(run_id,day_number,activated_at)
  VALUES(:'crossing_run'::uuid,1,TIMESTAMPTZ '2026-11-01 01:00:00+00');
 SELECT set_config('app.test_user','66666666-6666-4666-8666-666666666666',false);
@@ -477,7 +479,7 @@ SELECT public.lab_v2_resolve(:'crossing_run'::uuid,TIMESTAMPTZ '2026-11-01 03:00
 DO $period$
 BEGIN
  IF EXISTS (SELECT 1 FROM public.lab_v2_monthly_lives WHERE user_id=auth.uid()) OR
-    EXISTS (SELECT 1 FROM public.lab_v2_incidents WHERE run_id=:'crossing_run'::uuid)
+    EXISTS (SELECT 1 FROM public.lab_v2_incidents WHERE run_id=current_setting('app.crossing_run')::uuid)
  THEN RAISE EXCEPTION 'FAIL: crossing midnight consumed a life before 24+6 hours'; END IF;
 END $period$;
 SELECT 'LAB V2 CROSS-MONTH SAFETY PASSED' AS result;
