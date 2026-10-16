@@ -40,7 +40,7 @@ test("the chapter plan stays private and timer rows are inaccessible to API role
  assert.match(migration,/REVOKE ALL ON public\.lab_game_chapter_read_sessions FROM PUBLIC, anon, authenticated/);
  assert.match(migration,/REVOKE ALL ON public\.lab_v2_chapter_read_sessions FROM PUBLIC, anon, authenticated/);
  assert.doesNotMatch(migration,/CREATE POLICY[\s\S]{0,160}lab_game_plan_chapters/i);
- assert.match(pgSmoke,/lab_game_plan_chapters RLS was disabled/);
+ assert.match(pgSmoke,/chapter plan RLS was disabled/);
  assert.match(pgSmoke,/API roles can read the internal chapter plan directly/);
 });
 
