@@ -116,6 +116,7 @@ BEGIN
  IF n<>1 THEN RAISE EXCEPTION 'FAIL: reset incorrectly removed GC membership'; END IF;
 END $award$;
 SELECT (public.lab_v2_start(365)->>'run_id')::uuid AS restarted_run \gset
+SELECT set_config('app.last_restart_run', :'restarted_run',false);
 DO $award$
 DECLARE s jsonb;
 BEGIN
