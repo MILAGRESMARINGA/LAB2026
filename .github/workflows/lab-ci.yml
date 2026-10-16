@@ -63,15 +63,19 @@ jobs:
         run: npm run build
 
   v2-postgres:
-    name: V2 isolated PostgreSQL 16 integration and RLS
+    name: V2 isolated PostgreSQL ${{ matrix.postgres }} integration and RLS
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        postgres: ['16', '17']
     defaults:
       run:
         working-directory: lab-app
     services:
       postgres:
-        image: postgres:16
+        image: postgres:${{ matrix.postgres }}
         env:
           POSTGRES_DB: labgame_v2_ci
           POSTGRES_USER: postgres
