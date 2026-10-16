@@ -8,14 +8,14 @@ GRANT USAGE ON SCHEMA auth TO authenticated;
 CREATE TABLE auth.users(id uuid PRIMARY KEY,last_sign_in_at timestamptz DEFAULT now());
 -- Disposable Auth stub: a fresh session is tied to the JWT identity.
 CREATE TABLE auth.sessions(id uuid PRIMARY KEY,user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,created_at timestamptz NOT NULL DEFAULT now());
-CREATE OR REPLACE FUNCTION auth.fake_session() RETURNS trigger LANGUAGE plpgsql AS $
+CREATE OR REPLACE FUNCTION auth.fake_session() RETURNS trigger LANGUAGE plpgsql AS $fake$
 BEGIN
  INSERT INTO auth.sessions(id,user_id,created_at) VALUES(NEW.id,NEW.id,statement_timestamp());
  RETURN NEW;
-END $;
+END $fake$;
 CREATE TRIGGER fake_auth_session AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION auth.fake_session();
 CREATE OR REPLACE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS
-$ SELECT jsonb_build_object('session_id',NULLIF(current_setting('app.test_user',true),'')::text) $;
+$jwt$ SELECT jsonb_build_object('session_id',NULLIF(current_setting('app.test_user',true),'')::text) $jwt$;
 CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS
 $$ SELECT NULLIF(current_setting('app.test_user',true),'')::uuid $$;
 CREATE TABLE public.lab_game_runs(
