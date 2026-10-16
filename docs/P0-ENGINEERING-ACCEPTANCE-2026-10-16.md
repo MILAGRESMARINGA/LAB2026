@@ -51,3 +51,9 @@ Para liberar publicamente, sem pagar:
 6. **Rollout gradual da V2:** primeiro usuários novos/teste, depois migração expressa de V1 com interface; acompanhar logs, relógio real, XP e GCs; promover domínio canônico somente após regressões e retorno seguro.
 
 **Conclusão responsável:** código P0 e validação automatizada local estão concluídos nesta rodada. O lançamento público completo ainda NÃO está concluído; não é seguro ligar recursos que dependem de migrations ausentes ou operar resets/exclusões reais sem backup restaurável recente. Esses bloqueios não exigem cobrança: exigem procedimento de implantação seguro, acesso apropriado e provas finais.
+
+## 6. CI final de estabilidade gratuita
+**CI #433: 4/4 jobs aprovados** — https://github.com/MILAGRESMARINGA/LAB2026/actions/runs/38937995363
+- Após instabilidade temporária de Docker Hub e conflito de porta do Mailpit, a execução gratuita passou novamente em Vite/TypeScript/JavaScript, PostgreSQL 16, PostgreSQL 17, GoTrue real com dois usuários, confirmação e recuperação por e-mail local, Edge Function de exclusão e Chromium desktop/mobile.
+- Workflow agora evita iniciar contêineres só por alterações de documentação, limpa contêineres de teste LABGAME anteriores, permite retentativas de inicialização e usa porta de SMTP local isolada. Não conecta a qualquer serviço pago.
+- O P0 de engenharia segue aprovado; o gate de backup **atual** e a aplicação em produção são os únicos responsáveis por determinar disponibilidade pública. Custo de infraestrutura adicional nesta rodada: ZERO.
