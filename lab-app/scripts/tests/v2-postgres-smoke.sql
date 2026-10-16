@@ -595,15 +595,15 @@ RESET ROLE;
 -- V1 and V2 server-timed chapter confirmation (all rows are ephemeral CI fixtures).
 \i supabase/migrations/202610160109_server_side_reading_speed_guard.sql
 
-INSERT INTO auth.users(id) VALUES('77777777-7777-4777-8777-777777777777');
-INSERT INTO public.lab_game_stats(user_id) VALUES('77777777-7777-4777-8777-777777777777');
+INSERT INTO auth.users(id) VALUES('ab0de1f4-54dd-4caf-92ca-1b355b612fea');
+INSERT INTO public.lab_game_stats(user_id) VALUES('ab0de1f4-54dd-4caf-92ca-1b355b612fea');
 INSERT INTO public.lab_game_runs(user_id,started_on,status,completed_days)
 VALUES(
- '77777777-7777-4777-8777-777777777777',
+ 'ab0de1f4-54dd-4caf-92ca-1b355b612fea',
  (clock_timestamp() AT TIME ZONE 'America/Sao_Paulo')::date,'active',0
 ) RETURNING id AS speed_v1_run \gset
 SELECT set_config('app.speed_v1_run', :'speed_v1_run',false);
-SELECT set_config('app.test_user','77777777-7777-4777-8777-777777777777',false);
+SELECT set_config('app.test_user','ab0de1f4-54dd-4caf-92ca-1b355b612fea',false);
 
 SET ROLE authenticated;
 SELECT public.lab_game_begin_chapter('1:1');
