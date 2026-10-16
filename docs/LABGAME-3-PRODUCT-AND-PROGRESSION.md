@@ -43,7 +43,7 @@ Esses títulos refletem somente consistência no uso do app; não são títulos 
 A integridade do ciclo permanece: **66 livros / 1.189 capítulos / 365 etapas**. O tempo de leitura anual é apenas um ciclo de uma jornada vitalícia.
 - Concluir: coroação **simbólica**, medalha com número do ciclo e histórico pessoal preservado.
 - No dia seguinte, permitir novo ciclo voluntário; não liberar etapas futuras ou duplicar XP no dia da conclusão.
-- XP vitalício não é apagado quando um novo ciclo começa.
+- **XP da nova sequência é sempre 0 no início:** leituras e recompensas da sequência anterior **não são somadas à próxima**. Pontos, medalhas e coroas das sequências encerradas são preservados **no histórico pessoal como recordes e marcos a superar**, não como créditos ativos do próximo desafio.
 - **Regra aprovada em 14/10/2026:** bônus individual **adicional** de +10.000 XP ao terminar o 1º ciclo, +12.500 no 2º, +15.000 no 3º, e +2.500 de incremento a cada novo ciclo. A leitura integral já rende 11.890 XP por capítulos (fora vídeos), portanto ao final do primeiro ciclo o saldo será **21.890 XP + XP de vídeos**, sem considerar pontuação histórica de tentativas anteriores. A migração SQL está **preparada, não aplicada ao Supabase**, e só pode ser promovida após homologação e gate de segurança.
 - Um `cycle_completion` terá chave de idempotência (`user_id`, `run_id`, `award_code`) e validação server-side de conclusão. O servidor deve aplicar bônus uma única vez em transação e reconciliar placar, evitando que reenvio, reload, múltiplas abas, dispositivo duplicado, erro ou reinício concedam bônus em dobro.
 - Não tentar lançar bônus pelo cliente. Histórico imutável, auditoria e migração versionada com ensaio em staging antes de tocar produção. Resolver fórmula e controle de abuso antes da implementação.
@@ -52,7 +52,7 @@ A integridade do ciclo permanece: **66 livros / 1.189 capítulos / 365 etapas**.
 
 **Confirmado pelo responsável em outubro de 2026.** Existem **três situações distintas**, e nenhuma opção de zerar apenas o dia:
 
-1. **Falta de leitura (automática):** o participante perdeu o dia exigido do plano. Ao voltar, a tentativa corrente é interrompida e o próximo desafio passa à etapa 1, sem recuperar o dia perdido. O **melhor recorde anterior**, XP histórico, vídeos, estudos, Talentos, coroas e número de Bíblias já concluídas **permanecem intactos**.
+1. **Falta de leitura (automática):** o participante perdeu o prazo exigido. Ao voltar, a tentativa corrente é arquivada e o próximo desafio passa à etapa 1 **com 0 XP e 0 dias na nova sequência**, sem recuperar o período perdido. Melhores marcas, pontos e prêmios históricos da tentativa anterior **permanecem como registros a superar**, não entram no saldo da nova sequência. Bíblias completas e estudos concluídos permanecem contabilizados no histórico da conta.
 2. **Superar o próprio recorde:** exemplo: sequência máxima antiga 265 dias. Na nova tentativa, após completar 266 dias, o único número mostrado como **melhor recorde** passa de 265 para 266. Histórico auditável das tentativas permanece, mas 265 deixa de ser o melhor recorde vigente. Se não houver leitura por três dias após concluir apenas um, a contagem de dias lidos nunca se torna três; a nova tentativa abre no dia 1 e o recorde máximo continua sendo um.
 3. **Zerar absolutamente tudo (decisão expressa):** qualquer participante autenticado pode solicitar operação excepcional, irreversível e **protegida no servidor** para apagar TODOS os seus registros de progresso e pontuação (inclusive tentativas anteriores, XP de leitura/vídeos/estudos, recordes, Talentos, medalhas, Bíblias completas, coroas, bônus anuais de 10 mil XP e incrementos posteriores). O app reinicia com **dia 1, 0 XP, recorde 0, Bíblias concluídas 0 e estudos concluídos 0**. Nome, login, consentimentos, notificações, dados cadastrais e filiação a GC permanecem. Itens pessoais de leitura livre que não representam progresso (ex.: favoritos) podem ser mantidos, com aviso prévio transparente.
 4. **Excluir conta** é um fluxo diferente do reset: após processamento real, uma nova conta não herda progresso, conquistas ou pontos da antiga. Tratar administradores de GC e retenção legal antes da exclusão.
@@ -60,6 +60,17 @@ A integridade do ciclo permanece: **66 livros / 1.189 capítulos / 365 etapas**.
 Para evitar perda acidental, só o **reset total** exige modal de consequências + aceite + digitar `ZERAR` + confirmação recente de identidade; **exclusão de conta** tem confirmação separada com `EXCLUIR`. Nenhuma dessas operações ocorre pela simples abertura de um menu. Sempre recalcular rankings coletivos sem apagar méritos de outros integrantes.
 
 **Status técnico:** regra documentada, porém **reset total e autodeleção ainda NÃO implementados como RPC/endpoint no backend e NÃO ativados em produção**. Só implementar após revisão transacional em staging, gestão dos vínculos GC, ledger anual, vídeo/estudo e P0.
+
+## Regra de pontuação aprovada: XP atual ≠ recorde histórico
+
+**Esclarecimento do responsável (16/10/2026):** nenhum XP, medalha, vida ou progresso de uma tentativa encerrada pode ser **carregado ou acumulado na tentativa seguinte**. No recomeço, a Jornada exibe `Etapa 1 | XP atual: 0 | Melhor recorde: 265 dias` (exemplo). Depois de 266 etapas reais, passa a exibir `Melhor recorde: 266 dias`. Os valores e prêmios da antiga tentativa ficam na coleção de conquistas, como metas a superar. O histórico de Bíblias completas e estudos permanece no perfil, sem ser convertido em pontos do novo desafio.
+
+- **XP da tentativa:** ganho por capítulos válidos naquela `run_id`; zerado ao iniciar nova tentativa. Medalhas atuais são conquistadas novamente conforme pontos desta tentativa.
+- **Recordes:** `best_days` e `best_run_xp` representam máximos históricos do participante, não saldos transferíveis.
+- **Histórico de conquistas:** medalhas, Talentos, coroas, bônus e contagem de estudos/ciclos registrados por tentativa/ciclo, consultáveis mas não reutilizáveis no desbloqueio da nova Jornada.
+- **Antifraude:** não somar XP de dez tentativas falhadas no ranking, nem usar `lab_game_stats.total_xp` como XP de tentativa. Ganho de +10 por capítulo precisa ser único dentro da tentativa, mesmo que o capítulo já tenha sido lido numa tentativa antiga. O recorde de XP só sobe por desempenho superior **numa tentativa individual real**.
+- **Reset total:** além de zerar a tentativa, remove todo esse histórico de recordes, pontos e conquistas.
+- **Status da implementação:** `lab_game_stats.total_xp` atual soma XP entre tentativas; também há SQL de bônus anual preparado com scorecard acumulado. Ambos requerem nova modelagem e migração auditada antes desta regra entrar em vigor. **Não ativar os novos bônus sem resolver a separação de saldos.**
 
 ## Formação espiritual — conteúdo, não julgamento de fé
 - **Fundamentos para novos convertidos:** quem é Jesus; salvação pela graça; Bíblia; oração; arrependimento e fé; batismo; comunidade e igreja; vida de discípulo; missão, generosidade e serviço.
