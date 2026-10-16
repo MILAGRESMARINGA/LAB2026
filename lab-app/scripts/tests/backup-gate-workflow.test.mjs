@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 
 const workflow=readFileSync(new URL("../../../.github/workflows/p0-backup-restore-gate.yml",import.meta.url),"utf8");
+const config=readFileSync(new URL("../../supabase/config.toml",import.meta.url),"utf8");
 
 test("P0 release requires an explicit marker and verified PG17 restore before migrations",()=>{
  assert.match(workflow,/workflow_dispatch:/);
@@ -24,7 +25,18 @@ test("P0 release requires an explicit marker and verified PG17 restore before mi
  assert.match(workflow,/SUPABASE_DB_PASSWORD/);
  assert.match(workflow,/if: always\(\)/);
  assert.doesNotMatch(workflow,/upload-artifact/i);
- assert.doesNotMatch(workflow,/supabase\s+functions\s+deploy/i);
+ assert.match(workflow,/deploy-approved-edge-functions/);
+ assert.match(workflow,/needs:\s*\[backup-and-restore,\s*apply-p0-migrations\]/);
+ assert.match(workflow,/needs\.backup-and-restore\.outputs\.restore_verified == 'true'/);
+ assert.match(workflow,/needs\.apply-p0-migrations\.result == 'success'/);
+ assert.match(workflow,/npx --yes supabase@2\.121\.0/);
+ assert.doesNotMatch(workflow,/supabase@latest/);
+ assert.match(workflow,/functions deploy "\$function_name"/);
+ assert.match(workflow,/function_name in account-delete study-generate/);
+ assert.match(workflow,/No notification, email, or cron function is deployed/);
+ assert.match(config,/\[functions\.study-generate\][\s\S]*?verify_jwt = true/);
+ assert.match(config,/\[functions\.account-delete\][\s\S]*?verify_jwt = true/);
+ assert.ok(workflow.indexOf("db push --linked --yes") < workflow.indexOf("Deploy only account deletion and fail-closed study generation"));
  assert.ok(workflow.indexOf("Confirm explicit trigger") < workflow.indexOf("pg_dump --schema=public"));
  assert.ok(workflow.indexOf("Fail closed before any Supabase CLI access") < workflow.indexOf("npx --yes supabase@latest link"));
  assert.equal(workflow.includes('--password "$SUPABASE_DB_PASSWORD"'),false);
