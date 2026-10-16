@@ -152,14 +152,24 @@ export function ProfileSettings({accountEmail,onReset,onDeleted}:Props){
     <p className="muted">Você escolhe quais lembretes deseja. Padrão: nenhum aviso. Mensagens essenciais de segurança da conta não são desativadas aqui.</p>
     <fieldset disabled={!ready||saving} className="ps-fieldset">
      <label className="ps-check ps-master"><input type="checkbox" checked={prefs.enabled} onChange={e=>changeNotice("enabled",e.target.checked)}/><span><strong>Quero receber notificações</strong><small>Desmarque para não receber lembretes opcionais.</small></span></label>
-     <h3>Onde receber</h3>
-     <label className="ps-check"><input type="checkbox" disabled={!prefs.enabled} checked={prefs.in_app_popup} onChange={e=>changeNotice("in_app_popup",e.target.checked)}/><span>Pop-ups dentro do aplicativo quando estiver aberto</span></label>
-     <label className="ps-check"><input type="checkbox" disabled={!prefs.enabled} checked={prefs.email} onChange={e=>changeNotice("email",e.target.checked)}/><span>E-mail <small>Preferência registrada; envios automáticos ainda não estão ativados.</small></span></label>
-     <h3>O que receber</h3>
-     <label className="ps-check"><input type="checkbox" disabled={!prefs.enabled} checked={prefs.reading_reminders} onChange={e=>changeNotice("reading_reminders",e.target.checked)}/><span>Lembrete de leitura diária</span></label>
-     <label className="ps-check"><input type="checkbox" disabled={!prefs.enabled} checked={prefs.gc_activity} onChange={e=>changeNotice("gc_activity",e.target.checked)}/><span>Atividades e avisos do GC</span></label>
-     <label className="ps-check"><input type="checkbox" disabled={!prefs.enabled} checked={prefs.milestones} onChange={e=>changeNotice("milestones",e.target.checked)}/><span>Conquistas, Talentos e coroas da Jornada</span></label>
-     <div className="ps-actions"><button className="secondary-cta" onClick={()=>void persistPrefs()} type="button" disabled={!ready||saving}>SALVAR NOTIFICAÇÕES</button><button type="button" className="subtle-button" disabled={!prefs.enabled||!prefs.in_app_popup} onClick={()=>setPreview(x=>!x)}>TESTAR POP-UP</button></div>
+     <h3>Escolha os avisos e onde recebê-los</h3>
+     <p className="small-caption">Cada aviso pode aparecer como pop-up no app, chegar por e-mail, pelos dois canais ou por nenhum. E-mails automáticos ainda não estão disponíveis.</p>
+     <div className="ps-notice-matrix" role="group" aria-label="Canais por tipo de notificação">
+      {([
+       ["Leitura diária","reading_popup","reading_email"],
+       ["Próxima etapa disponível","stage_popup","stage_email"],
+       ["Avisos do Grupo de Crescimento","gc_popup","gc_email"],
+       ["Talentos, medalhas e coroas","achievement_popup","achievement_email"],
+       ["Novos estudos e discipulados","study_popup","study_email"]
+      ] as const).map(([label,popup,email])=>
+       <div className="ps-notice-row" key={popup}>
+        <strong>{label}</strong>
+        <label className="ps-check"><input type="checkbox" disabled={!prefs.enabled} checked={prefs[popup]} onChange={e=>changeNotice(popup,e.target.checked)}/><span>Pop-up</span></label>
+        <label className="ps-check"><input type="checkbox" disabled={!prefs.enabled} checked={prefs[email]} onChange={e=>changeNotice(email,e.target.checked)}/><span>E-mail</span></label>
+       </div>
+      )}
+     </div>
+     <div className="ps-actions"><button className="secondary-cta" onClick={()=>void persistPrefs()} type="button" disabled={!ready||saving}>SALVAR NOTIFICAÇÕES</button><button type="button" className="subtle-button" disabled={!prefs.enabled||!Object.entries(prefs).some(([k,v])=>k.endsWith("_popup")&&v)} onClick={()=>setPreview(x=>!x)}>TESTAR POP-UP</button></div>
     </fieldset>
     {preview&&<div role="status" className="ps-popup-preview"><Bell size={20}/><div><strong>Lembrete LABGAME</strong><p>Seu próximo capítulo está esperando. Esta é uma demonstração local, não um envio agendado.</p></div><button type="button" aria-label="Fechar notificação de exemplo" onClick={()=>setPreview(false)}><X size={18}/></button></div>}
    </div>
