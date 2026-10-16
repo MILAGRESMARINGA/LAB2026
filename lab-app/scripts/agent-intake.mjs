@@ -5,11 +5,17 @@
 import {classifyTask} from "../railway/agent-orchestrator/server.mjs";
 import {pathToFileURL} from "node:url";
 
-export function isTrustedIssue(issue,permission){
+// Stable GitHub numeric owner ID, verified against GitHub's issue.author_association.
+// The Actions GITHUB_TOKEN cannot read collaborator permissions with admin scope.
+// This allowlist is deliberately NOT configurable through an issue body.
+const OWNER_ID=173290142;
+export function isTrustedIssue(issue){
  return Boolean(issue&&Number.isSafeInteger(issue.number)&&issue.number>0&&
   issue.title?.startsWith("LAB AGENTE · ")&&
   issue.body?.includes("## Solicitação para fila LABGame")&&
-  !issue.pull_request&&issue.state==="open"&&permission==="admin");
+  !issue.pull_request&&issue.state==="open"&&
+  issue.user?.id===OWNER_ID&&issue.user?.login==="MILAGRESMARINGA"&&
+  issue.author_association==="OWNER");
 }
 export function fileContent(issue){
  const body=String(issue.body??"");
@@ -40,7 +46,7 @@ export async function execute(env=process.env,fetcher=fetch){
    ...(data?{body:JSON.stringify(data)}:{}),
    signal:AbortSignal.timeout(20000)
   });
-  if(!res.ok)throw Error("GitHub API "+res.status);
+  if(!res.ok)throw Error("GitHub API "+res.status+" on "+method+" "+path.slice(0,110));
   return res.status===204?{}:res.json();
  };
  const issue=await call("/issues/"+number);
@@ -49,8 +55,8 @@ export async function execute(env=process.env,fetcher=fetch){
  }
  const username=String(issue.user?.login??"");
  if(!/^[a-z\d](?:[a-z\d-]{0,37})$/i.test(username))return {status:"untrusted"};
- const permission=await call("/collaborators/"+encodeURIComponent(username)+"/permission");
- if(!isTrustedIssue(issue,permission.permission))return {status:"untrusted"};
+ // Verify trusted issue fields from GitHub's API; never trust request body.
+ if(!isTrustedIssue(issue))return {status:"untrusted"};
  // Classify only the quoted request, never our standard policy boilerplate.
  const userRequest=String(issue.body).split("\n## Política")[0];
  if(classifyTask(issue.title+"\n"+userRequest)==="approval_required"||
