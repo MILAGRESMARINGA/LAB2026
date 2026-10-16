@@ -6,7 +6,7 @@ import {BibleReader} from "./BibleReader";
 import {DailyInAppPopup} from "./DailyInAppPopup";
 import {ConsistencyFlame} from "./ConsistencyFlame";
 import {
- activateJourneyV2,confirmJourneyV2Chapter,getJourneyV2Chapters,
+ activateJourneyV2,beginJourneyV2Chapter,confirmJourneyV2Chapter,getJourneyV2Chapters,
  getJourneyV2Checks,loadLatestJourneyV2,startJourneyV2,
  type JourneyV2Chapter,type JourneyV2State,type JourneyV2Length
 } from "../features/journey-v2";
@@ -91,6 +91,10 @@ export function JourneyV2Panel({userId,onState}:Props){
   if(!game||!selected||busy)return;
   void process(()=>confirmJourneyV2Chapter(game.run_id,game.stage??0,selected));
  };
+ const beginSelectedChapter=useCallback((chapterId:string)=>{
+  if(!game||game.stage===null)throw Error("Etapa não está ativa.");
+  return beginJourneyV2Chapter(game.run_id,game.stage,chapterId);
+ },[game?.run_id,game?.stage]);
  if(loading)return <section className="game-panel" aria-live="polite"><p className="muted">Carregando Jornada V2 protegida...</p></section>;
  return <><DailyInAppPopup userId={userId} day={game?.stage??null}
   today={new Intl.DateTimeFormat("sv-SE",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(clock))}
@@ -164,7 +168,7 @@ export function JourneyV2Panel({userId,onState}:Props){
     </div>
     {!stageFinished&&selected&&!checkedSet.has(selected)&&
      <div className="v2-reading" key={selected}>
-      <BibleReader chapterId={selected} busy={busy} onConfirm={read}/>
+      <BibleReader chapterId={selected} onOpen={beginSelectedChapter} busy={busy} onConfirm={read}/>
      </div>}
     {stageFinished&&<div className="v2-start" role="status">
      <h3><CheckCircle2 size={23}/> Etapa completa!</h3>

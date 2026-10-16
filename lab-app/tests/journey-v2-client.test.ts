@@ -2,7 +2,7 @@ import {beforeEach,describe,expect,it,vi} from "vitest";
 const {rpc,from}=vi.hoisted(()=>({rpc:vi.fn(),from:vi.fn()}));
 vi.mock("../src/lib/supabase",()=>({supabase:{rpc,from}}));
 import {
- startJourneyV2,syncJourneyV2,activateJourneyV2,
+ startJourneyV2,syncJourneyV2,activateJourneyV2,beginJourneyV2Chapter,
  confirmJourneyV2Chapter,getJourneyV2Chapters
 } from "../src/features/journey-v2";
 
@@ -31,12 +31,14 @@ describe("Jornada V2 só funciona com duas travas explícitas",()=>{
   vi.stubEnv("VITE_LAB_V2_READY","true");
   await expect(startJourneyV2(365)).resolves.toMatchObject({run_xp:0});
   await activateJourneyV2(id,1);
+  await beginJourneyV2Chapter(id,1,"1:1");
   await confirmJourneyV2Chapter(id,1,"1:1");
   await syncJourneyV2(id);
   expect(rpc).toHaveBeenNthCalledWith(1,"lab_v2_start",{p_plan_length:365});
   expect(rpc).toHaveBeenNthCalledWith(2,"lab_v2_activate",{p_run:id,p_stage:1});
-  expect(rpc).toHaveBeenNthCalledWith(3,"lab_v2_confirm",{p_run:id,p_stage:1,p_chapter:"1:1"});
-  expect(rpc).toHaveBeenNthCalledWith(4,"lab_v2_sync",{p_run:id});
+  expect(rpc).toHaveBeenNthCalledWith(3,"lab_v2_begin_chapter",{p_run:id,p_stage:1,p_chapter:"1:1"});
+  expect(rpc).toHaveBeenNthCalledWith(4,"lab_v2_confirm",{p_run:id,p_stage:1,p_chapter:"1:1"});
+  expect(rpc).toHaveBeenNthCalledWith(5,"lab_v2_sync",{p_run:id});
  });
  it("não aceita identificadores, capítulos ou etapas inválidas",async()=>{
   vi.stubEnv("VITE_LAB_V2_READY","true");

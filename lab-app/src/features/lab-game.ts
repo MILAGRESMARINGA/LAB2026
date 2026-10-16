@@ -11,6 +11,20 @@ export async function loadGameState():Promise<LabGameState>{
  if(error)throw error;
  return data as LabGameState;
 }
+export type LabGameChapterReadingStart={
+ run_id:string;day:number;chapter_id:string;
+ minimum_read_seconds:number;eligible_at:string;
+};
+export async function beginGameChapter(chapterId:string):Promise<LabGameChapterReadingStart>{
+ if(!supabase)throw Error("Serviço de leitura indisponível.");
+ if(!/^\d{1,2}:\d{1,3}$/.test(chapterId))throw Error("Capítulo inválido.");
+ const {data,error}=await supabase.rpc("lab_game_begin_chapter",{p_chapter_id:chapterId});
+ if(error)throw error;
+ if(!data||typeof data.minimum_read_seconds!=="number")
+  throw Error("O servidor não iniciou a validação da leitura.");
+ return data as LabGameChapterReadingStart;
+}
+
 export async function confirmGameChapter(chapterId:string):Promise<LabGameState>{
  if(!supabase)throw Error("Serviço de leitura indisponível.");
  const {data,error}=await supabase.rpc("lab_game_confirm_chapter",{p_chapter_id:chapterId});

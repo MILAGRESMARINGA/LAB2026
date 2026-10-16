@@ -21,8 +21,12 @@ $$ SELECT NULLIF(current_setting('app.test_user',true),'')::uuid $$;
 CREATE TABLE public.lab_game_runs(
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
  user_id uuid NOT NULL REFERENCES auth.users(id),
- status text NOT NULL,
- finished_on date
+ started_on date NOT NULL,
+ status text NOT NULL DEFAULT 'active',
+ completed_days smallint NOT NULL DEFAULT 0,
+ finished_on date,
+ created_at timestamptz NOT NULL DEFAULT now(),
+ UNIQUE (id,user_id)
 );
 CREATE TABLE public.lab_game_stats(
  user_id uuid PRIMARY KEY REFERENCES auth.users(id),
@@ -33,6 +37,71 @@ CREATE TABLE public.lab_game_stats(
  display_name text NOT NULL DEFAULT 'Leitor LAB',
  leaderboard_opt_in boolean NOT NULL DEFAULT false
 );
+CREATE TABLE public.lab_game_plan_chapters(
+ version smallint NOT NULL,day_number smallint NOT NULL,slot smallint NOT NULL,chapter_id text NOT NULL,
+ PRIMARY KEY(version,day_number,slot),UNIQUE(version,chapter_id)
+);
+INSERT INTO public.lab_game_plan_chapters VALUES
+ (1,1,1,'1:1'),(1,1,2,'19:1'),(1,1,3,'43:1');
+ALTER TABLE public.lab_game_plan_chapters ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.lab_game_plan_chapters FROM PUBLIC,anon,authenticated;
+CREATE TABLE public.lab_game_chapter_checks(
+ run_id uuid NOT NULL REFERENCES public.lab_game_runs(id) ON DELETE CASCADE,
+ day_number smallint NOT NULL,chapter_id text NOT NULL,read_on date NOT NULL,
+ confirmed_at timestamptz NOT NULL DEFAULT now(),
+ PRIMARY KEY(run_id,day_number,chapter_id)
+);
+ALTER TABLE public.lab_game_runs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.lab_game_chapter_checks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.lab_game_stats ENABLE ROW LEVEL SECURITY;
+GRANT SELECT ON public.lab_game_runs,public.lab_game_chapter_checks,public.lab_game_stats TO authenticated;
+CREATE POLICY "Own challenge runs" ON public.lab_game_runs
+ FOR SELECT TO authenticated USING (user_id=(SELECT auth.uid()));
+CREATE POLICY "Own challenge stats" ON public.lab_game_stats
+ FOR SELECT TO authenticated USING (user_id=(SELECT auth.uid()));
+CREATE POLICY "Own chapter checks" ON public.lab_game_chapter_checks
+ FOR SELECT TO authenticated USING (EXISTS(
+  SELECT 1 FROM public.lab_game_runs r WHERE r.id=run_id AND r.user_id=(SELECT auth.uid())
+ ));
+CREATE TABLE public.lab_bible_verses(
+ edition text NOT NULL,chapter_id text NOT NULL,verse_number smallint NOT NULL,verse_text text NOT NULL,
+ PRIMARY KEY(edition,chapter_id,verse_number)
+);
+ALTER TABLE public.lab_bible_verses ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.lab_bible_verses FROM PUBLIC,anon,authenticated;
+INSERT INTO public.lab_bible_verses(edition,chapter_id,verse_number,verse_text)
+VALUES
+ ('ALM1911','1:1',1,array_to_string(array_fill('palavra'::text,ARRAY[200]),' ')),
+ ('ALM1911','43:1',1,'palavra');
+INSERT INTO public.lab_bible_verses(edition,chapter_id,verse_number,verse_text)
+SELECT 'ALM1911','19:1',g,'palavra' FROM generate_series(1,20) AS g;
+CREATE TABLE public.lab_game_cycle_awards(
+ run_id uuid PRIMARY KEY REFERENCES public.lab_game_runs(id) ON DELETE CASCADE,
+ user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+ cycle_number integer NOT NULL,bonus_xp integer NOT NULL,
+ awarded_at timestamptz NOT NULL DEFAULT now(),UNIQUE(user_id,cycle_number)
+);
+ALTER TABLE public.lab_game_cycle_awards ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.lab_game_cycle_awards FROM PUBLIC,anon,authenticated;
+GRANT SELECT ON public.lab_game_cycle_awards TO authenticated;
+CREATE POLICY "Own test awards" ON public.lab_game_cycle_awards
+ FOR SELECT TO authenticated USING (user_id=(SELECT auth.uid()));
+CREATE OR REPLACE FUNCTION public.lab_game_sync()
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=''
+AS $sync$
+DECLARE v_user uuid:=auth.uid();v_run public.lab_game_runs%ROWTYPE;v_xp integer;
+BEGIN
+ IF v_user IS NULL THEN RAISE EXCEPTION 'Autenticação necessária'; END IF;
+ SELECT * INTO v_run FROM public.lab_game_runs
+  WHERE user_id=v_user AND status='active' ORDER BY created_at DESC,id DESC LIMIT 1;
+ SELECT COALESCE(total_xp,0) INTO v_xp FROM public.lab_game_stats WHERE user_id=v_user;
+ RETURN jsonb_build_object('run_id',v_run.id,'day',1,'completed_days',v_run.completed_days,
+   'total_xp',COALESCE(v_xp,0),'checked','[]'::jsonb);
+END
+$sync$;
+REVOKE ALL ON FUNCTION public.lab_game_sync() FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.lab_game_sync() TO authenticated;
+
 CREATE TABLE public.lab_game_video_resources(video_key text PRIMARY KEY);
 INSERT INTO public.lab_game_video_resources VALUES('videos:genesis-1-11');
 CREATE TABLE public.lab_game_video_sessions(user_id uuid NOT NULL REFERENCES auth.users(id));
@@ -519,4 +588,126 @@ SELECT 'LAB V2 CROSS-MONTH SAFETY PASSED' AS result;
 -- Final full-year crown/constancy and irreversible reset gates.
 \i scripts/tests/v2-annual-awards-smoke.sql
 
+
 \i scripts/tests/v2-terminal-state-smoke.sql
+
+RESET ROLE;
+-- V1 and V2 server-timed chapter confirmation (all rows are ephemeral CI fixtures).
+\i supabase/migrations/202610160109_server_side_reading_speed_guard.sql
+
+INSERT INTO auth.users(id) VALUES('77777777-7777-4777-8777-777777777777');
+INSERT INTO public.lab_game_stats(user_id) VALUES('77777777-7777-4777-8777-777777777777');
+INSERT INTO public.lab_game_runs(user_id,started_on,status,completed_days)
+VALUES(
+ '77777777-7777-4777-8777-777777777777',
+ (clock_timestamp() AT TIME ZONE 'America/Sao_Paulo')::date,'active',0
+) RETURNING id AS speed_v1_run \gset
+SELECT set_config('app.speed_v1_run', :'speed_v1_run',false);
+SELECT set_config('app.test_user','77777777-7777-4777-8777-777777777777',false);
+
+SET ROLE authenticated;
+SELECT public.lab_game_begin_chapter('1:1');
+DO $speed$
+BEGIN
+ BEGIN
+  PERFORM public.lab_game_confirm_chapter('1:1');
+  RAISE EXCEPTION 'FAIL: V1 accepted an immediate chapter confirmation';
+ EXCEPTION WHEN OTHERS THEN
+  IF SQLERRM NOT LIKE 'Leitura muito rápida:%' THEN RAISE; END IF;
+ END;
+END $speed$;
+RESET ROLE;
+DO $speed$
+BEGIN
+ IF public.lab_chapter_minimum_read_seconds('1:1')<>50 THEN
+  RAISE EXCEPTION 'FAIL: V1 duration did not use the 200-word fixture';
+ END IF;
+END $speed$;
+UPDATE public.lab_game_chapter_read_sessions SET started_at=statement_timestamp()-interval '2 minutes'
+ WHERE run_id=:'speed_v1_run'::uuid AND day_number=1 AND chapter_id='1:1';
+SET ROLE authenticated;
+SELECT public.lab_game_confirm_chapter('1:1');
+SELECT public.lab_game_confirm_chapter('1:1');
+DO $speed$
+DECLARE xp integer;checks integer;starts integer;
+BEGIN
+ SELECT total_xp INTO xp FROM public.lab_game_stats WHERE user_id=auth.uid();
+ SELECT count(*) INTO checks FROM public.lab_game_chapter_checks
+  WHERE run_id=current_setting('app.speed_v1_run',true)::uuid;
+ IF xp<>10 OR checks<>1 THEN
+  RAISE EXCEPTION 'FAIL: V1 confirmation did not award exactly once (XP %, checks %)',xp,checks;
+ END IF;
+ SELECT count(*) INTO starts FROM public.lab_game_chapter_read_sessions
+  WHERE run_id=current_setting('app.speed_v1_run',true)::uuid;
+ IF starts<>0 THEN RAISE EXCEPTION 'FAIL: V1 reading session was not consumed'; END IF;
+END $speed$;
+RESET ROLE;
+
+-- The release remains enabled only in this disposable PostgreSQL fixture.
+SET ROLE authenticated;
+SELECT (public.lab_v2_start(365)->>'run_id')::uuid AS speed_v2_run \gset
+SELECT set_config('app.speed_v2_run', :'speed_v2_run',false);
+SELECT public.lab_v2_activate(:'speed_v2_run'::uuid,1);
+SELECT public.lab_v2_begin_chapter(:'speed_v2_run'::uuid,1,'19:1');
+DO $speed$
+BEGIN
+ BEGIN
+  PERFORM public.lab_v2_confirm(
+   current_setting('app.speed_v2_run',true)::uuid,1,'19:1');
+  RAISE EXCEPTION 'FAIL: V2 accepted an immediate chapter confirmation';
+ EXCEPTION WHEN OTHERS THEN
+  IF SQLERRM NOT LIKE 'Leitura muito rápida:%' THEN RAISE; END IF;
+ END;
+END $speed$;
+RESET ROLE;
+DO $speed$
+BEGIN
+ IF public.lab_chapter_minimum_read_seconds('19:1')<>40 THEN
+  RAISE EXCEPTION 'FAIL: V2 duration did not use the 20-verse fixture';
+ END IF;
+END $speed$;
+UPDATE public.lab_v2_chapter_read_sessions SET started_at=statement_timestamp()-interval '2 minutes'
+ WHERE run_id=:'speed_v2_run'::uuid AND day_number=1 AND chapter_id='19:1';
+SELECT public.lab_v2_confirm(:'speed_v2_run'::uuid,1,'19:1');
+SELECT public.lab_v2_confirm(:'speed_v2_run'::uuid,1,'19:1');
+DO $speed$
+DECLARE score jsonb;checks integer;starts integer;
+BEGIN
+ SELECT public.lab_v2_sync(current_setting('app.speed_v2_run',true)::uuid) INTO score;
+ SELECT count(*) INTO checks FROM public.lab_v2_chapter_checks
+  WHERE run_id=current_setting('app.speed_v2_run',true)::uuid
+    AND day_number=1 AND chapter_id='19:1';
+ SELECT count(*) INTO starts FROM public.lab_v2_chapter_read_sessions
+  WHERE run_id=current_setting('app.speed_v2_run',true)::uuid;
+ IF checks<>1 OR starts<>0 OR (score->>'run_xp')::integer<>10 THEN
+  RAISE EXCEPTION 'FAIL: V2 confirmation did not award exactly once (score %, checks %, sessions %)',
+    score,checks,starts;
+ END IF;
+END $speed$;
+DO $speed$
+BEGIN
+ IF EXISTS(
+  SELECT 1 FROM pg_catalog.pg_proc p
+  JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace
+  WHERE n.nspname='public' AND p.prosecdef
+    AND NOT ('search_path=""'=ANY(COALESCE(p.proconfig,ARRAY[]::text[])))
+ ) THEN
+  RAISE EXCEPTION 'FAIL: a public SECURITY DEFINER function lacks fixed search_path';
+ END IF;
+ IF NOT (
+  SELECT c.relrowsecurity FROM pg_catalog.pg_class c
+  JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
+  WHERE n.nspname='public' AND c.relname='lab_game_plan_chapters'
+ ) THEN RAISE EXCEPTION 'FAIL: chapter plan RLS was disabled'; END IF;
+ IF EXISTS(
+  SELECT 1 FROM pg_catalog.pg_policies
+  WHERE schemaname='public' AND tablename='lab_game_plan_chapters'
+ ) THEN RAISE EXCEPTION 'FAIL: a policy opened the internal chapter plan'; END IF;
+ IF has_table_privilege('anon','public.lab_game_plan_chapters','SELECT')
+    OR has_table_privilege('authenticated','public.lab_game_plan_chapters','SELECT') THEN
+  RAISE EXCEPTION 'FAIL: API roles can read the internal chapter plan directly';
+ END IF;
+END $speed$;
+RESET ROLE;
+SELECT 'LAB SERVER-SIDE READING SPEED GUARDS PASSED' AS result;
+
