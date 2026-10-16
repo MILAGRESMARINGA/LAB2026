@@ -27,14 +27,15 @@ BEGIN
       GROUP BY r.id
     ) trials
    ),0)),
-   COALESCE((
-    SELECT COUNT(c.chapter_id)::integer*10-COALESCE(SUM(d.late_penalty),0)::integer
-    FROM public.lab_v2_runs r
-    JOIN public.lab_v2_chapter_checks c ON c.run_id=r.id
-    LEFT JOIN public.lab_v2_stages d
-     ON d.run_id=c.run_id AND d.day_number=c.day_number
+   GREATEST(0,COALESCE((
+    SELECT COUNT(c.chapter_id)::integer*10
+    FROM public.lab_v2_runs r JOIN public.lab_v2_chapter_checks c ON c.run_id=r.id
     WHERE r.user_id=m.user_id AND r.status='active'
-   ),0)
+   ),0)-COALESCE((
+    SELECT SUM(d.late_penalty)::integer
+    FROM public.lab_v2_runs r JOIN public.lab_v2_stages d ON d.run_id=r.id
+    WHERE r.user_id=m.user_id AND r.status='active'
+   ),0))
  FROM public.reading_group_members m
  JOIN public.lab_game_stats s ON s.user_id=m.user_id
  WHERE m.group_id=p_group_id AND s.leaderboard_opt_in=true
