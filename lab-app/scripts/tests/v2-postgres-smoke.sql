@@ -346,3 +346,48 @@ BEGIN
 END $test$;
 RESET ROLE;
 SELECT 'LAB V2 POSTGRES SMOKE PASSED' AS result;
+
+
+-- Profile & notice matrix must also compile on the target PostgreSQL engine.
+-- This portion is evaluated after the V2 game tests to avoid replacing the
+-- smoke-specific unified-reset function before it has been exercised.
+\i supabase/migrations/202610160001_profile_notification_preferences.sql
+\i supabase/migrations/202610160106_notification_channel_matrix.sql
+
+SELECT set_config('app.test_user','11111111-1111-4111-8111-111111111111',false);
+SET ROLE authenticated;
+INSERT INTO public.lab_notification_preferences(user_id,enabled,in_app_popup,email,reading_reminders,gc_activity)
+VALUES(auth.uid(),true,true,true,true,false);
+RESET ROLE;
+-- Re-running the single additive backfill statement simulates a user record
+-- from before the migration without mutating production data.
+UPDATE public.lab_notification_preferences
+ SET reading_popup=enabled AND in_app_popup AND reading_reminders,
+     reading_email=enabled AND email AND reading_reminders,
+     gc_popup=enabled AND in_app_popup AND gc_activity,
+     gc_email=enabled AND email AND gc_activity;
+SET ROLE authenticated;
+DO $notice$
+DECLARE r public.lab_notification_preferences%ROWTYPE;
+BEGIN
+ SELECT * INTO r FROM public.lab_notification_preferences WHERE user_id=auth.uid();
+ IF r.reading_popup IS DISTINCT FROM true OR r.reading_email IS DISTINCT FROM true
+    OR r.gc_popup IS DISTINCT FROM false OR r.stage_email IS DISTINCT FROM false THEN
+  RAISE EXCEPTION 'FAIL: notification category-channel consent incorrectly backfilled';
+ END IF;
+END $notice$;
+SELECT set_config('app.test_user','22222222-2222-4222-8222-222222222222',false);
+DO $notice$
+DECLARE total integer;
+BEGIN
+ SELECT COUNT(*) INTO total FROM public.lab_notification_preferences;
+ IF total<>0 THEN RAISE EXCEPTION 'FAIL: another user sees private notification settings'; END IF;
+ BEGIN
+  INSERT INTO public.lab_notification_preferences(user_id,enabled,reading_popup)
+  VALUES('11111111-1111-4111-8111-111111111111',true,true);
+  RAISE EXCEPTION 'FAIL: user can create settings belonging to another user';
+ EXCEPTION WHEN insufficient_privilege OR check_violation OR unique_violation THEN NULL;
+ END;
+END $notice$;
+RESET ROLE;
+SELECT 'LAB PROFILE AND NOTIFICATION MATRIX PASSED' AS result;
