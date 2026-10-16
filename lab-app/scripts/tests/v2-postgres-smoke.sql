@@ -3,6 +3,7 @@
 -- Isolated stubs replace Supabase auth; no user or production data is used.
 CREATE ROLE anon NOLOGIN;
 CREATE ROLE authenticated NOLOGIN;
+CREATE ROLE service_role NOLOGIN BYPASSRLS;
 CREATE SCHEMA auth;
 GRANT USAGE ON SCHEMA auth TO authenticated;
 CREATE TABLE auth.users(id uuid PRIMARY KEY,last_sign_in_at timestamptz DEFAULT now());
@@ -711,3 +712,309 @@ END $speed$;
 RESET ROLE;
 SELECT 'LAB SERVER-SIDE READING SPEED GUARDS PASSED' AS result;
 
+
+
+-- Versioned study cache and fair GC XP score. This is still the disposable PG16/17 fixture.
+\i supabase/migrations/202610160110_lab_v2_study_content_cache.sql
+\i supabase/migrations/202610160111_lab_v2_gc_fair_xp_ranking.sql
+
+DO $study_seed$
+DECLARE n integer;
+BEGIN
+ SELECT count(*) INTO n FROM public.lab_v2_study_content
+  WHERE journey_key='bible-annual' AND layer=1 AND journey_day BETWEEN 1 AND 3
+    AND publication_status='published';
+ IF n<>6 THEN RAISE EXCEPTION 'FAIL: expected six curated Layer 1 studies for days 1-3, got %',n; END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.lab_v2_study_content
+   WHERE study_key='d1-genesis1-john1-layer1-2026-10-v1'
+     AND chapter_refs=ARRAY['1:1','43:1']::text[])
+    OR NOT EXISTS(SELECT 1 FROM public.lab_v2_study_content
+   WHERE study_key='d1-psalm1-layer1-2026-10-v1'
+     AND chapter_refs=ARRAY['19:1']::text[])
+    OR NOT EXISTS(SELECT 1 FROM public.lab_v2_study_content
+   WHERE study_key='d2-genesis2-3-layer1-2026-10-v1'
+     AND chapter_refs=ARRAY['1:2','1:3']::text[])
+    OR NOT EXISTS(SELECT 1 FROM public.lab_v2_study_content
+   WHERE study_key='d2-john2-layer1-2026-10-v1'
+     AND chapter_refs=ARRAY['43:2']::text[])
+    OR NOT EXISTS(SELECT 1 FROM public.lab_v2_study_content
+   WHERE study_key='d3-genesis4-5-layer1-2026-10-v1'
+     AND chapter_refs=ARRAY['1:4','1:5']::text[])
+    OR NOT EXISTS(SELECT 1 FROM public.lab_v2_study_content
+   WHERE study_key='d3-psalm2-layer1-2026-10-v1'
+     AND chapter_refs=ARRAY['19:2']::text[])
+ THEN RAISE EXCEPTION 'FAIL: connected and separate day-reference keys are wrong'; END IF;
+ IF (SELECT cache_key FROM public.lab_v2_study_content
+       WHERE study_key='d1-genesis1-john1-layer1-2026-10-v1')
+    <>'bible-annual:1:1:1,43:1:L1:2026-10-v1'
+ THEN RAISE EXCEPTION 'FAIL: study cache key omits journey/day/references/layer/version'; END IF;
+END $study_seed$;
+
+-- Replaying the same versioned cache key is idempotent and cannot mint a second row.
+INSERT INTO public.lab_v2_study_content
+  (study_key,journey_key,journey_day,chapter_refs,layer,content_version,
+   source_kind,publication_status,title,content)
+SELECT study_key,journey_key,journey_day,chapter_refs,layer,content_version,
+       source_kind,publication_status,title,content
+  FROM public.lab_v2_study_content
+ WHERE study_key='d1-genesis1-john1-layer1-2026-10-v1'
+ON CONFLICT DO NOTHING;
+DO $study_idempotency$
+BEGIN
+ IF (SELECT count(*) FROM public.lab_v2_study_content
+      WHERE journey_key='bible-annual' AND journey_day=1
+        AND chapter_refs=ARRAY['1:1','43:1']::text[]
+        AND layer=1 AND content_version='2026-10-v1')<>1
+ THEN RAISE EXCEPTION 'FAIL: versioned study cache inserted twice'; END IF;
+END $study_idempotency$;
+
+-- An alternate published version is a distinct cache row but the same XP unit.
+INSERT INTO public.lab_v2_study_catalog(study_key,title,xp)
+VALUES ('d1-genesis1-john1-layer1-2026-10-v2','Fixture alternate study version',15)
+ON CONFLICT (study_key) DO NOTHING;
+INSERT INTO public.lab_v2_study_content
+  (study_key,journey_key,journey_day,chapter_refs,layer,content_version,
+   source_kind,publication_status,title,content)
+SELECT 'd1-genesis1-john1-layer1-2026-10-v2',journey_key,journey_day,chapter_refs,
+       layer,'ci-v2','curated','published','Fixture alternate study version',content
+  FROM public.lab_v2_study_content
+ WHERE study_key='d1-genesis1-john1-layer1-2026-10-v1'
+ON CONFLICT DO NOTHING;
+
+-- Test-only published layer fixtures exercise the 30/90 day policy without
+-- inventing any production Layer 2 or Layer 3 study content.
+INSERT INTO public.lab_v2_study_catalog(study_key,title,xp) VALUES
+ ('ci-layer2-unlock-v1','Fixture: camada 2',15),
+ ('ci-layer3-unlock-v1','Fixture: camada 3',15);
+INSERT INTO public.lab_v2_study_content
+ (study_key,journey_key,journey_day,chapter_refs,layer,content_version,
+  source_kind,publication_status,title,content)
+VALUES
+ ('ci-layer2-unlock-v1','bible-annual',1,ARRAY['1:1']::text[],2,'ci-v1',
+  'curated','published','Fixture: camada 2','{"title":"Fixture"}'::jsonb),
+ ('ci-layer3-unlock-v1','bible-annual',1,ARRAY['1:1']::text[],3,'ci-v1',
+  'curated','published','Fixture: camada 3','{"title":"Fixture"}'::jsonb);
+
+INSERT INTO auth.users(id) VALUES
+ ('77777777-7777-4777-8777-777777777777'),
+ ('88888888-8888-4888-8888-888888888888'),
+ ('99999999-9999-4999-8999-999999999999');
+INSERT INTO public.lab_game_stats(user_id,display_name,leaderboard_opt_in)
+VALUES
+ ('77777777-7777-4777-8777-777777777777','Study Fixture',false),
+ ('88888888-8888-4888-8888-888888888888','Layer 2 Fixture',false),
+ ('99999999-9999-4999-8999-999999999999','Layer 3 Fixture',false);
+INSERT INTO public.lab_v2_runs(id,user_id,plan_length,status,started_at)
+VALUES
+ ('a7777777-7777-4777-8777-777777777777','77777777-7777-4777-8777-777777777777',365,'active',statement_timestamp()-interval '1 day'),
+ ('a8888888-8888-4888-8888-888888888888','88888888-8888-4888-8888-888888888888',365,'active',statement_timestamp()-interval '1 day'),
+ ('a9999999-9999-4999-8999-999999999999','99999999-9999-4999-8999-999999999999',365,'active',statement_timestamp()-interval '1 day');
+INSERT INTO public.lab_v2_stages(run_id,day_number,activated_at,completed_at)
+VALUES
+ ('a7777777-7777-4777-8777-777777777777',1,statement_timestamp()-interval '1 hour',statement_timestamp()-interval '10 minutes');
+INSERT INTO public.lab_v2_stages(run_id,day_number,activated_at,completed_at)
+SELECT 'a8888888-8888-4888-8888-888888888888',g,
+       statement_timestamp()-interval '1 hour',statement_timestamp()-interval '10 minutes'
+  FROM generate_series(1,30) AS g;
+INSERT INTO public.lab_v2_stages(run_id,day_number,activated_at,completed_at)
+SELECT 'a9999999-9999-4999-8999-999999999999',g,
+       statement_timestamp()-interval '1 hour',statement_timestamp()-interval '10 minutes'
+  FROM generate_series(1,90) AS g;
+INSERT INTO public.lab_v2_chapter_checks(run_id,day_number,chapter_id,confirmed_at)
+VALUES
+ ('a7777777-7777-4777-8777-777777777777',1,'1:1',statement_timestamp()-interval '10 minutes'),
+ ('a7777777-7777-4777-8777-777777777777',1,'19:1',statement_timestamp()-interval '10 minutes'),
+ ('a7777777-7777-4777-8777-777777777777',1,'43:1',statement_timestamp()-interval '10 minutes');
+
+SET ROLE authenticated;
+SELECT set_config('app.test_user','77777777-7777-4777-8777-777777777777',false);
+DO $study_rls$
+BEGIN
+ IF (SELECT count(DISTINCT (journey_day,chapter_refs)) FROM public.lab_v2_study_content
+      WHERE journey_day BETWEEN 1 AND 3 AND layer=1)<>6
+ THEN RAISE EXCEPTION 'FAIL: signed-in new learner cannot read published Layer 1 seeds'; END IF;
+ IF EXISTS(SELECT 1 FROM public.lab_v2_study_content WHERE layer IN(2,3))
+ THEN RAISE EXCEPTION 'FAIL: Layer 2 or 3 unlocked before its progress threshold'; END IF;
+ IF (SELECT count(*) FROM public.lab_v2_study_content WHERE layer=2 AND publication_status='published')<>0
+ THEN RAISE EXCEPTION 'FAIL: unpublished layer content leaked'; END IF;
+END $study_rls$;
+DO $study_reward$
+DECLARE s jsonb; rewards integer;xp integer;
+BEGIN
+ BEGIN
+  PERFORM public.lab_v2_confirm_study(
+    'a7777777-7777-4777-8777-777777777777','ci-layer2-unlock-v1',true);
+  RAISE EXCEPTION 'FAIL: layer 2 study reward bypassed 30-day unlock';
+ EXCEPTION WHEN OTHERS THEN
+  IF SQLERRM NOT LIKE 'Camada 2 bloqueada:%' THEN RAISE; END IF;
+ END;
+ BEGIN
+  PERFORM public.lab_v2_confirm_study(
+    'a7777777-7777-4777-8777-777777777777','d2-genesis2-3-layer1-2026-10-v1',true);
+  RAISE EXCEPTION 'FAIL: a study was rewarded before its day was completed';
+ EXCEPTION WHEN OTHERS THEN
+  IF SQLERRM NOT LIKE 'Conclua a leitura do dia relacionado%' THEN RAISE; END IF;
+ END;
+ SELECT public.lab_v2_confirm_study(
+   'a7777777-7777-4777-8777-777777777777','d1-genesis1-john1-layer1-2026-10-v1',true) INTO s;
+ IF s->>'awarded'<>'true' THEN RAISE EXCEPTION 'FAIL: connected Day 1 study was not awarded'; END IF;
+ SELECT public.lab_v2_confirm_study(
+   'a7777777-7777-4777-8777-777777777777','d1-genesis1-john1-layer1-2026-10-v1',true) INTO s;
+ IF s->>'awarded'<>'false' THEN RAISE EXCEPTION 'FAIL: repeated study confirmation awarded XP twice'; END IF;
+ SELECT public.lab_v2_confirm_study(
+   'a7777777-7777-4777-8777-777777777777','d1-genesis1-john1-layer1-2026-10-v2',true) INTO s;
+ IF s->>'awarded'<>'false' THEN
+   RAISE EXCEPTION 'FAIL: a new content version awarded XP for the same study unit';
+ END IF;
+ SELECT public.lab_v2_confirm_study(
+   'a7777777-7777-4777-8777-777777777777','d1-psalm1-layer1-2026-10-v1',true) INTO s;
+ IF s->>'awarded'<>'true' THEN RAISE EXCEPTION 'FAIL: separate Psalm study was not awarded'; END IF;
+ SELECT count(*),sum(awarded_xp)::integer INTO rewards,xp
+   FROM public.lab_v2_study_rewards
+  WHERE run_id='a7777777-7777-4777-8777-777777777777';
+ IF rewards<>2 OR xp<>30 THEN RAISE EXCEPTION 'FAIL: study XP was duplicated (rows %, XP %)',rewards,xp; END IF;
+ SELECT public.lab_v2_sync('a7777777-7777-4777-8777-777777777777') INTO s;
+ IF (s->>'study_xp')::integer<>30 OR (s->>'run_xp')::integer<>60
+ THEN RAISE EXCEPTION 'FAIL: study XP not included in server score: %',s; END IF;
+END $study_reward$;
+RESET ROLE;
+
+SET ROLE authenticated;
+SELECT set_config('app.test_user','88888888-8888-4888-8888-888888888888',false);
+DO $study_layer2$
+BEGIN
+ IF (SELECT count(*) FROM public.lab_v2_study_content WHERE layer=2)<>1
+ THEN RAISE EXCEPTION 'FAIL: Layer 2 did not unlock at 30 completed days'; END IF;
+ IF EXISTS(SELECT 1 FROM public.lab_v2_study_content WHERE layer=3)
+ THEN RAISE EXCEPTION 'FAIL: Layer 3 unlocked before 90 completed days'; END IF;
+END $study_layer2$;
+SELECT set_config('app.test_user','99999999-9999-4999-8999-999999999999',false);
+DO $study_layer3$
+BEGIN
+ IF (SELECT count(*) FROM public.lab_v2_study_content WHERE layer=3)<>1
+ THEN RAISE EXCEPTION 'FAIL: Layer 3 did not unlock at 90 completed days'; END IF;
+END $study_layer3$;
+RESET ROLE;
+SELECT 'LAB STUDY CACHE, LAYERS AND IDEMPOTENT XP PASSED' AS result;
+
+-- Synthetic consented participants prove per-member averaging and the declared
+-- three-category consistency multiplier without exposing personal activity.
+RESET ROLE;
+WITH ids AS (
+  SELECT g,
+    ('80000000-0000-4000-8000-' || lpad(to_hex(g),12,'0'))::uuid AS user_id
+  FROM generate_series(1,24) AS g
+)
+INSERT INTO auth.users(id) SELECT user_id FROM ids;
+WITH ids AS (
+  SELECT g,
+    ('80000000-0000-4000-8000-' || lpad(to_hex(g),12,'0'))::uuid AS user_id
+  FROM generate_series(1,24) AS g
+)
+INSERT INTO public.lab_game_stats(user_id,display_name,leaderboard_opt_in)
+SELECT user_id,'CI GC Fixture '||g, g<>4 FROM ids;
+INSERT INTO public.reading_groups(name,owner_id,competition_opt_in)
+VALUES
+ ('LAB Fairness Small','80000000-0000-4000-8000-000000000001',true)
+RETURNING id AS group_small \gset
+INSERT INTO public.reading_groups(name,owner_id,competition_opt_in)
+VALUES
+ ('LAB Fairness Large','80000000-0000-4000-8000-000000000005',true)
+RETURNING id AS group_large \gset
+WITH ids AS (
+ SELECT g,('80000000-0000-4000-8000-'||lpad(to_hex(g),12,'0'))::uuid AS user_id
+ FROM generate_series(1,4) AS g
+)
+INSERT INTO public.reading_group_members(group_id,user_id,role,joined_at)
+SELECT :'group_small'::uuid,user_id,
+       CASE WHEN g=1 THEN 'leader' ELSE 'member' END,
+       statement_timestamp()-interval '7 days'
+ FROM ids;
+WITH ids AS (
+ SELECT g,('80000000-0000-4000-8000-'||lpad(to_hex(g),12,'0'))::uuid AS user_id
+ FROM generate_series(5,24) AS g
+)
+INSERT INTO public.reading_group_members(group_id,user_id,role,joined_at)
+SELECT :'group_large'::uuid,user_id,
+       CASE WHEN g=5 THEN 'leader' ELSE 'member' END,
+       statement_timestamp()-interval '7 days'
+ FROM ids;
+WITH ids AS (
+ SELECT g,
+  ('80000000-0000-4000-8000-'||lpad(to_hex(g),12,'0'))::uuid AS user_id,
+  ('90000000-0000-4000-8000-'||lpad(to_hex(g),12,'0'))::uuid AS run_id
+ FROM generate_series(1,24) AS g
+)
+INSERT INTO public.lab_v2_runs(id,user_id,plan_length,status,started_at,finished_at)
+SELECT run_id,user_id,365,'completed',
+       statement_timestamp()-interval '2 days',
+       statement_timestamp()-interval '1 day'
+ FROM ids;
+WITH ids AS (
+ SELECT g,
+  ('90000000-0000-4000-8000-'||lpad(to_hex(g),12,'0'))::uuid AS run_id
+ FROM generate_series(1,24) AS g
+)
+INSERT INTO public.lab_v2_stages(run_id,day_number,activated_at,completed_at)
+SELECT run_id,1,statement_timestamp()-interval '2 hours',statement_timestamp()-interval '1 hour'
+ FROM ids;
+WITH ids AS (
+ SELECT g,
+  ('90000000-0000-4000-8000-'||lpad(to_hex(g),12,'0'))::uuid AS run_id
+ FROM generate_series(1,24) AS g
+)
+INSERT INTO public.lab_v2_chapter_checks(run_id,day_number,chapter_id,confirmed_at)
+SELECT run_id,1,'19:1',statement_timestamp()
+ FROM ids;
+WITH ids AS (
+ SELECT g,
+  ('90000000-0000-4000-8000-'||lpad(to_hex(g),12,'0'))::uuid AS run_id
+ FROM generate_series(1,24) AS g
+)
+INSERT INTO public.lab_v2_study_rewards(run_id,study_key,study_unit_key,awarded_xp,confirmed_at)
+SELECT run_id,'d1-psalm1-layer1-2026-10-v1',
+       'fixture:psalm1:'||run_id::text,15,statement_timestamp()
+ FROM ids;
+WITH ids AS (
+ SELECT g,
+  ('90000000-0000-4000-8000-'||lpad(to_hex(g),12,'0'))::uuid AS run_id
+ FROM generate_series(1,24) AS g
+)
+INSERT INTO public.lab_v2_video_rewards(run_id,video_key,awarded_xp,confirmed_at)
+SELECT run_id,'videos:genesis-1-11',5,statement_timestamp()
+ FROM ids;
+
+SET ROLE authenticated;
+SELECT set_config('app.test_user','80000000-0000-4000-8000-000000000001',false);
+SELECT set_config('app.group_small', :'group_small', false);
+SELECT set_config('app.group_large', :'group_large', false);
+SELECT * FROM public.lab_v2_gc_league_fair();
+SELECT public.lab_v2_gc_group_scorecard(:'group_small'::uuid);
+DO $fair_score$
+DECLARE
+  small jsonb;
+  large jsonb;
+  listed integer;
+BEGIN
+ SELECT public.lab_v2_gc_group_scorecard(current_setting('app.group_small')::uuid) INTO small;
+ SELECT public.lab_v2_gc_group_scorecard(current_setting('app.group_large')::uuid) INTO large;
+ IF (small->>'average_xp_per_member')::numeric<>30
+    OR (large->>'average_xp_per_member')::numeric<>30
+    OR (small->>'score')::numeric<>(large->>'score')::numeric
+    OR (small->>'consistency_multiplier')::numeric<>(large->>'consistency_multiplier')::numeric
+ THEN RAISE EXCEPTION 'FAIL: group size changed mean XP/consistency/score (% / %)',small,large; END IF;
+ IF (small->>'members')::integer<>4 OR (small->>'consenting_members')::integer<>3
+    OR (large->>'members')::integer<>20 OR (large->>'consenting_members')::integer<>20
+ THEN RAISE EXCEPTION 'FAIL: group leaderboard counts do not respect consent (% / %)',small,large; END IF;
+ IF (small->>'reading_member_days')::integer<>3
+    OR (small->>'study_member_days')::integer<>3
+    OR (small->>'video_member_days')::integer<>3
+    OR (small->>'reading_coverage_pct')::numeric<>14.3
+ THEN RAISE EXCEPTION 'FAIL: transparent activity coverage calculation is wrong: %',small; END IF;
+ SELECT count(*) INTO listed FROM public.lab_v2_gc_league_fair()
+ WHERE group_id IN (current_setting('app.group_small')::uuid,
+                    current_setting('app.group_large')::uuid);
+ IF listed<>2 THEN RAISE EXCEPTION 'FAIL: expected both eligible national groups, got %',listed; END IF;
+END $fair_score$;
+RESET ROLE;
+SELECT 'LAB FAIR GC AVERAGE XP AND THREE-CATEGORY CONSISTENCY PASSED' AS result;

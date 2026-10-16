@@ -18,6 +18,7 @@
 - [Bíblia e mídias](./BIBLE-DATA-AND-MEDIA.md): licença Almeida 1911 e BibleProject.
 - [Autenticação e e-mails P0](./P0-AUTH-RECOVERY-RUNBOOK.md): DNS, Supabase e SMTP.
 - [Backup e endurecimento do banco P0](./P0-DATABASE-BACKUP-AND-HARDENING.md): Supabase Free sem backup automático, script Windows, inventário, restauração e gate SQL.
+- [Gate de backup, restore PG17 e ranking justo](./P0-CI-BACKUP-RESTORE-GATE.md): gatilho de release, restore efêmero, migrations condicionadas e fórmula/testes de score e cache.
 
 ## Registros de decisão (ADR)
 - [ADR 0001 — Isolamento de LABGAME vs CRM](./adr/0001-boundaries.md)
