@@ -26,7 +26,7 @@
 - [ADR 0004 — Gates de qualidade e segurança](./adr/0004-quality-and-security-gates.md)
 
 ## Agentes, contratos e validação
-- [Handoff e política de veto](../.agents/WORKFLOW.md), [12 especialistas](../.agents/README.md). Os agentes não executam automaticamente.
+- [Handoff e política de veto](../.agents/WORKFLOW.md), [manifesto dos oito agentes](../.agents/manifest.json) e [descrições](../.agents/README.md). A CI valida contratos e testes; não há runtime de LLM conectado.
 - `cd lab-app && npm run verify:engineering && npm test && npm run build`.
 - Workflow do GitHub: [LAB CI](../.github/workflows/lab-ci.yml).
 - Ferramentas do produto: código em `lab-app/`. O diretório `project/` é um CRM legado, **fora de escopo** e não deve ser aplicado ao banco LABGAME.

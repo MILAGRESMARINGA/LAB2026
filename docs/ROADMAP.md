@@ -108,18 +108,9 @@ Atualização: 11/10/2026. Branch: `lab-rebuild-2026` do repositório `MILAGRESM
 - [ ] Publicação homologada e abertura gradual por GC
 
 ## Papéis de agentes
-- **principal-architect:** invariantes, modelo versionado e arquitetura
-- **backend-engineer:** RPCs transacionais e limites de etapas
-- **database-engineer:** PostgreSQL, migrações e índices
-- **security-engineer:** RLS, autorização por GC e proteção de dados
-- **qa-reliability-engineer:** testes de regressão, fluxo anual e cenários de falha
-- **frontend-ux-engineer:** onboarding, jornada e acessibilidade
-- **integration-engineer:** links BibleProject, traduções licenciadas e autenticação
-- **platform-observability-engineer:** logs, releases, backups e monitoramento
-- **ai-engineer:** estudos e conteúdos pedagógicos sob revisão humana
+A arquitetura oficial contém oito agentes, listados no manifesto ../.agents/manifest.json: ai-engineer (orquestração), backend-engineer, database-engineer, security-engineer, frontend-ux-engineer, qa-reliability-engineer, integration-engineer e platform-observability-engineer. As antigas especialidades de arquitetura principal, cânon bíblico, plano anual e gamificação foram incorporadas a esses papéis.
 
-Esses nomes são responsabilidades de revisão e desenvolvimento, **não** processos de agentes autônomos em execução.
-
+Os prompts são contratos operacionais. GitHub Actions valida contratos, executa a suíte de CI e reúne evidências; não há runtime de LLM conectado e nenhum prompt executa sozinho.
 ## Acordos e critérios
 Regras completas: `docs/LABGAME-2.0-RULES.md`. Nenhum livro ou capítulo pode ser removido, repetido artificialmente ou alterado para caber na gamificação. Não tratar o estado espiritual das pessoas como métrica do jogo. Não publicar exegese automatizada sem revisão nem links de vídeos ainda não fornecidos.
 

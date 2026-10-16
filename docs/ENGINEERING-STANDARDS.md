@@ -1,12 +1,12 @@
 # LABGAME — Padrão obrigatório de engenharia de software
 
-**Versão:** 1.0 · **Owner de processo:** principal-architect · **Segurança com veto:** security-engineer.
+**Versão:** 1.0 · **Owner de processo:** ai-engineer · **Segurança com veto:** security-engineer.
 
 ## Fluxo de engenharia: do requisito ao release
 
 1. **Especificar**: problema, contexto, regra bíblica, casos positivos/negativos, invariante de pontuação, privacidade e risco; ID rastreável `LAB-xxx`.
 2. **Projetar**: contrato TypeScript/SQL/JSON Schema, fluxo de dados, fronteiras de confiança e custo. Toda decisão não trivial gera ADR com opções e riscos. Preferir mudança mínima compatível.
-3. **Revisar**: principal-architect arbitra impacto; backend/database/security/QA/AI/UX são convocados conforme componentes alterados. Agentes são **checklists de papéis**, não tarefas automáticas.
+3. **Revisar**: ai-engineer coordena os especialistas definidos em .agents/manifest.json; backend/database/security/QA/frontend/integration/platform atuam conforme os componentes alterados. Os prompts são contratos; GitHub Actions valida contratos e testes, mas não há runtime de LLM conectado.
 4. **Implementar**: branch `lab-rebuild-2026` até liberação formal; `main` preservada. Mudanças pequenas, comentários sobre *por quê*, sem credenciais. Nunca alterar `project/` nem Supabase CRM.
 5. **Validar**: `npm run verify:engineering`, `npm test`, `npm run build` em `lab-app/`; testes SQL de autorização, E2E e entregabilidade conforme mudança; capturar evidências de commits e CI.
 6. **Revisão de segurança**: autenticação, RLS, logs, dependências, dados, upload, HTML, SSRF, CSRF, injeção de prompt, custo IA. Bloquear release quando há vulnerabilidade crítica não mitigada.
