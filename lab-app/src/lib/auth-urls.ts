@@ -9,6 +9,9 @@ export const LAB_REBUILD_APP_ORIGIN="https://labgame-biblia-git-lab-rebuild-2026
 
 export function resolvePublicAppOrigin(configured:string|undefined,hostname:string|undefined):string{
  const current=(hostname||"").toLowerCase();
+ // A preview deployment can be assigned the public alias without rebuilding.
+ // Never let the PREVIEW build-time env redirect public visitors to the SSO preview.
+ if(current===new URL(PRODUCTION_APP_ORIGIN).hostname)return PRODUCTION_APP_ORIGIN;
  const branchHost=new URL(LAB_REBUILD_APP_ORIGIN).hostname;
  const isBranch=current===branchHost;
  const isKnownPreview=/^labgame-biblia-[a-z0-9]+-antonios-projects-0bf892e8\.vercel\.app$/.test(current);
