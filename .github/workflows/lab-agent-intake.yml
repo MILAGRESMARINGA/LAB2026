@@ -1,0 +1,45 @@
+name: LAB Agent Intake
+
+# Admin-only GitHub Issues -> draft triage PR and P0 CI dispatch.
+# No issue content is ever executed as shell, JS, SQL or AI instructions.
+on:
+  issues:
+    types: [opened]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Existing issue number to process"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: write
+
+concurrency:
+  group: lab-agent-intake-${{ github.event.issue.number || inputs.issue_number }}
+  cancel-in-progress: false
+
+jobs:
+  triage:
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.issue.title, 'LAB AGENTE · ')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout trusted default branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Create safe draft intake PR (admin issue only)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node lab-app/scripts/agent-intake.mjs
