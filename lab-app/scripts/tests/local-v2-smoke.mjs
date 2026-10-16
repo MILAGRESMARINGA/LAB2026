@@ -1,6 +1,7 @@
 /** Real local GoTrue/JWT RLS test for LABGAME V2. No remote credentials. */
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
+import {execFileSync} from "node:child_process";
 import {createClient} from "@supabase/supabase-js";
 
 const content=readFileSync(process.env.LAB_SUPABASE_LOCAL_ENV_FILE||"/tmp/labgame-supabase-ci.env","utf8");
@@ -24,7 +25,7 @@ try{
   const c=client();
   const {data:session,error:loginError}=await c.auth.signInWithPassword({email,password:pwd});
   assert.ifError(loginError);assert.ok(session.session);
-  participants.push({c,id:data.user.id});
+  participants.push({c,id:data.user.id,email});
  }
  const [a,b]=participants;
  const {data:started,error:startErr}=await a.c.rpc("lab_v2_start",{p_plan_length:365});
@@ -62,8 +63,27 @@ try{
   .insert({run_id:runId,day_number:1,chapter_id:"1:2",confirmed_at:new Date().toISOString()});
  assert.ok(mutateError,"Clients cannot write directly to the V2 ledger");
 
+ // Force only the FIRST local session to become stale, without waiting.
+ // This modifies disposable Supabase Auth in Docker, NEVER hosted data.
+ const {data:oldSession,error:oldSessionError}=await a.c.auth.getSession();
+ assert.ifError(oldSessionError);
+ const payload=JSON.parse(Buffer.from(oldSession.session.access_token.split(".")[1],"base64url").toString("utf8"));
+ assert.match(payload.session_id,/^[a-f0-9-]{36}$/i);
+ assert.match(a.id,/^[a-f0-9-]{36}$/i);
+ execFileSync("docker",["exec","supabase_db_labgame-free-ci","psql","-U","postgres","-d","postgres","-v","ON_ERROR_STOP=1","-c",
+  `UPDATE auth.sessions SET created_at=statement_timestamp()-interval '10 minutes' WHERE id='${payload.session_id}'::uuid AND user_id='${a.id}'::uuid`],{stdio:"pipe"});
+ // A new login on another device updates global last_sign_in_at; it must
+ // NEVER make the stale JWT eligible to erase the user's journey.
+ const reauthed=client();
+ const freshLogin=await reauthed.auth.signInWithPassword({email:a.email,password:pwd});
+ assert.ifError(freshLogin.error);assert.ok(freshLogin.data.session);
+ const denied=await a.c.rpc("lab_game_full_reset",{p_confirmation:"ZERAR JORNADA"});
+ assert.ok(denied.error?.message?.includes("Entre novamente"),
+  "An old JWT must not reset a journey after another session has signed in");
+ const {data:stillHere,error:stillHereErr}=await a.c.from("lab_v2_runs").select("id").eq("id",runId);
+ assert.ifError(stillHereErr);assert.equal(stillHere.length,1);
  // An irrevocable full reset is account-scoped, leaves profile & GC affiliation intact.
- const {data:reset,error:resetError}=await a.c.rpc("lab_game_full_reset",{
+ const {data:reset,error:resetError}=await reauthed.rpc("lab_game_full_reset",{
   p_confirmation:"ZERAR JORNADA"
  });
  assert.ifError(resetError);assert.equal(reset.reset,true);

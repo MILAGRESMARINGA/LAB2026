@@ -234,16 +234,21 @@ RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=''
 AS $fn$
 DECLARE
  v_user uuid:=auth.uid();
- v_last_sign_in timestamptz;
+ v_session_id text:=auth.jwt()->>'session_id';
  v_at timestamptz:=statement_timestamp();
  v_today date:=(v_at AT TIME ZONE 'America/Sao_Paulo')::date;
 BEGIN
  IF v_user IS NULL THEN RAISE EXCEPTION 'Autenticação necessária'; END IF;
  IF p_confirmation IS DISTINCT FROM 'ZERAR JORNADA' THEN
   RAISE EXCEPTION 'Digite ZERAR JORNADA para confirmar'; END IF;
- SELECT last_sign_in_at INTO v_last_sign_in FROM auth.users WHERE id=v_user;
- IF v_last_sign_in IS NULL OR v_last_sign_in<v_at-interval '5 minutes' THEN
-  RAISE EXCEPTION 'Entre novamente na sua conta para confirmar'; END IF;
+ -- Never trust global last_sign_in_at: another device could make a stale
+ -- JWT appear recently reauthenticated. Demand this JWT's fresh session.
+ IF v_session_id IS NULL OR NOT EXISTS(
+  SELECT 1 FROM auth.sessions s
+  WHERE s.id=v_session_id::uuid AND s.user_id=v_user
+    AND s.created_at>=v_at-interval '5 minutes'
+    AND s.created_at<=v_at+interval '30 seconds'
+ ) THEN RAISE EXCEPTION 'Entre novamente na sua conta para confirmar'; END IF;
  -- The V1 and V2 scorekeepers share one user lock during reset.
  PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(v_user::text,2116));
  INSERT INTO public.lab_game_stats(user_id) VALUES(v_user) ON CONFLICT DO NOTHING;

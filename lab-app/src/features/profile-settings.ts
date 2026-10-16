@@ -38,6 +38,10 @@ export const PERSONAL_FIELDS=[
  "address_number","address_extra"
 ] as const;
 export const RELIGIOUS_FIELDS=["church_name","pastor_name","ministry_role","gc_name"] as const;
+/** Mirror the confirmed server-side consent withdrawal in the visible form. */
+export function clearReligiousDetails(profile:MemberProfile):MemberProfile{
+ return {...profile,church_name:"",pastor_name:"",ministry_role:"",gc_name:"",religious_data_consent_at:null};
+}
 
 const clean=(x:string,max=160)=>x.trim().slice(0,max);
 const getAuthenticatedUser=async()=>{

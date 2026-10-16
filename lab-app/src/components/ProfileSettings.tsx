@@ -3,7 +3,7 @@ import {downloadMyAccountData} from "../features/account-export";
 import {AlertTriangle,Bell,BookOpen,CheckCircle2,ChevronDown,KeyRound,
  LockKeyhole,Mail,MapPin,ShieldAlert,Trash2,UserCircle,Users,X} from "lucide-react";
 import {
- DEFAULT_NOTICES,EMPTY_MEMBER_PROFILE,loadMemberSettings,
+ DEFAULT_NOTICES,EMPTY_MEMBER_PROFILE,loadMemberSettings,clearReligiousDetails,
  saveMemberProfile,saveNoticePreferences,resetAllJourneyData,deleteMyAccount,
  type MemberProfile,type NoticePreferences
 } from "../features/profile-settings";
@@ -55,13 +55,19 @@ export function ProfileSettings({accountEmail,onReset,onDeleted}:Props){
   setPrefs(prev=>({...prev,[key]:value}));
  const persistProfile=async()=>{
   setSaving(true);setMessage("");
-  try{await saveMemberProfile(profile,consent);setMessage("Dados do perfil salvos somente para sua conta.");
+  try{
+   await saveMemberProfile(profile,consent);
+   if(!consent)setProfile(current=>clearReligiousDetails(current));
+   setMessage(consent?"Dados do perfil salvos somente para sua conta.":"Perfil salvo. Os dados de igreja e ministério foram apagados após retirar seu consentimento.");
   }catch(e){setMessage(e instanceof Error?e.message:"Não foi possível salvar o cadastro.");
   }finally{setSaving(false)}
  };
  const persistPrefs=async()=>{
   setSaving(true);setMessage("");
-  try{await saveNoticePreferences(prefs);setMessage("Preferências de notificações salvas. O envio automático por e-mail ainda está em implantação.");
+  try{
+   await saveNoticePreferences(prefs);
+   if(!prefs.enabled)setPrefs({...DEFAULT_NOTICES});
+   setMessage("Preferências de notificações salvas. O envio automático por e-mail ainda está em implantação.");
   }catch(e){setMessage(e instanceof Error?e.message:"Não foi possível salvar as preferências.");
   }finally{setSaving(false)}
  };
@@ -76,13 +82,13 @@ export function ProfileSettings({accountEmail,onReset,onDeleted}:Props){
    if(action==="reset"){
     await resetAllJourneyData(password,phrase);
     await onReset();
+    requestAction(null);
     setMessage("Jornada zerada. Seu cadastro e vínculos com GCs foram preservados.");
    }else{
     await deleteMyAccount(password,phrase,confirmEmail);
     onDeleted();
     return;
    }
-   requestAction(null);
   }catch(e){setMessage(e instanceof Error?e.message:"A operação não foi concluída.");
   }finally{setSaving(false)}
  };
