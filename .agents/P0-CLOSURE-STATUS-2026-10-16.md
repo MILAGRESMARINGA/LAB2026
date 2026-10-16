@@ -1,5 +1,12 @@
 # LABGAME P0 — estado de fechamento e gates de produção
 
+## Evidência CI mais recente antes desta atualização
+
+- LAB CI [#506](https://github.com/MILAGRESMARINGA/LAB2026/actions/runs/38978180204), commit `578e7bf43b6d2412d7f776e34b48d35e1947594d`: SUCCESS, 6/6 jobs.
+- Os jobs passaram em build/unit/engineering/Deno, PostgreSQL 16, PostgreSQL 17, Auth/RLS e V2 em Supabase local descartável, teste local de exclusão de conta, fluxo mobile, contrato dos oito agentes e montagem do relatório.
+- Esse workflow usou ambientes efêmeros e não comprovou nem executou backup de produção, migration de produção ou deploy de Edge Function.
+
+
 **Data:** 16/10/2026  
 **Projeto:** Supabase LABGAME, ref azejfxvaamgkmfmwdzjn.
 
@@ -41,3 +48,11 @@
 ## Ações de produção nesta sessão
 
 Nenhuma. Consultas de projeto, migrations, advisors, funções e contagens foram somente leitura. A CI não tem credenciais de produção e não publica funções.
+
+## Atualização da autorização de IA e do gate de backup
+
+- O responsável autorizou uso de API de IA limitado; chamadas podem gerar cobrança. Nenhum limite R$ 0 é afirmado.
+- O runtime opcional de orquestração em GitHub Actions é manual e restrito; esta alteração não consultou, criou ou alterou o segredo `OPENAI_API_KEY`. Não houve inferência ao vivo. Sem esse segredo, o fluxo escreve `SKIPPED` e não chama o provedor.
+- O gerador de estudos consulta cache antes do provedor e a migration fixa misses a 10 globais e 3 por usuário por dia UTC. Continua fail-closed sem a chave.
+- A existência do workflow automatizado de backup/restore não equivale a backup executado. O gate de release continua bloqueado até haver run verde que registre pg_dump, restore efêmero e comparação de integridade; migrations e funções de produção continuam pendentes.
+- O conteúdo da Camada 1 tem seis estudos curados dos dias 1–3; Camadas 2/3 não têm seeds curadas. O runtime não recupera obras dos autores listados, portanto não atribui citações humanas.

@@ -1,11 +1,27 @@
 # LABGAME study generation
 
-The authenticated `study-generate` Supabase Edge Function is cache-first. It resolves the caller's bearer token through Supabase Auth, asks a service-role-only RPC for the active plan and Almeida 1911 verse data, and accepts only ordered chapter subsets from that verified day. The layer thresholds remain enforced in PostgreSQL (0, 30, and 90 completed stages).
+The authenticated `study-generate` Supabase Edge Function is cache-first. It resolves the caller's bearer token through Supabase Auth, then uses a service-role-only RPC to read the active plan and Almeida 1911 verse data. It accepts only ordered chapter subsets from that verified day. PostgreSQL enforces the progressive thresholds: Layer 1 at 0 completed days, Layer 2 at 30, and Layer 3 at 90.
 
-Before any model call, the function searches published content for the exact day, layer, and chapter set. A cache hit returns the stored study without acquiring a generation reservation or calling the provider. Cache misses require `OPENAI_API_KEY`; when that secret is absent, the endpoint returns the nonsecret `study_generation_unavailable` response and does not reserve quota. This repository does not configure the key and CI never invokes production or the live provider.
+## Theological and exegesis rules
 
-Generated output uses a strict JSON schema, a 64 KB maximum retrieved prompt, a 1,200-token maximum output, a 25-second request timeout, and `store:false`. The default provider model is `gpt-6-luna`. A server validator rejects malformed output, non-Bible citations, references outside the retrieved chapters/verses, and explicit deterministic or Calvinist assertions. The prompt treats retrieved verse text as untrusted data, ignores instructions inside it, and forbids author quotations or citations because no human-author source corpus is retrieved by this endpoint.
+The editorial lens is evangelical Pentecostal Arminian: prevenient grace, a real human response that may accept or resist the call, progressive sanctification, the continuing gifts of the Spirit and premillennial hope only when Layer 3 and the text support it. The model first interprets each chapter in its own context. It connects readings only when a direct textual/canonical key is demonstrable, such as an explicit quotation, allusion or clear shared narrative link. If that connection is absent, it must keep the exegesis and applications separate by Bible reference and set `theological_connection` to `null`; it must not force one theme across unrelated readings.
 
-Migration `202610160112_lab_v2_study_generation_limits.sql` creates RLS-protected operational tables with no direct Data API grants. Service-role-only RPCs validate the active run and chapter subset, reserve idempotency keys under an advisory lock, and enforce three cache-miss generations per user and ten globally per UTC hour. Generated study rows are published as append-only versions in the existing cache table. Failed leases are released; expired leases can be recovered after two minutes.
+The available RAG source in this runtime is the verified Bible text only. No human-author corpus has been ingested. Names such as Arminius, John Wesley, Adam Clarke, A.B. Simpson, R.A. Torrey, Andrew Murray, Finney, Bounds and Moody are research direction only; generated content may not invent or attribute quotations, page citations or positions to them. The prompt treats retrieved verse text as untrusted data and ignores instructions embedded in that text.
 
-Validation runs through `npm run verify:engineering`, `npm test`, the PostgreSQL 16/17 smoke suite, and `deno check`. These checks use deterministic provider mocks and disposable databases. They do not prove live inference, production migration, or Edge Function deployment.
+## Seeded content and layer readiness
+
+The current migration seeds six curated studies, all in Layer 1 for days 1–3: Genesis 1 connected with John 1; Psalm 1 separate; Genesis 2–3 connected and John 2 separate; Genesis 4–5 connected and Psalm 2 separate. Layer 2 (leadership preparation) and Layer 3 (complete theology and eschatology) have no curated seeds at this time. They depend on authenticated generation after their respective 30/90-day unlock thresholds unless later curated seeds are added.
+
+Do not describe these six studies as a full systematic theology course or as a complete public-domain-author library. Model-generated studies are not human-curated seeds.
+
+## Cache, provider and quotas
+
+Before any model call, the function searches published content for the exact day, layer and chapter set. A cache hit returns stored content without a generation reservation or provider call. Cache misses require `OPENAI_API_KEY`; when the secret is absent, the endpoint returns `study_generation_unavailable` and does not reserve quota.
+
+Generated output uses a strict JSON schema, a 64,000-byte maximum retrieved prompt, a 1,200-token maximum output, a 25-second request timeout and `store:false`. The default provider model is `gpt-6-luna`. The database enforces at most 10 cache-miss generations globally per UTC day and 3 per user per UTC day. A key is idempotent; failed leases are released, and expired leases can be recovered after two minutes.
+
+API calls may incur charges; no R$ 0 claim is made. The owner has authorized bounded API use. This cost policy does not create or upgrade a paid plan.
+
+## Validation status
+
+`npm run verify:engineering`, `npm test`, PostgreSQL 16/17 smoke tests and `deno check` use deterministic provider mocks and disposable databases. They do not prove live inference, production migration or Edge Function deployment. A CI green result is not production homologation.

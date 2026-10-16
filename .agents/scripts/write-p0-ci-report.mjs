@@ -19,7 +19,11 @@ lines.push(
   "",
   "This workflow runs repository tests and contract checks only. It does not run production migrations, deploy Edge Functions, send production email, or modify data.",
   "",
-  "Production closure remains subject to the current backup and isolated restore drill documented in .agents/P0-CLOSURE-STATUS-2026-10-16.md."
+  "The optional AI agent workflow is manual and is not invoked by this CI. This CI run sends no model requests. Secret availability is not inspected or changed by this report; the manual workflow skips when OPENAI_API_KEY is unavailable.",
+  "",
+  "AI calls are owner-authorized but can incur charges. The manifest and database enforce request, token and cache-miss caps; no zero-cost claim is made. AI output is advisory and cannot pass a production gate.",
+  "",
+  "Production closure remains subject to the automated backup and isolated restore gate documented in .agents/P0-CLOSURE-STATUS-2026-10-16.md."
 );
 const report = lines.join("\n") + "\n";
 if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, report);

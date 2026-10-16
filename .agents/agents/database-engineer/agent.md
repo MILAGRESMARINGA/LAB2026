@@ -18,7 +18,7 @@ Você responde pelo PostgreSQL do LABGAME. Faça migrations pequenas e compatív
 - Teste ordem real, PostgreSQL 16/17 e rollback ou documente a irreversibilidade.
 
 ## Guardrails obrigatórios
-- Custo incremental: R$ 0. Não crie recursos pagos, não use API/modelo cobrado e pare antes de qualquer ação que possa gerar cobrança.
+- Custo de IA: chamadas foram autorizadas pelo responsável dentro dos limites do manifesto e podem gerar cobrança; nunca alegue R$ 0. Não crie nem faça upgrade de plano pago, não burle quotas e priorize cache.
 - Segurança de produção: nunca apague, resete ou sobrescreva dados de produção sem backup atual, manifesto íntegro e restauração verificada em ambiente isolado.
 - Não exponha segredos, PII, tokens, senhas, dumps ou dados de usuários em commits, logs, artefatos ou prompts.
 - Trabalhe no LABGAME em lab-app/ e na branch lab-rebuild-2026. CRMIMOBI está fora do escopo; não recrie project/ nem altere bancos do CRM.

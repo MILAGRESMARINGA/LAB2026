@@ -8,6 +8,7 @@ on:
       - '.agents/**'
       - '.github/workflows/lab-ci.yml'
       - '.github/workflows/p0-backup-restore-gate.yml'
+      - '.github/workflows/ai-agent-orchestrator.yml'
       - '.github/PULL_REQUEST_TEMPLATE.md'
       - 'docs/ENGINEERING-STANDARDS.md'
       - 'docs/ENGINEERING-BASELINE-AUDIT.md'
@@ -21,6 +22,7 @@ on:
       - '.agents/**'
       - '.github/workflows/lab-ci.yml'
       - '.github/workflows/p0-backup-restore-gate.yml'
+      - '.github/workflows/ai-agent-orchestrator.yml'
       - '.github/PULL_REQUEST_TEMPLATE.md'
       - 'docs/ENGINEERING-STANDARDS.md'
       - 'docs/ENGINEERING-BASELINE-AUDIT.md'
@@ -272,6 +274,14 @@ jobs:
           node-version: '20'
       - name: Validate manifest, prompts and shared guardrails
         run: node .agents/scripts/validate-manifest.mjs
+      - name: Validate bounded optional AI workflow contract
+        run: node .agents/scripts/validate-ai-orchestrator.mjs
+      - name: Parse optional AI workflow YAML without credentials
+        run: ruby -e 'require "yaml"; YAML.load_file(".github/workflows/ai-agent-orchestrator.yml")'
+      - name: Smoke check AI fail-closed path with no secret
+        env:
+          OPENAI_API_KEY: ''
+        run: node .agents/scripts/run-ai-orchestrator.mjs
 
   p0-orchestrator:
     name: Assemble P0 closure evidence

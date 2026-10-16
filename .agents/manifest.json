@@ -1,37 +1,64 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "project": "LABGAME 3.0",
   "repository": "MILAGRESMARINGA/LAB2026",
   "working_branch": "lab-rebuild-2026",
   "production_project_ref": "azejfxvaamgkmfmwdzjn",
-  "incremental_cost_limit_brl": 0,
+  "cost_policy": {
+    "api_usage": "owner-authorized-bounded-and-potentially-billable",
+    "incremental_cost_limit_brl": null,
+    "no_paid_plan_upgrade": true,
+    "cache_first": true,
+    "study_generation": {
+      "provider_model": "gpt-6-luna",
+      "max_cache_misses_global_per_utc_day": 10,
+      "max_cache_misses_per_user_per_utc_day": 3,
+      "max_output_tokens": 1200,
+      "max_prompt_bytes": 64000,
+      "provider_timeout_seconds": 25,
+      "fail_closed_without_openai_api_key": true
+    },
+    "ai_orchestrator": {
+      "max_runs_per_rolling_24h": 1,
+      "max_calls_per_run": 8,
+      "max_calls_per_agent": 1,
+      "max_output_tokens_per_call": 128,
+      "max_output_tokens_per_run": 1024,
+      "max_request_bytes_per_run": 65536,
+      "retries": 0
+    }
+  },
   "orchestration": {
     "lead": "ai-engineer",
-    "runtime": "github-actions-deterministic-gates",
-    "llm_inference_configured": false,
+    "runtime": "optional-github-actions-workflow-dispatch",
+    "llm_inference_enabled_by_default": false,
+    "llm_secret_status": "not-inspected-or-changed-in-this-task",
     "production_mutations_from_ci": false,
+    "production_mutations_from_ai_workflow": false,
+    "llm_can_execute_commands": false,
+    "llm_can_write_repository": false,
     "live_backup_required_before_destructive_operations": true
   },
   "agents": [
     {
       "id": "ai-engineer",
       "path": "agents/ai-engineer/agent.md",
-      "scope": "Orchestrate seven agents, sequence P0 closure, cost and evidence gates."
+      "scope": "Orchestrate seven specialists, study generation policy, theological source rules and evidence-based P0 closure."
     },
     {
       "id": "backend-engineer",
       "path": "agents/backend-engineer/agent.md",
-      "scope": "Business logic, Deno/TypeScript Edge Functions, APIs, gamification, clock and timezone."
+      "scope": "Business logic, Deno/TypeScript Edge Functions, APIs, gamification, server clock and timezone."
     },
     {
       "id": "database-engineer",
       "path": "agents/database-engineer/agent.md",
-      "scope": "PostgreSQL, Supabase migrations, Bible plan integrity and free pg_dump backup/restore."
+      "scope": "PostgreSQL, Supabase migrations, Bible plan integrity and free pg_dump backup/restore evidence."
     },
     {
       "id": "security-engineer",
       "path": "agents/security-engineer/agent.md",
-      "scope": "RLS, 13 app SECURITY DEFINER RPCs, search_path, server password validation and leaked-password protection."
+      "scope": "RLS, app SECURITY DEFINER RPCs, search_path, server password validation and leaked-password protection."
     },
     {
       "id": "frontend-ux-engineer",
@@ -46,7 +73,7 @@
     {
       "id": "integration-engineer",
       "path": "agents/integration-engineer/agent.md",
-      "scope": "Free transactional email, signup confirmation, recovery, redirects and webhooks."
+      "scope": "Auth email, signup confirmation, recovery, redirects and webhooks under a reviewed cost ceiling."
     },
     {
       "id": "platform-observability-engineer",
