@@ -45,6 +45,7 @@ CREATE TABLE public.reading_group_members(
 \i supabase/migrations/202610160102_lab_v2_awards_and_unified_reset.sql
 \i supabase/migrations/202610160103_lab_v2_gc_rankings.sql
 \i supabase/migrations/202610160104_lab_v2_video_xp.sql
+\i supabase/migrations/202610160105_lab_v2_study_rewards.sql
 
 INSERT INTO auth.users(id) VALUES
 ('11111111-1111-4111-8111-111111111111'),
@@ -131,6 +132,31 @@ BEGIN
  END IF;
 END $test$;
 
+-- Six catalog studies are independently awarded once per RUN, never as
+-- substitutes for chapters or XP in an archived previous attempt.
+DO $test$
+BEGIN
+ BEGIN
+  PERFORM public.lab_v2_confirm_study(
+   (SELECT id FROM public.lab_v2_runs WHERE user_id=auth.uid() AND status='active'),
+   'criacao',false);
+  RAISE EXCEPTION 'FAIL: study without acknowledgement';
+ EXCEPTION WHEN OTHERS THEN
+  IF SQLERRM NOT LIKE 'Confirme que examinou%' THEN RAISE; END IF;
+ END;
+END $test$;
+SELECT public.lab_v2_confirm_study(:'first_run'::uuid,'criacao',true);
+SELECT public.lab_v2_confirm_study(:'first_run'::uuid,'criacao',true);
+DO $test$
+DECLARE score jsonb;
+BEGIN
+ SELECT public.lab_v2_sync((SELECT id FROM public.lab_v2_runs
+  WHERE user_id=auth.uid() AND status='active')) INTO score;
+ IF (score->>'study_xp')::integer<>15 OR (score->>'studies_this_run')::integer<>1 OR
+   (score->>'run_xp')::integer<>50 THEN
+  RAISE EXCEPTION 'FAIL: study double-credit or missing bonus: %',score;
+ END IF;
+END $test$;
 -- Controlled fault-injection: backdate one stage in the isolated DB so no
 -- tests need to wait 24-104 real hours.
 RESET ROLE;
