@@ -19,14 +19,29 @@ CREATE TABLE public.lab_game_stats(
  best_days smallint NOT NULL DEFAULT 0,
  total_xp integer NOT NULL DEFAULT 0,
  total_completed_days integer NOT NULL DEFAULT 0,
- updated_at timestamptz NOT NULL DEFAULT now()
+ updated_at timestamptz NOT NULL DEFAULT now(),
+ display_name text NOT NULL DEFAULT 'Leitor LAB',
+ leaderboard_opt_in boolean NOT NULL DEFAULT false
 );
 CREATE TABLE public.lab_game_video_sessions(user_id uuid NOT NULL REFERENCES auth.users(id));
 CREATE TABLE public.lab_game_video_rewards(user_id uuid NOT NULL REFERENCES auth.users(id));
 CREATE TABLE public.reading_completions(user_id uuid NOT NULL REFERENCES auth.users(id));
+CREATE TABLE public.reading_groups(
+ id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+ name text NOT NULL,
+ owner_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+ competition_opt_in boolean NOT NULL DEFAULT false
+);
+CREATE TABLE public.reading_group_members(
+ group_id uuid NOT NULL REFERENCES public.reading_groups(id) ON DELETE CASCADE,
+ user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+ role text NOT NULL DEFAULT 'member',
+ PRIMARY KEY(group_id,user_id)
+);
 \i supabase/migrations/202610160100_lab_v2_shadow_game.sql
 \i supabase/migrations/202610160101_lab_v2_plans_seed.sql
 \i supabase/migrations/202610160102_lab_v2_awards_and_unified_reset.sql
+\i supabase/migrations/202610160103_lab_v2_gc_rankings.sql
 
 INSERT INTO auth.users(id) VALUES
 ('11111111-1111-4111-8111-111111111111'),
@@ -225,6 +240,44 @@ BEGIN
    EXISTS (SELECT 1 FROM public.lab_v2_cycle_awards WHERE user_id=auth.uid()) OR
    EXISTS (SELECT 1 FROM public.lab_v2_monthly_lives WHERE user_id=auth.uid())
  THEN RAISE EXCEPTION 'FAIL: V2 results survived full reset'; END IF;
+END $test$;
+-- GC integration: new participants cannot transfer pre-join completion.
+RESET ROLE;
+INSERT INTO auth.users(id) VALUES('33333333-3333-4333-8333-333333333333');
+INSERT INTO public.lab_game_stats(user_id,leaderboard_opt_in) VALUES
+ ('11111111-1111-4111-8111-111111111111',true),
+ ('22222222-2222-4222-8222-222222222222',true),
+ ('33333333-3333-4333-8333-333333333333',true)
+ON CONFLICT(user_id) DO UPDATE SET leaderboard_opt_in=true;
+-- The smoke profile table needs leaderboard columns for the GC views.
+INSERT INTO public.reading_groups(name,owner_id,competition_opt_in)
+ VALUES('GC Integracao','11111111-1111-4111-8111-111111111111',true)
+ RETURNING id AS gc_id \gset
+INSERT INTO public.reading_group_members(group_id,user_id,role) VALUES
+ (:'gc_id'::uuid,'11111111-1111-4111-8111-111111111111','leader'),
+ (:'gc_id'::uuid,'22222222-2222-4222-8222-222222222222','member'),
+ (:'gc_id'::uuid,'33333333-3333-4333-8333-333333333333','member');
+SELECT set_config('app.test_user','22222222-2222-4222-8222-222222222222',false);
+SET ROLE authenticated;
+SELECT * FROM public.lab_v2_gc_league();
+SELECT public.lab_v2_group_summary(:'gc_id'::uuid);
+SELECT * FROM public.lab_v2_group_ranking(:'gc_id'::uuid);
+DO $test$
+DECLARE n integer;
+BEGIN
+ SELECT count(*) INTO n FROM public.lab_v2_gc_league();
+ IF n<>1 THEN RAISE EXCEPTION 'FAIL: eligible opted-in GC not in V2 league'; END IF;
+END $test$;
+-- Authenticated stranger (non-member) cannot browse the GC's private scores.
+SELECT set_config('app.test_user','44444444-4444-4444-8444-444444444444',false);
+DO $test$
+BEGIN
+ BEGIN
+  PERFORM public.lab_v2_group_summary((SELECT id FROM public.reading_groups LIMIT 1));
+  RAISE EXCEPTION 'FAIL: non-member viewed private GC';
+ EXCEPTION WHEN OTHERS THEN
+  IF SQLERRM NOT LIKE 'Acesso ao GC não autorizado%' THEN RAISE; END IF;
+ END;
 END $test$;
 RESET ROLE;
 SELECT 'LAB V2 POSTGRES SMOKE PASSED' AS result;
