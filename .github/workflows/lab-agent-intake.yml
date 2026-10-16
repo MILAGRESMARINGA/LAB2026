@@ -34,7 +34,7 @@ jobs:
           ref: main
           persist-credentials: false
       - name: Node 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
       - name: Create safe draft intake PR (admin issue only)
