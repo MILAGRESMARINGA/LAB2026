@@ -42,16 +42,19 @@ jobs:
           node-version: '20'
       - name: Install dependencies (temporary until lockfile is committed)
         run: npm install --no-audit --no-fund
-      - name: Parse database backup PowerShell syntax without executing it
+      - name: Parse both database backup and restore PowerShell scripts
         shell: pwsh
         run: |
-          $tokens = $null
-          $syntaxErrors = $null
-          $path = (Resolve-Path "./scripts/backup-labgame.ps1").Path
-          [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$tokens, [ref]$syntaxErrors) | Out-Null
-          if ($syntaxErrors.Count -gt 0) {
-            $syntaxErrors | ForEach-Object { Write-Error $_.Message }
-            exit 1
+          foreach ($relativePath in @("./scripts/backup-labgame.ps1", "./scripts/verify-labgame-restore.ps1")) {
+            $tokens = $null
+            $syntaxErrors = $null
+            $path = (Resolve-Path $relativePath).Path
+            [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$tokens, [ref]$syntaxErrors) | Out-Null
+            if ($syntaxErrors.Count -gt 0) {
+              $syntaxErrors | ForEach-Object { Write-Error "$($path): $($_.Message)" }
+              exit 1
+            }
+            Write-Host "PowerShell syntax approved: $relativePath"
           }
       - name: Validate engineering documentation and security baselines
         run: npm run verify:engineering
