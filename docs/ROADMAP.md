@@ -361,3 +361,15 @@ Detalhes: `docs/JOURNEY-ROLLING-24H-GAME-RULES-DESIGN.md`.
 - [ ] Elaborar política de migração de tentativas já existentes, versão do plano, 365/366 para início livre, XP pós-resgate, XP de vídeo/estudos na nova tentativa, GC e coroas antes da implantação.
 - [ ] Depois de estabilizar a mecânica da Jornada, implementar Central de Configurações com logout visível, notificações granulares, perfil opcional, reset total e autodeleção com confirmações.
 - [ ] **Publicação:** somente após P0 Auth/SMTP + 2 contas + backup/restore off-site + CI/staging E2E. Nenhuma mudança de servidor ou domínios no presente pacote.
+
+
+## Entrega técnica — Jornada V2 em migrações sombra + PostgreSQL CI (16/10/2026)
+- [x] Migração `lab-app/supabase/migrations/202610160100_lab_v2_shadow_game.sql` criada e isolada da V1: nova ledger de etapas, capítulos, vidas, incidentes e RPCs autenticadas, trava `lab_v2_release_controls.enabled=false`.
+- [x] Migration seed `202610160101_lab_v2_plans_seed.sql`: 2378 associações, sendo 1189 capítulos em 365 etapas e 1189 em 366; contrato automatizado compara **todas** as linhas ao gerador TS. IDs de migração revisados para não colidir com a migração de Perfil.
+- [x] CI `.github/workflows/lab-ci.yml` acrescentou PostgreSQL 16 temporário; smoke SQL `lab-app/scripts/tests/v2-postgres-smoke.sql` valida duas identidades simuladas, RLS, idempotência, prazos, carência, vidas, reinício e não herança de XP. Rodada nº 335 **aprovada**: https://github.com/MILAGRESMARINGA/LAB2026/actions/runs/38904343989.
+- [x] Adapter V2 opt-in `lab-app/src/features/journey-v2.ts` e testes `lab-app/tests/journey-v2-client.test.ts`; sem importação na Jornada em produção e bloqueio `VITE_LAB_V2_READY` default off.
+- [x] Relatório de escopo, evidências e bloqueios: [JOURNEY-V2-BUILD-STATUS-2026-10-16.md](JOURNEY-V2-BUILD-STATUS-2026-10-16.md).
+- [ ] **P0 antes de liberação:** reset total V1+V2 transacional, migração/convivência de contas V1, plan_length 365/366 por modalidade, GC cronológico, XP de vídeo/estudo, prêmio/coroa + constância, ajuste após uso de vida e testes reais de staging.
+- [ ] **P0 segurança:** testar de fato com duas contas Auth Supabase, concorrência em sessão paralela, backup e restore externo, SMTP, Edge Function de exclusão de conta, RLS, rollout e revisão de privacidade.
+- [ ] **Central de Configurações:** telas e SQL preparadas na branch (Perfil, notificações, logout visível e modais); conectar somente após validar banco e fluxos perigosos. Não apresentar preferências de e-mail como notificações realmente enviadas.
+- **PRODUÇÃO NÃO ALTERADA:** nenhum SQL/migration executado no Supabase do usuário; não houve promoção de domínio Vercel.
