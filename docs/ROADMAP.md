@@ -301,3 +301,14 @@ Visão e regras detalhadas: [LABGAME-3-PRODUCT-AND-PROGRESSION.md](LABGAME-3-PRO
 - [ ] **Executar** verificador com duas contas autenticadas e independentes; banco de produção ainda possui apenas 1 conta, sem grupos ou XP registrado.
 - [ ] **Executar** fluxos de escrita (GC, convite, capítulo e XP) somente em staging separado ou em condições de QA expressamente autorizadas; não apresentar simulação como teste real.
 - [ ] Finalizar SMTP de confirmação/recuperação, proteção de senhas vazadas e política de backup externo.
+
+
+## Regra aprovada — Recomeçar, Recordes e Apagar resultados (outubro de 2026)
+- [x] **Recomeço automático:** perdeu um dia da leitura anual, a próxima tentativa começa na etapa 1; não é permitido pular, recuperar ou zerar seletivamente o dia. Pontos já ganhos, melhor recorde, coroas e estudos permanecem acumulados.
+- [x] **Superação de recordes:** se o melhor recorde é 265, a conquista de 266 dias na nova tentativa torna 266 o novo valor máximo exibido; tentativas passadas não são apagadas apenas porque o melhor recorde mudou.
+- [x] **Reset total aprovado:** zerar por escolha expressa significa apagar 100% dos XP (inclusive vídeos/estudos e bônus anuais), leituras confirmadas, tentativas anteriores, recordes, Talentos, medalhas, coroas, contadores de Bíblias integrais e estudos concluídos. A conta e a inscrição nos GCs permanecem; o novo desafio começa no dia 1 com 0 XP. Não oferecer "zerar apenas o dia".
+- [x] **Excluir conta versus reset:** são processos separados; conta nova após exclusão processada não herda progresso antigo.
+- [ ] **Backend ainda pendente:** implementar reset com lock por usuário, idempotência, confirmação de identidade recente, limpeza/reconciliação de ledger anual + XP de vídeo + progresso de estudos, compatibilidade com GC e testes de concorrência em staging. Não tocar produção antes dos gates P0.
+- [ ] **UX ainda pendente:** modal duplo (checkbox + texto obrigatório `ZERAR` ou `EXCLUIR`), exportação de dados e recibo de confirmação; nenhuma ação destrutiva deve funcionar sem backend auditado.
+- [ ] **Segurança e LGPD:** exclusão de identidade com retenções legais transparentes, resolução da liderança de GC e acesso seguro aos dados de perfil.
+Documento completo: `docs/PROFILE-SETTINGS-NOTIFICATIONS-PRIVACY-PROPOSAL.md`.
