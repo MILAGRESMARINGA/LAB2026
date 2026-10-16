@@ -146,7 +146,7 @@ export default function App(){
  const bestDays=v2Enabled?(v2Game?.best_completed_stages??0):(game?.best_days??0);
  const talentMilestones=earnedTalentMilestones(bestDays);
  const rankLevel=bestDays>=365?"Guardião da Palavra":bestDays>=100?"Peregrino":bestDays>=30?"Constante":bestDays>=7?"Semeador":"Iniciante";
- const flameLevel=activeDays>=30?"intense":activeDays>=7?"steady":activeDays>0?"growing":"quiet";
+ const flameLevel=v2Enabled&&v2Game?.status==="failed"?"ember":activeDays>=30?"intense":activeDays>=7?"steady":activeDays>0?"growing":"quiet";
  const changePassword=async()=>{setBusy(true);setRecoveryNotice("");try{
   await updateAccountPassword(newPassword);
   setPasswordRecoveryMode(false);setNewPassword("");
