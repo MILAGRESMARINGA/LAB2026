@@ -49,3 +49,7 @@ assert.equal(caps.max_output_tokens_per_call, 128);
 assert.equal(caps.max_output_tokens_per_run, 1024);
 assert.equal(caps.max_request_bytes_per_run, 65536);
 assert.equal(caps.retries, 0);
+assert.ok(runner.includes('fs.appendFileSync(target, markdown + "\\n")'), "summary output must contain real newline escapes");
+assert.ok(runner.includes('const rows = section.split("\\n")'), "P0 report parsing must split actual lines");
+assert.ok(runner.includes('const nextHeading = tail.slice(1).search(/\\n## /)'), "P0 heading parsing must recognize actual lines");
+console.log("Optional AI workflow contract OK: dispatch-only, read-only, sequential, token/call capped and fail-closed.");
