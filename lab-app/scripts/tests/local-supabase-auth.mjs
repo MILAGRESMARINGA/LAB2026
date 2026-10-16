@@ -23,7 +23,7 @@ const prefix="lab-ci-"+process.pid+"-"+Date.now();
 const emails=[prefix+"-a@example.test",prefix+"-b@example.test"];
 const ids=[];
 async function localMessageLink(recipient){
- const mailBase=kv.MAILPIT_URL||kv.INBUCKET_URL||"http://127.0.0.1:54324";
+ const mailBase=kv.MAILPIT_URL||kv.INBUCKET_URL||"http://127.0.0.1:55324";
  assert.ok(/^http:\/\/(127\.0\.0\.1|localhost):\d+\/?$/.test(mailBase),"Local mail catcher only");
  for(let attempt=0;attempt<25;attempt++){
   const response=await fetch(mailBase+"/api/v1/messages");
