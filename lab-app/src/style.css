@@ -178,6 +178,7 @@ body.video-modal-open{overflow:hidden}
 .gc-league-score>strong{font-size:22px;color:#b9e65a}
 .gc-league-period{display:flex;align-items:center;gap:8px;color:#a9c2c8;font-size:12px;margin-top:16px}
 .gc-league-footnote{font-size:12px;line-height:1.6;color:#acc0c3;margin:20px 0 5px}
+.gc-aggregate-notice{display:flex;align-items:flex-start;gap:11px;padding:13px 14px;margin:14px 0;background:#293c33;border:1px solid #7da76e;border-radius:12px;color:#e9f5e7}.gc-aggregate-notice>svg{flex-shrink:0;color:#d8f19a}.gc-aggregate-notice>div{flex:1}.gc-aggregate-notice strong{color:#ecfad3}.gc-aggregate-notice p{font-size:12px;line-height:1.5;margin:5px 0 0;color:#d1e5d3}.gc-aggregate-notice button{min-width:34px;min-height:34px;background:transparent;border:0;color:#e9f5e7}
 @media(max-width:600px){.gc-league{padding:17px 0 0}.gc-league-consent{padding:12px}.gc-league-heading{gap:10px}.gc-league-icon{height:46px;width:46px}.gc-league-row{gap:7px;padding:12px 8px}.gc-league-position{width:28px;font-size:17px}.gc-league-name>strong{font-size:13px}.gc-league-name>span,.gc-league-score>span{font-size:10px}.gc-league-score>strong{font-size:18px}}
 
 /* Bible-wide Portuguese text search with highlighted selected verse. */

@@ -163,7 +163,7 @@ export function ProfileSettings({accountEmail,onReset,onDeleted}:Props){
      <div className="ps-notice-matrix" role="group" aria-label="Canais por tipo de notificação">
       {([
        ["Leitura diária","reading_popup","reading_email"],
-       ["Próxima etapa disponível","stage_popup","stage_email"],
+       ["Ritmo e prazo da jornada","stage_popup","stage_email"],
        ["Avisos do Grupo de Crescimento","gc_popup","gc_email"],
        ["Talentos, medalhas e coroas","achievement_popup","achievement_email"],
        ["Novos estudos e discipulados","study_popup","study_email"]

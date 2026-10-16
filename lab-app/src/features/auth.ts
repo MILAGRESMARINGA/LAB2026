@@ -19,7 +19,7 @@ export function authErrorMessage(error:unknown):string{
  if(/Email not confirmed/i.test(raw))return "Confirme seu e-mail antes de entrar. Verifique também a pasta de spam.";
  if(/token.*expired|expired.*token|otp_expired|otp.*expired/i.test(raw))return "O código ou link expirou. Solicite um novo e-mail.";
  if(/token.*invalid|invalid.*token|invalid.*otp|otp.*invalid|token.*not.found/i.test(raw))return "Código inválido ou já utilizado. Solicite outro e-mail, se necessário.";
- if(/already registered|already exists/i.test(raw))return "Este e-mail já possui cadastro. Entre na conta ou recupere sua senha.";
+ if(/already registered|already exists/i.test(raw))return "Não foi possível concluir a solicitação. Se este e-mail já estiver cadastrado, entre ou recupere a senha.";
  if(/rate limit|too many requests|over_email_send_rate_limit/i.test(raw))return "Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente novamente.";
  if(/signup.*disabled|signups not allowed/i.test(raw))return "O cadastro está desabilitado nas configurações de autenticação do LABGAME.";
  if(/network|fetch|failed to fetch/i.test(raw))return "Não foi possível conectar ao servidor. Confira sua internet e tente novamente.";
