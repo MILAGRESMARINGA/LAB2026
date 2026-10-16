@@ -41,8 +41,8 @@ describe("Jornada V2 só funciona com duas travas explícitas",()=>{
  it("não aceita identificadores, capítulos ou etapas inválidas",async()=>{
   vi.stubEnv("VITE_LAB_V2_READY","true");
   expect(()=>confirmJourneyV2Chapter(id,1,"<script>")).toThrow("Capítulo");
-  await expect(activateJourneyV2(id,0)).rejects.toThrow("Etapa");
-  await expect(syncJourneyV2("another-user")).rejects.toThrow("Identificador");
+  expect(()=>activateJourneyV2(id,0)).toThrow("Etapa");
+  expect(()=>syncJourneyV2("another-user")).toThrow("Identificador");
   expect(rpc).not.toHaveBeenCalled();
  });
  it("nega resposta desconhecida do servidor sem inventar XP",async()=>{
