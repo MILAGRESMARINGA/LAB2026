@@ -169,7 +169,8 @@ DECLARE s jsonb;
 BEGIN
  SELECT public.lab_v2_sync((SELECT id FROM public.lab_v2_runs
    WHERE user_id=auth.uid() AND status='active')) INTO s;
- IF (s->>'run_xp')::integer<>27 THEN
+ IF (s->>'reading_xp')::integer<>27 OR (s->>'video_xp')::integer<>5 OR
+    (s->>'study_xp')::integer<>15 OR (s->>'run_xp')::integer<>47 THEN
   RAISE EXCEPTION 'FAIL: late penalty not applied exactly once: %',s;
  END IF;
 END
