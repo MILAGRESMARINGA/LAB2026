@@ -39,7 +39,7 @@ BEGIN
  FROM public.reading_group_members m
  JOIN public.lab_game_stats s ON s.user_id=m.user_id
  WHERE m.group_id=p_group_id AND s.leaderboard_opt_in=true
- ORDER BY best_days DESC,completed_days DESC,total_xp DESC,s.display_name ASC
+ ORDER BY 3 DESC,2 DESC,4 DESC,1 ASC
  LIMIT 100;
 END;
 $fn$;
