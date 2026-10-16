@@ -373,3 +373,14 @@ Detalhes: `docs/JOURNEY-ROLLING-24H-GAME-RULES-DESIGN.md`.
 - [ ] **P0 segurança:** testar de fato com duas contas Auth Supabase, concorrência em sessão paralela, backup e restore externo, SMTP, Edge Function de exclusão de conta, RLS, rollout e revisão de privacidade.
 - [ ] **Central de Configurações:** telas e SQL preparadas na branch (Perfil, notificações, logout visível e modais); conectar somente após validar banco e fluxos perigosos. Não apresentar preferências de e-mail como notificações realmente enviadas.
 - **PRODUÇÃO NÃO ALTERADA:** nenhum SQL/migration executado no Supabase do usuário; não houve promoção de domínio Vercel.
+
+
+## Entrega ampliada — notificações e privacidade, 16/10/2026
+- [x] Correção de XP no smoke PostgreSQL: multa é verificada sobre `reading_xp=27` independentemente de XP de vídeo/estudos, mantendo `run_xp=47` com recompensas válidas (CI #372).
+- [x] Exportação pessoal cobre `lab_v2_video_sessions`, `lab_v2_video_rewards` e `lab_v2_study_rewards`, além de capítulos, runs e perfil; testes garantem consulta apenas a `run_id` do titular.
+- [x] Migração `202610160106_notification_channel_matrix.sql`: cinco categorias de aviso com pop-up e e-mail separados e backfill conservador das preferências antigas; notificação geral desligada prevalece.
+- [x] Frontend do Perfil exibe matriz 5×2 responsiva e `DailyInAppPopup` consulta opt-in específico de leitura; tipo de dado religioso continua facultativo e privado.
+- [x] Teste PostgreSQL ampliado executa também as migrações de Perfil e Matriz, com duas identidades simuladas e RLS. Removida instrução de privilégio `MAINTAIN` incompatível com PG16.
+- [x] CI #382 verde: https://github.com/MILAGRESMARINGA/LAB2026/actions/runs/38923291741.
+- [ ] Bloqueios externos e de publicação: staging Supabase Auth real/custos, backend email opt-in auditado, implantar e testar Edge Function de exclusão, duas contas reais, validação mobile, backup off-site, rollout das migrações, reprocessamento GC e promoção controlada Vercel.
+- [ ] **Não prometer conclusão em produção sem homologação.** Plano executivo: `docs/LABGAME-RELEASE-READINESS-2026-10-16.md`.
