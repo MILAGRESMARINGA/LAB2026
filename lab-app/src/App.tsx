@@ -113,6 +113,22 @@ export default function App(){
  const viewInvite=async(groupId:string)=>{setGroupBusy(true);try{const token=await getGroupInvite(groupId);setInvites(prev=>({...prev,[groupId]:token}))}catch(e){setGroupMessage(describeError(e))}finally{setGroupBusy(false)}};
 
  const saveProfile=async()=>{setBusy(true);setMessage("");try{await saveGameProfile(profileName,optIn);await refreshGame();setMessage("Preferências atualizadas.")}catch(e){setMessage(describeError(e))}finally{setBusy(false)}};
+ const logout=async()=>{
+  if(busy)return;
+  setBusy(true);setMessage("");
+  try{
+   await signOut();
+   // Remove all account-specific UI state, including any previously revealed GC invite.
+   setUser(null);setGame(null);setScorecard(null);setGroups([]);setInvites({});
+   setRankingGroup("");setActiveVideo(null);setLessonOpen(false);setLastConfirmed(null);
+   setProfileName("");setOptIn(false);setGroupMessage("");setPasswordRecoveryMode(false);
+   setTab("profile");
+   setMessage("Você saiu da conta neste dispositivo. Entre com outra conta quando quiser.");
+  }catch(e){
+   setMessage("Não foi possível sair da conta: "+describeError(e));
+  }finally{setBusy(false)}
+ };
+
  const selectedBlock=useMemo(()=>STUDY_BLOCKS.find(b=>b.id===selectedStudy)??STUDY_BLOCKS[0],[selectedStudy]);
  const goTab=(next:Tab)=>{setMessage("");setLessonOpen(false);setLastConfirmed(null);setTab(next);if(next==="journey"&&user)void refreshGame()};
  if(authRoute!=="none")return <AuthFlow route={authRoute}/>;
@@ -182,7 +198,7 @@ export default function App(){
    </div>)}</div>
   </div>}
  </section>
- <h2>Meus marcos</h2><div className="milestone-list">{[1,7,30,100,180,365].map(goal=><div className={"milestone "+(bestDays>=goal?"earned":"")} key={goal}><Award size={19}/><span>{goal===365?"Bíblia completa":goal+" dias seguidos"}</span><strong>{bestDays>=goal?"CONQUISTADO":"BLOQUEADO"}</strong></div>)}</div><form className="profile-form" onSubmit={e=>{e.preventDefault();void saveProfile()}}><h2>Identidade no GC</h2><label htmlFor="display-name">Nome exibido</label><input id="display-name" value={profileName} minLength={2} maxLength={60} required onChange={e=>setProfileName(e.target.value)}/><label className="toggle-rank"><input type="checkbox" checked={optIn} onChange={e=>setOptIn(e.target.checked)}/> Quero aparecer nos rankings privados dos meus GCs.</label><button className="secondary-cta" disabled={busy} type="submit">SALVAR PERFIL</button></form><button className="logout-button" type="button" onClick={()=>void signOut()}><LogOut size={16}/> Sair da conta</button>{message&&<p role="status" className="feedback-message">{message}</p>}</>}<InstallApp/></section>}
+ <h2>Meus marcos</h2><div className="milestone-list">{[1,7,30,100,180,365].map(goal=><div className={"milestone "+(bestDays>=goal?"earned":"")} key={goal}><Award size={19}/><span>{goal===365?"Bíblia completa":goal+" dias seguidos"}</span><strong>{bestDays>=goal?"CONQUISTADO":"BLOQUEADO"}</strong></div>)}</div><form className="profile-form" onSubmit={e=>{e.preventDefault();void saveProfile()}}><h2>Identidade no GC</h2><label htmlFor="display-name">Nome exibido</label><input id="display-name" value={profileName} minLength={2} maxLength={60} required onChange={e=>setProfileName(e.target.value)}/><label className="toggle-rank"><input type="checkbox" checked={optIn} onChange={e=>setOptIn(e.target.checked)}/> Quero aparecer nos rankings privados dos meus GCs.</label><button className="secondary-cta" disabled={busy} type="submit">SALVAR PERFIL</button></form><button className="logout-button" type="button" disabled={busy} onClick={()=>void logout()}><LogOut size={16}/> {busy?"SAINDO...":"Sair da conta"}</button>{message&&<p role="status" className="feedback-message">{message}</p>}</>}<InstallApp/></section>}
   </main>
   <nav className="game-bottom-nav" aria-label="Menu LABGAME">{tabs.map(t=><button key={t.id} type="button" className={tab===t.id?"active":""} onClick={()=>goTab(t.id)} aria-current={tab===t.id?"page":undefined}><t.icon size={21}/><span>{t.label}</span></button>)}</nav>
   {activeVideo&&<BibleProjectPlayer key={activeVideo.resource.url} resource={activeVideo.resource} book={activeVideo.book} signedIn={Boolean(user)} onClose={()=>setActiveVideo(null)} onBonus={total=>{setGame(prev=>prev?{...prev,total_xp:total}:prev);void refreshScorecard()}}/>}
