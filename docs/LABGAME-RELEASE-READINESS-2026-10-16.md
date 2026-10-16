@@ -28,3 +28,12 @@ D. Homologar rollback/backup off-site. Definir o anúncio e a confirmação expl
 E. Ativar primeiro o painel num ambiente de visualização restrito; liberar progressivamente. Só após passagem em staging promover Vercel e criar migrações de produção com chaves controladas.
 
 **Declaração honesta:** o código e os testes isolados são entregas reais; o produto completo em produção ainda **não** foi homologado nem publicado, e não deve ser descrito como concluído.
+
+
+## Progresso adicional — envio opcional de leitura por e-mail (desativado)
+
+- `202610160107_notification_delivery_audit.sql`: registro de entrega por usuário/categoria/canal/dia, chave única para não disparar duas vezes, RLS somente leitura própria, escrita exclusiva do servidor.
+- `supabase/functions/notify-reading-email/index.ts`: trabalhador de e-mail por API Resend, com segredo de cron separado de JWT, flag `LAB_NOTIFICATION_EMAIL_READY=true` obrigatória, remetente e domínio verificados, preferência `reading_email` e `enabled` verificadas **duas vezes**, leitura V2 em andamento, horário silencioso 20h–08h Brasil e reserva idempotente antes de enviar.
+- O trabalhador **NÃO FOI IMPLANTADO NEM AGENDADO**. Sem `RESEND_API_KEY`, `LAB_NOTIFICATION_FROM` verificado e `LAB_NOTIFICATION_CRON_SECRET` de alta entropia ele falha fechado sem e-mail. Precisará de agendamento seguro no staging/produção e monitoramento de erros, rejeições e opt-out.
+- `account-export.ts` inclui histórico de envio opcional do usuário; testes SQL + Vitest verificam matriz, seleção privada e restrição de escrita; sem envio durante testes.
+- Esta primeira rotina é somente para **lembrete de leitura diária**; atividades GC, novas etapas, conquistas e estudos ainda precisam de produtores específicos e regras de frequência antes de ativar essas categorias no canal de e-mail.
