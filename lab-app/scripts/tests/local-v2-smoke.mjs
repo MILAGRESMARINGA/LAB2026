@@ -14,17 +14,24 @@ const service=createClient(url,kv.SERVICE_ROLE_KEY||kv.SECRET_KEY,opts);
 const client=()=>createClient(url,kv.ANON_KEY||kv.PUBLISHABLE_KEY,opts);
 const ids=[];
 const pwd="labLOCAL-strong-4game-2026!";
+function runEphemeralSql(sql){
+ execFileSync("docker",["exec","supabase_db_labgame-free-ci","psql","-U","postgres","-d","postgres","-v","ON_ERROR_STOP=1","-c",sql],{stdio:"pipe"});
+}
 function seedEphemeralBibleVerses(){
  // Local Supabase has no Bible import; synthetic rows stay inside the disposable test DB.
- const sql=[
-  "INSERT INTO public.lab_bible_chapters(edition,chapter_id,book_name,chapter_number,verses)\nVALUES\n ('ALM1911','1:1','Gênesis',1,'[{\"verse_number\":1,\"text\":\"Fixture local de Gênesis 1:1.\"}]'::jsonb),\n ('ALM1911','19:1','Salmos',1,'[{\"verse_number\":1,\"text\":\"Fixture local de Salmos 1:1.\"}]'::jsonb),\n ('ALM1911','43:1','João',1,'[{\"verse_number\":1,\"text\":\"Fixture local de João 1:1.\"}]'::jsonb)\nON CONFLICT(edition,chapter_id) DO NOTHING;",
+ // Keep the parent chapter insert in a separate psql transaction from the verse
+ // inserts: one multi-statement -c is atomic, so an FK error would roll the
+ // parent fixtures back and hide the actual fixture problem.
+ const chapterSql="INSERT INTO public.lab_bible_chapters(edition,chapter_id,book_name,chapter_number,verses)\nVALUES\n ('ALM1911','1:1','Gênesis',1,'[{\"verse_number\":1,\"text\":\"Fixture local de Gênesis 1:1.\"}]'::jsonb),\n ('ALM1911','19:1','Salmos',1,'[{\"verse_number\":1,\"text\":\"Fixture local de Salmos 1:1.\"}]'::jsonb),\n ('ALM1911','43:1','João',1,'[{\"verse_number\":1,\"text\":\"Fixture local de João 1:1.\"}]'::jsonb)\nON CONFLICT(edition,chapter_id) DO NOTHING;";
+ const verseSql=[
   "CREATE TABLE IF NOT EXISTS public.lab_bible_verses(edition text NOT NULL,chapter_id text NOT NULL,verse_number smallint NOT NULL,verse_text text NOT NULL,PRIMARY KEY(edition,chapter_id,verse_number));",
   "ALTER TABLE public.lab_bible_verses ENABLE ROW LEVEL SECURITY;",
   "REVOKE ALL ON public.lab_bible_verses FROM PUBLIC,anon,authenticated;",
   "INSERT INTO public.lab_bible_verses VALUES('ALM1911','1:1',1,array_to_string(array_fill('palavra'::text,ARRAY[200]),' ')), ('ALM1911','43:1',1,'palavra') ON CONFLICT(edition,chapter_id,verse_number) DO UPDATE SET verse_text=EXCLUDED.verse_text;",
   "INSERT INTO public.lab_bible_verses SELECT 'ALM1911','19:1',g,'palavra' FROM generate_series(1,20) AS g ON CONFLICT(edition,chapter_id,verse_number) DO UPDATE SET verse_text=EXCLUDED.verse_text;"
  ].join("\n");
- execFileSync("docker",["exec","supabase_db_labgame-free-ci","psql","-U","postgres","-d","postgres","-v","ON_ERROR_STOP=1","-c",sql],{stdio:"pipe"});
+ runEphemeralSql(chapterSql);
+ runEphemeralSql(verseSql);
 }
 try{
  seedEphemeralBibleVerses();
