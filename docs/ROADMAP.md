@@ -312,3 +312,12 @@ Visão e regras detalhadas: [LABGAME-3-PRODUCT-AND-PROGRESSION.md](LABGAME-3-PRO
 - [ ] **UX ainda pendente:** modal duplo (checkbox + texto obrigatório `ZERAR` ou `EXCLUIR`), exportação de dados e recibo de confirmação; nenhuma ação destrutiva deve funcionar sem backend auditado.
 - [ ] **Segurança e LGPD:** exclusão de identidade com retenções legais transparentes, resolução da liderança de GC e acesso seguro aos dados de perfil.
 Documento completo: `docs/PROFILE-SETTINGS-NOTIFICATIONS-PRIVACY-PROPOSAL.md`.
+
+
+## Correção de economia: recordes arquivados não são XP da nova sequência (16/10/2026)
+- [x] Regra do produto: todo recomeço abre `run_xp=0` e `run_days=0`; a tentativa anterior não transfere XP, medalhas, Talentos ou vidas.
+- [x] Os melhores recordes anteriores de dias e XP são preservados como **barreiras a superar**, e vitrine de conquistas fica no histórico sem conceder nada à tentativa atual. A marca máxima só muda após ser superada de fato.
+- [x] Leitura obrigatória do mesmo capítulo numa tentativa nova pode receber XP **daquela tentativa**, com idempotência por `run_id`; XP de tentativas encerradas não se soma à pontuação atual nem dispara medalhas.
+- [ ] Refatorar `lab_game_stats.total_xp`, scorecard, ranking e algoritmo antifraude para distinguir `run_xp`, `best_run_xp`, histórico por tentativa e bônus de ciclo completo; não confundir com o saldo vitalício da implementação legada.
+- [ ] Reavaliar e revalidar a migração pendente de bônus anual (+10k...) à luz desta regra antes de qualquer produção.
+- [ ] Testar duas contas, falha e recomeço, reinício por conclusão, faixas de carência e vidas em staging. Nenhuma migração SQL foi aplicada por esta especificação.
