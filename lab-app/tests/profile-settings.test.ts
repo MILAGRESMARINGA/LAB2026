@@ -44,25 +44,21 @@ describe("Configurações privadas LABGAME",()=>{
    reading_reminders:false,gc_activity:false,milestones:false
   },{onConflict:"user_id"});
  });
- it("exige consentimento antes de gravar dados religiosos",async()=>{
-  await expect(saveMemberProfile({
-   ...EMPTY_MEMBER_PROFILE,church_name:"Igreja Exemplo"
-  },false)).rejects.toThrow("Autorize");
-  expect(upsert).not.toHaveBeenCalled();
+ it("grava dados ministeriais apenas com consentimento explícito",async()=>{
+  await saveMemberProfile({...EMPTY_MEMBER_PROFILE,church_name:"Igreja Exemplo"},true);
+  expect(upsert.mock.calls[0][0].church_name).toBe("Igreja Exemplo");
+  expect(upsert.mock.calls[0][0].religious_data_consent_at).toBeTruthy();
  });
  it("não envia dados religiosos quando o consentimento for retirado",async()=>{
   await saveMemberProfile({
    ...EMPTY_MEMBER_PROFILE,full_name:"Ana da Silva",
    church_name:"Igreja Exemplo",pastor_name:"Pastor",
    ministry_role:"Membro / ovelha",gc_name:"GC Esperança"
-  },false).catch(()=>undefined);
-  expect(upsert).not.toHaveBeenCalled();
-  await saveMemberProfile({
-   ...EMPTY_MEMBER_PROFILE,church_name:"",pastor_name:"",
-   ministry_role:"",gc_name:""
   },false);
   expect(upsert.mock.calls[0][0].religious_data_consent_at).toBeNull();
   expect(upsert.mock.calls[0][0].church_name).toBeNull();
+  expect(upsert.mock.calls[0][0].pastor_name).toBeNull();
+  expect(upsert.mock.calls[0][0].ministry_role).toBeNull();
  });
  it("recusa apagar jornada se a frase for incorreta, sem acessar o banco",async()=>{
   await expect(resetAllJourneyData("senha-ficticia","ZERAR"))
