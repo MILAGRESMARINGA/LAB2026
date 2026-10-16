@@ -24,6 +24,7 @@ import {syncJourneyV2,getV2StudyRewards,confirmV2Study,type JourneyV2State} from
 import {FormationLibrary} from "./components/FormationLibrary";
 import {ProfileSettings} from "./components/ProfileSettings";
 import {DailyInAppPopup} from "./components/DailyInAppPopup";
+import {AgentVoiceConsole} from "./components/AgentVoiceConsole";
 import {earnedTalentMilestones} from "./domain/journey-rewards";
 import {chooseJourneyVersion} from "./domain/journey-version";
 type Tab="today"|"bible"|"journey"|"studies"|"groups"|"profile";
@@ -36,7 +37,7 @@ export default function App(){
  const authQuery=typeof window==="undefined"?null:new URLSearchParams(window.location.search).get("auth");
  const authRoute=typeof window==="undefined"?"none":authRouteFromPath(window.location.pathname);
  const [tab,setTab]=useState<Tab>(()=>authQuery?"profile":"journey");
- const [user,setUser]=useState<{id:string;email:string}|null>(null);
+ const [user,setUser]=useState<{id:string;email:string;agentAdmin:boolean}|null>(null);
  const [variantDecision,setVariantDecision]=useState<{userId:string;mode:"v1"|"v2"}|null>(null);
  const journeyVariant: "loading"|"v1"|"v2" = !v2FeatureEnabled?"v1":user&&variantDecision?.userId===user.id?variantDecision.mode:"loading";
  const v2Enabled=v2FeatureEnabled&&journeyVariant==="v2";
@@ -78,7 +79,7 @@ export default function App(){
   const setAuth=async()=>{
    const {data:{user:authenticated}}=await client.auth.getUser();
    if(!active||authEventReceived)return;
-   setUser(authenticated?{id:authenticated.id,email:authenticated.email||""}:null);
+   setUser(authenticated?{id:authenticated.id,email:authenticated.email||"",agentAdmin:authenticated.app_metadata?.labgame_orchestrator_admin===true}:null);
    setAuthLoading(false);
   };
   void setAuth();
@@ -87,7 +88,7 @@ export default function App(){
    authEventReceived=true;
    if(event==="PASSWORD_RECOVERY")setPasswordRecoveryMode(true);
    const authenticated=session?.user;
-   setUser(authenticated?{id:authenticated.id,email:authenticated.email||""}:null);
+   setUser(authenticated?{id:authenticated.id,email:authenticated.email||"",agentAdmin:authenticated.app_metadata?.labgame_orchestrator_admin===true}:null);
    setAuthLoading(false);
   });
   return()=>{active=false;subscription.unsubscribe()};
@@ -277,7 +278,7 @@ export default function App(){
   <p className="muted">{v2Game?.completed_bibles_historical??0} Bíblia(s) completa(s) registrada(s).</p>
  </section>}
  <h2>Meus marcos</h2><div className="milestone-list">{[1,7,30,100,180,365].map(goal=><div className={"milestone "+(bestDays>=goal?"earned":"")} key={goal}><Award size={19}/><span>{goal===365?"Bíblia completa":goal+" dias seguidos"}</span><strong>{bestDays>=goal?"CONQUISTADO":"BLOQUEADO"}</strong></div>)}</div><form className="profile-form" onSubmit={e=>{e.preventDefault();void saveProfile()}}><h2>Identidade no GC</h2><label htmlFor="display-name">Nome exibido</label><input id="display-name" value={profileName} minLength={2} maxLength={60} required onChange={e=>setProfileName(e.target.value)}/><label className="toggle-rank"><input type="checkbox" checked={optIn} onChange={e=>setOptIn(e.target.checked)}/> Quero aparecer nos rankings privados dos meus GCs.</label><button className="secondary-cta" disabled={busy} type="submit">SALVAR PERFIL</button></form><section className="account-security"><h2><LockKeyhole size={21}/> Segurança da conta</h2><p className="muted">Encerre sua sessão neste dispositivo. Seus dados e pontos serão preservados.</p><button className="logout-cta" type="button" disabled={busy} onClick={()=>void logout()}><LogOut size={18}/> {busy?"SAINDO...":"SAIR DA CONTA"}</button></section>
-<ProfileSettings accountEmail={user.email} onReset={async()=>{if(v2Enabled){setV2Game(null);setV2Epoch(n=>n+1)}else{await refreshGame();await refreshScorecard()}setLessonOpen(false);setLastConfirmed(null);setTab("journey")}} onDeleted={()=>{setUser(null);setGame(null);setV2Game(null);setScorecard(null);setGroups([]);setInvites({});setLessonOpen(false);setTab("profile");setMessage("Conta excluída. Você pode criar uma nova conta quando quiser.")}}/>{message&&<p role="status" className="feedback-message">{message}</p>}</>}<InstallApp/></section>}
+{import.meta.env.VITE_AGENT_CONSOLE_ENABLED==="true"&&user.agentAdmin&&<AgentVoiceConsole/>}<ProfileSettings accountEmail={user.email} onReset={async()=>{if(v2Enabled){setV2Game(null);setV2Epoch(n=>n+1)}else{await refreshGame();await refreshScorecard()}setLessonOpen(false);setLastConfirmed(null);setTab("journey")}} onDeleted={()=>{setUser(null);setGame(null);setV2Game(null);setScorecard(null);setGroups([]);setInvites({});setLessonOpen(false);setTab("profile");setMessage("Conta excluída. Você pode criar uma nova conta quando quiser.")}}/>{message&&<p role="status" className="feedback-message">{message}</p>}</>}<InstallApp/></section>}
   </main>
   <nav className="game-bottom-nav" aria-label="Menu LABGAME">{tabs.map(t=><button key={t.id} type="button" className={tab===t.id?"active":""} onClick={()=>goTab(t.id)} aria-current={tab===t.id?"page":undefined}><t.icon size={21}/><span>{t.label}</span></button>)}</nav>
   {activeVideo&&<BibleProjectPlayer key={activeVideo.resource.url} resource={activeVideo.resource} book={activeVideo.book} signedIn={Boolean(user)} runId={v2Enabled?v2Game?.status==="active"?v2Game.run_id:null:null} onClose={()=>setActiveVideo(null)} onBonus={total=>{
