@@ -37,3 +37,12 @@ E. Ativar primeiro o painel num ambiente de visualização restrito; liberar pro
 - O trabalhador **NÃO FOI IMPLANTADO NEM AGENDADO**. Sem `RESEND_API_KEY`, `LAB_NOTIFICATION_FROM` verificado e `LAB_NOTIFICATION_CRON_SECRET` de alta entropia ele falha fechado sem e-mail. Precisará de agendamento seguro no staging/produção e monitoramento de erros, rejeições e opt-out.
 - `account-export.ts` inclui histórico de envio opcional do usuário; testes SQL + Vitest verificam matriz, seleção privada e restrição de escrita; sem envio durante testes.
 - Esta primeira rotina é somente para **lembrete de leitura diária**; atividades GC, novas etapas, conquistas e estudos ainda precisam de produtores específicos e regras de frequência antes de ativar essas categorias no canal de e-mail.
+
+## Verificação ampliada e custo de staging
+
+- Testes de integração agora são executados em **PostgreSQL 16 e PostgreSQL 17**, versão correspondente à engine do projeto LABGAME. CI nº 396 passou na compilação e nos dois bancos: https://github.com/MILAGRESMARINGA/LAB2026/actions/runs/38926162657.
+- Adicionado caso de teste real com horários simulados da passagem de outubro para novembro: incidente de outubro é debitado exclusivamente nas vidas de outubro até o fim das extensões; a chegada de novembro não revive run encerrada nem cobra vida de uma etapa ainda no prazo.
+- O painel de Jornada V2 agora oferece modalidade de 366 etapas somente em 1º de janeiro de ano bissexto no fuso de São Paulo; o PostgreSQL continua revalidando essa condição independentemente do relógio do navegador.
+- **Supabase staging:** o projeto `azejfxvaamgkmfmwdzjn` pertence à organização `LAB2026GAME`, plano Free, sem branches. Tentativa de criar branch `labgame-v2-homologacao` foi interrompida pelo sistema de autorização de custo.
+- Valor cotado por Supabase: **USD 0,01344 por hora** de branch ativa, estimado **USD 0,32256 por 24 horas**, sujeito a encargos e uso adicionais. A autorização genérica do desenvolvimento não substitui confirmação explícita do preço; **nenhuma branch paga foi criada**.
+- Próxima etapa requer consentimento específico ao custo acima para obter confirmation_id, criar staging e testar GoTrue real, Edge Function, RLS e rollback. Não executar writes/migrations na produção para contornar o gate.
