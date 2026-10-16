@@ -12,13 +12,15 @@ describe("P0 — saída segura da sessão",()=>{
  it("encerra apenas a sessão deste dispositivo sem exigir logout global",async()=>{
   fakeSignOut.mockResolvedValue({error:null});
   await expect(signOut()).resolves.toBeUndefined();
-  expect(fakeSignOut).toHaveBeenCalledExactlyOnceWith({scope:"local"});
+  expect(fakeSignOut).toHaveBeenCalledTimes(1);
+  expect(fakeSignOut).toHaveBeenCalledWith({scope:"local"});
  });
 
  it("não oculta erros: permite à interface apresentar falha de saída",async()=>{
   const e=new Error("network unavailable");
   fakeSignOut.mockResolvedValue({error:e});
   await expect(signOut()).rejects.toThrow("network unavailable");
-  expect(fakeSignOut).toHaveBeenCalledExactlyOnceWith({scope:"local"});
+  expect(fakeSignOut).toHaveBeenCalledTimes(1);
+  expect(fakeSignOut).toHaveBeenCalledWith({scope:"local"});
  });
 });
