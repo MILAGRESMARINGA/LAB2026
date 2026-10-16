@@ -77,19 +77,30 @@ export async function execute(env=process.env,fetcher=fetch){
   message:"docs(agent): triage authorized issue #"+number,
   branch,content:Buffer.from(fileContent(issue),"utf8").toString("base64")
  });
- const pr=await call("/pulls","POST",{
+ let pr=null;
+ try{pr=await call("/pulls","POST",{
   title:"[LAB AGENT] Triagem #"+number+": "+issue.title.slice(0,80),
   base:"main",head:branch,draft:true,
   body:"Triagem automática e não funcional da solicitação #"+number+
    ".\n\n**Não contém código gerado por IA nem aprovação de produção.**"+
    "\n\nO executor de programação requer orçamento e integração expressamente autorizados."
- });
- await call("/actions/workflows/lab-ci.yml/dispatches","POST",{ref:branch});
+ });}catch(e){
+  // GitHub Actions can restrict creation of pull requests even with write
+  // scopes. Preserve the branch and CI, with no permissions escalation.
+  if(!String(e.message).includes("GitHub API 403 on POST /pulls"))throw e;
+ }
+ let ciStarted=false;
+ try{await call("/actions/workflows/lab-ci.yml/dispatches","POST",{ref:branch});ciStarted=true}catch(e){
+  if(!String(e.message).includes("GitHub API 403 on POST /actions/"))throw e;
+ }
+ const refUrl="https://github.com/"+repo+"/tree/"+branch;
  await call("/issues/"+number+"/comments","POST",{
-  body:"LABGame: triagem criada em "+pr.html_url+
-   ". A CI foi solicitada. Nenhum código da aplicação ou dado real foi alterado."
+  body:"LABGame: triagem criada em "+(pr?.html_url??refUrl)+
+   (pr?" (PR draft).":" (branch, criação de PR bloqueada por configuração GitHub).")+
+   (ciStarted?" CI solicitada.":" CI não iniciada: permissões GitHub Actions insuficientes.")+
+   " Nenhum código do aplicativo ou dado real foi alterado."
  });
- return {status:"triaged",number:pr.number,url:pr.html_url,branch};
+ return {status:pr?"triaged":"triaged_without_pr",number:pr?.number??null,url:pr?.html_url??refUrl,branch,ciStarted};
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
  execute().then(r=>console.log(JSON.stringify(r))).catch(e=>{
