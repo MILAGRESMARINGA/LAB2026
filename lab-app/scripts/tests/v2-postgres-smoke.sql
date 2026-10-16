@@ -5,16 +5,28 @@ CREATE ROLE anon NOLOGIN;
 CREATE ROLE authenticated NOLOGIN;
 CREATE SCHEMA auth;
 GRANT USAGE ON SCHEMA auth TO authenticated;
-CREATE TABLE auth.users(id uuid PRIMARY KEY);
+CREATE TABLE auth.users(id uuid PRIMARY KEY,last_sign_in_at timestamptz DEFAULT now());
 CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS
 $$ SELECT NULLIF(current_setting('app.test_user',true),'')::uuid $$;
 CREATE TABLE public.lab_game_runs(
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
  user_id uuid NOT NULL REFERENCES auth.users(id),
- status text NOT NULL
+ status text NOT NULL,
+ finished_on date
 );
+CREATE TABLE public.lab_game_stats(
+ user_id uuid PRIMARY KEY REFERENCES auth.users(id),
+ best_days smallint NOT NULL DEFAULT 0,
+ total_xp integer NOT NULL DEFAULT 0,
+ total_completed_days integer NOT NULL DEFAULT 0,
+ updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE public.lab_game_video_sessions(user_id uuid NOT NULL REFERENCES auth.users(id));
+CREATE TABLE public.lab_game_video_rewards(user_id uuid NOT NULL REFERENCES auth.users(id));
+CREATE TABLE public.reading_completions(user_id uuid NOT NULL REFERENCES auth.users(id));
 \i supabase/migrations/202610160100_lab_v2_shadow_game.sql
 \i supabase/migrations/202610160101_lab_v2_plans_seed.sql
+\i supabase/migrations/202610160102_lab_v2_awards_and_unified_reset.sql
 
 INSERT INTO auth.users(id) VALUES
 ('11111111-1111-4111-8111-111111111111'),
@@ -155,5 +167,52 @@ BEGIN
  IF count_<>1 THEN RAISE EXCEPTION 'FAIL: chapter RLS leaked another user checks'; END IF;
 END
 $test$;
+-- Simulate an almost-complete annual run in the ephemeral DB only.
+-- No production account is used and no reward is manually written.
+SELECT set_config('app.test_user','11111111-1111-4111-8111-111111111111',false);
+RESET ROLE;
+INSERT INTO public.lab_v2_stages(run_id,day_number,activated_at,completed_at,transitioned_at)
+ SELECT :'new_run'::uuid,n,
+  statement_timestamp()-interval '26 hours',
+  statement_timestamp()-interval '25 hours',
+  statement_timestamp()-interval '25 hours'
+ FROM generate_series(1,364) n;
+INSERT INTO public.lab_v2_chapter_checks(run_id,day_number,chapter_id,confirmed_at)
+ SELECT :'new_run'::uuid,p.day_number,p.chapter_id,statement_timestamp()-interval '25 hours'
+ FROM public.lab_v2_plan_chapters p WHERE p.plan_length=365 AND p.day_number<=364;
+SET ROLE authenticated;
+SELECT public.lab_v2_activate(:'new_run'::uuid,365);
+SELECT public.lab_v2_confirm(:'new_run'::uuid,365,'39:3');
+SELECT public.lab_v2_confirm(:'new_run'::uuid,365,'39:4');
+SELECT public.lab_v2_confirm(:'new_run'::uuid,365,'19:150');
+SELECT public.lab_v2_confirm(:'new_run'::uuid,365,'66:22');
+DO $test$
+DECLARE s jsonb;c integer;
+BEGIN
+ SELECT public.lab_v2_sync(:'new_run'::uuid) INTO s;
+ SELECT COUNT(*) INTO c FROM public.lab_v2_cycle_awards WHERE run_id=:'new_run'::uuid;
+ IF s->>'status'<>'completed' OR (s->>'run_xp')::integer<>21890 OR c<>1 OR
+   s->'cycle_award'->>'perfect_constancy'<>'true' THEN
+  RAISE EXCEPTION 'FAIL: V2 annual bonus/perfect badge: % count %',s,c;
+ END IF;
+END $test$;
+-- Repeated RPC confirmations cannot issue another completed-cycle award.
+SELECT public.lab_v2_confirm(:'new_run'::uuid,365,'66:22');
+DO $test$
+BEGIN
+ IF (SELECT COUNT(*) FROM public.lab_v2_cycle_awards WHERE run_id=:'new_run'::uuid)<>1
+ THEN RAISE EXCEPTION 'FAIL: annual crown duplicated'; END IF;
+END $test$;
+-- Explicit verified reset removes V1+V2 historical XP, awards and all lives.
+DO $test$
+DECLARE s jsonb;
+BEGIN
+ SELECT public.lab_game_full_reset('ZERAR JORNADA') INTO s;
+ IF s->>'reset'<>'true' THEN RAISE EXCEPTION 'FAIL: total reset'; END IF;
+ IF EXISTS (SELECT 1 FROM public.lab_v2_runs WHERE user_id=auth.uid()) OR
+   EXISTS (SELECT 1 FROM public.lab_v2_cycle_awards WHERE user_id=auth.uid()) OR
+   EXISTS (SELECT 1 FROM public.lab_v2_monthly_lives WHERE user_id=auth.uid())
+ THEN RAISE EXCEPTION 'FAIL: V2 results survived full reset'; END IF;
+END $test$;
 RESET ROLE;
 SELECT 'LAB V2 POSTGRES SMOKE PASSED' AS result;
