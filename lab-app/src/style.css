@@ -617,3 +617,14 @@ body.video-modal-open{overflow:hidden}
  .ps-modal{padding:16px}
 }
 @media(prefers-reduced-motion:reduce){.ps-section>summary>svg{transition:none}}
+
+
+/* Dismissible reading notification, only after explicit user opt-in. */
+.lab-inapp-popup{position:fixed;bottom:88px;right:22px;z-index:60;display:flex;align-items:flex-start;gap:13px;width:min(390px,calc(100vw - 30px));padding:16px;background:#293c33;border:2px solid #a0cf78;border-radius:16px;box-shadow:0 14px 42px #0008;color:#e9f5e7}
+.lab-inapp-popup>svg{color:#d8f19a;flex-shrink:0;margin-top:2px}
+.lab-inapp-popup>div{flex:1;min-width:0}
+.lab-inapp-popup strong{font-size:14px;color:#ecfad3}
+.lab-inapp-popup p{font-size:12px;line-height:1.55;color:#d1e5d3;margin:6px 0 12px}
+.lab-inapp-popup button{min-height:35px;border:1px solid #7da76e;border-radius:8px;background:#426540;color:#f5ffec;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:7px 12px;font-size:11px;font-weight:850}
+.lab-inapp-popup .lab-inapp-popup-close{background:transparent;border:0;min-width:39px;min-height:39px;padding:7px;align-self:flex-start}
+@media(max-width:650px){.lab-inapp-popup{right:10px;bottom:76px;width:calc(100vw - 20px);padding:13px;gap:9px}}
