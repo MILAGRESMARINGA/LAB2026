@@ -1,4 +1,5 @@
 import {supabase} from "../lib/supabase";
+import type {GCLeagueEntry,GCGroupSummary,LabRankingEntry} from "./lab-game";
 
 /**
  * Shadow V2 transport. Not imported by the live App or the V1 journey.
@@ -110,4 +111,25 @@ export async function getJourneyV2Checks(runId:string,stage:number):Promise<stri
   .eq("day_number",validStage(stage));
  if(error)throw error;
  return (data??[]).map(row=>row.chapter_id as string);
+}
+
+/** Rankings for 24h rolling stages; never substitute the V1 civil-day functions. */
+export async function getV2GCLeague():Promise<GCLeagueEntry[]>{
+ assertV2ClientEnabled();
+ const {data,error}=await supabase!.rpc("lab_v2_gc_league");
+ if(error)throw error;
+ return (data??[]) as GCLeagueEntry[];
+}
+export async function getV2GroupSummary(groupId:string):Promise<GCGroupSummary>{
+ assertV2ClientEnabled();
+ const {data,error}=await supabase!.rpc("lab_v2_group_summary",{p_group_id:validRunId(groupId)});
+ if(error)throw error;
+ if(!data)throw Error("GC indisponível");
+ return data as GCGroupSummary;
+}
+export async function getV2GroupRanking(groupId:string):Promise<LabRankingEntry[]>{
+ assertV2ClientEnabled();
+ const {data,error}=await supabase!.rpc("lab_v2_group_ranking",{p_group_id:validRunId(groupId)});
+ if(error)throw error;
+ return (data??[]) as LabRankingEntry[];
 }
