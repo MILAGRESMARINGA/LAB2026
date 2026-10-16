@@ -42,6 +42,10 @@ try{
   });
   assert.ifError(error);
  }
+ const sameChapterRequests=await Promise.all(Array.from({length:8},()=>
+  a.c.rpc("lab_v2_confirm",{p_run:runId,p_stage:1,p_chapter:"43:1"})
+ ));
+ for(const response of sameChapterRequests)assert.ifError(response.error);
  const {data:checked,error:checkedErr}=await a.c.rpc("lab_v2_sync",{p_run:runId});
  assert.ifError(checkedErr);assert.equal(checked.run_xp,30);
  const {error:advanceErr}=await a.c.rpc("lab_v2_activate",{p_run:runId,p_stage:2});
@@ -79,7 +83,7 @@ try{
  assert.ifError(orphanErr);assert.deepEqual(orphan,[]);
 
  await b.c.auth.signOut({scope:"local"});
- console.log("PASS: real GoTrue V2 365 plan, XP, timers, cross-account RLS, full reset, cascade deletion");
+ console.log("PASS: real GoTrue V2 365 plan, concurrent idempotent XP, timers, cross-account RLS, full reset, cascade deletion");
 }finally{
  for(const id of ids) await service.auth.admin.deleteUser(id).catch(()=>undefined);
 }
