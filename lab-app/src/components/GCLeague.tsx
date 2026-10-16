@@ -14,6 +14,7 @@ export function GCLeague({userId,groups,onGroupsChange}:Props){
  const [busy,setBusy]=useState(false);
  const [message,setMessage]=useState("");
  const [aggregateNotice,setAggregateNotice]=useState(false);
+ const participating=groups.some(g=>g.competition_opt_in);
  const aggregateKey=userId?gcAggregateNoticeStorageKey(userId,saoPauloWeekStart(Date.now())):null;
  useEffect(()=>{
   let active=true;
@@ -27,7 +28,6 @@ export function GCLeague({userId,groups,onGroupsChange}:Props){
   }).catch(()=>undefined);
   return()=>{active=false};
  },[aggregateKey,participating]);
- const participating=groups.some(g=>g.competition_opt_in);
  const load=async()=>{
   if(!participating){setRows([]);return}
   setBusy(true);setMessage("");
