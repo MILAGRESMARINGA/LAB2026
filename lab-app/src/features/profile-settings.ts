@@ -4,10 +4,20 @@ import {signIn,signOut} from "./auth";
 export type NoticePreferences={
  enabled:boolean;in_app_popup:boolean;email:boolean;
  reading_reminders:boolean;gc_activity:boolean;milestones:boolean;
+ reading_popup:boolean;reading_email:boolean;
+ stage_popup:boolean;stage_email:boolean;
+ gc_popup:boolean;gc_email:boolean;
+ achievement_popup:boolean;achievement_email:boolean;
+ study_popup:boolean;study_email:boolean;
 };
 export const DEFAULT_NOTICES:NoticePreferences={
  enabled:false,in_app_popup:false,email:false,
- reading_reminders:false,gc_activity:false,milestones:false
+ reading_reminders:false,gc_activity:false,milestones:false,
+ reading_popup:false,reading_email:false,
+ stage_popup:false,stage_email:false,
+ gc_popup:false,gc_email:false,
+ achievement_popup:false,achievement_email:false,
+ study_popup:false,study_email:false
 };
 export type MemberProfile={
  full_name:string;phone:string;date_of_birth:string;marital_status:string;
@@ -61,7 +71,7 @@ export async function loadMemberSettings():Promise<{profile:MemberProfile;notifi
 export async function loadNoticePreferencesOnly():Promise<NoticePreferences>{
  const u=await getAuthenticatedUser();
  const {data,error}=await supabase!.from("lab_notification_preferences")
-  .select("enabled,in_app_popup,email,reading_reminders,gc_activity,milestones")
+  .select("enabled,in_app_popup,email,reading_reminders,gc_activity,milestones,reading_popup,reading_email,stage_popup,stage_email,gc_popup,gc_email,achievement_popup,achievement_email,study_popup,study_email")
   .eq("user_id",u.id).maybeSingle();
  failOnError(error);
  return {...DEFAULT_NOTICES,...Object.fromEntries(
@@ -93,14 +103,28 @@ export async function saveMemberProfile(input:MemberProfile,agreedReligiousData:
 }
 export async function saveNoticePreferences(input:NoticePreferences):Promise<void>{
  const u=await getAuthenticatedUser();
+ const active=input.enabled;
+ const matrix={
+  reading_popup:active&&input.reading_popup,
+  reading_email:active&&input.reading_email,
+  stage_popup:active&&input.stage_popup,
+  stage_email:active&&input.stage_email,
+  gc_popup:active&&input.gc_popup,
+  gc_email:active&&input.gc_email,
+  achievement_popup:active&&input.achievement_popup,
+  achievement_email:active&&input.achievement_email,
+  study_popup:active&&input.study_popup,
+  study_email:active&&input.study_email
+ };
+ const anyPopup=Object.entries(matrix).some(([k,v])=>k.endsWith("_popup")&&v);
+ const anyEmail=Object.entries(matrix).some(([k,v])=>k.endsWith("_email")&&v);
  const {error}=await supabase!.from("lab_notification_preferences").upsert({
-  user_id:u.id,
-  enabled:input.enabled,
-  in_app_popup:input.enabled&&input.in_app_popup,
-  email:input.enabled&&input.email,
-  reading_reminders:input.enabled&&input.reading_reminders,
-  gc_activity:input.enabled&&input.gc_activity,
-  milestones:input.enabled&&input.milestones
+  user_id:u.id,enabled:active,...matrix,
+  // Legacy compatibility columns are derived ONLY from explicit matrix opt-ins.
+  in_app_popup:anyPopup,email:anyEmail,
+  reading_reminders:matrix.reading_popup||matrix.reading_email,
+  gc_activity:matrix.gc_popup||matrix.gc_email,
+  milestones:matrix.achievement_popup||matrix.achievement_email
  },{onConflict:"user_id"});
  failOnError(error);
 }
