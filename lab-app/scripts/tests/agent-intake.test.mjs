@@ -64,6 +64,19 @@ test("safe admin request opens draft PR and queues tests, without coding changes
  assert.ok(content.includes("nenhuma alteração funcional foi realizada"));
  assert.ok(n.calls.some(x=>x.url.endsWith("/actions/workflows/lab-ci.yml/dispatches")));
 });
+test("GitHub restriction 403 on PR creation preserves branch, report and CI",async()=>{
+ const n=network();
+ const wrapped=async(url,opts)=>{
+  if(url.endsWith("/pulls"))return new Response("",{status:403});
+  return n.fetcher(url,opts);
+ };
+ const result=await execute(env,wrapped);
+ assert.equal(result.status,"triaged_without_pr");
+ assert.equal(result.ciStarted,true);
+ assert.ok(result.url.endsWith("/tree/agent/intake-12"));
+ assert.ok(n.calls.some(x=>x.url.endsWith("/actions/workflows/lab-ci.yml/dispatches")));
+ assert.ok(n.calls.some(x=>x.url.endsWith("/issues/12/comments")));
+});
 test("workflow requires privileged author; cannot execute arbitrary pull request scripts",()=>{
  const yaml=readFileSync(new URL("../../../.github/workflows/lab-agent-intake.yml",import.meta.url),"utf8");
  assert.ok(yaml.includes("issues:"));
