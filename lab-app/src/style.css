@@ -679,3 +679,9 @@ body.video-modal-open{overflow:hidden}
 .ps-notice-row strong{font-size:13px;line-height:1.5;color:#e9f4ed}
 .ps-notice-row .ps-check{margin:0;min-width:0;font-size:12px}
 @media(max-width:530px){.ps-notice-row{grid-template-columns:1fr 1fr;gap:10px}.ps-notice-row strong{grid-column:1/-1}.ps-notice-row .ps-check{justify-content:flex-start}}
+
+/* Mobile account safety: preserve an easy-to-tap full-width sign-out CTA. */
+@media(max-width:650px){
+ .account-security{padding:12px;margin:18px 0;border-radius:14px;min-width:0}
+ .account-security .logout-cta{display:flex;width:100%;min-height:56px;min-width:0;box-sizing:border-box;touch-action:manipulation}
+}
