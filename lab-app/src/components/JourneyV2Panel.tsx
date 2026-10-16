@@ -1,12 +1,13 @@
 import {useCallback,useEffect,useMemo,useState} from "react";
 import {BookOpen,CheckCircle2,Clock3,Crown,Flame,RotateCcw,ShieldCheck,Trophy} from "lucide-react";
 import {CHAPTERS} from "../domain/canon";
+import {brazilianLeapDayStartAvailable} from "../domain/journey-plan-eligibility";
 import {BibleReader} from "./BibleReader";
 import {DailyInAppPopup} from "./DailyInAppPopup";
 import {
  activateJourneyV2,confirmJourneyV2Chapter,getJourneyV2Chapters,
  getJourneyV2Checks,loadLatestJourneyV2,startJourneyV2,
- type JourneyV2Chapter,type JourneyV2State
+ type JourneyV2Chapter,type JourneyV2State,type JourneyV2Length
 } from "../features/journey-v2";
 
 type Props={userId:string;onState?:(state:JourneyV2State|null)=>void};
@@ -33,6 +34,7 @@ export function JourneyV2Panel({userId,onState}:Props){
  const [selected,setSelected]=useState<string|null>(null);
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
  const [error,setError]=useState(""),[accept,setAccept]=useState(false);
+ const [startPlanLength,setStartPlanLength]=useState<JourneyV2Length>(365);
  const [clock,setClock]=useState(Date.now()),[serverOffset,setServerOffset]=useState(0);
  const update=useCallback((next:JourneyV2State|null)=>{
   setGame(next);onState?.(next);
@@ -65,6 +67,8 @@ export function JourneyV2Panel({userId,onState}:Props){
  const confirmedCount=chapters.filter(c=>checkedSet.has(c.chapter_id)).length;
  const stageFinished=game?.completed_at!==null&&game?.completed_at!==undefined;
  const now=clock+serverOffset;
+ const canChooseLeapPlan=brazilianLeapDayStartAvailable(new Date(now));
+ const selectedPlan:JourneyV2Length=canChooseLeapPlan?startPlanLength:365;
  const deadline=game?.normal_deadline_at?Date.parse(game.normal_deadline_at):null;
  const grace=game?.grace_deadline_at?Date.parse(game.grace_deadline_at):null;
  const eligible=game?.next_eligible_at?Date.parse(game.next_eligible_at):null;
@@ -77,7 +81,7 @@ export function JourneyV2Panel({userId,onState}:Props){
   catch(e){setError(e instanceof Error?e.message:"Não foi possível confirmar no servidor.")}
   finally{setBusy(false)}
  };
- const begin=()=>{if(!accept||busy)return;void process(()=>startJourneyV2(365))};
+ const begin=()=>{if(!accept||busy)return;void process(()=>startJourneyV2(selectedPlan))};
  const next=()=>{
   if(!game||busy)return;
   void process(()=>activateJourneyV2(game.run_id,(game.stage??0)+1));
@@ -97,9 +101,18 @@ export function JourneyV2Panel({userId,onState}:Props){
   <h1>Sua Jornada. <em>Um capítulo de cada vez.</em></h1>
   <p className="muted">3 ou 4 capítulos por etapa · 24 horas a partir da ativação · 6 horas de tolerância · 3 vidas mensais.</p>
   {error&&<p role="alert" className="feedback-message">{error}</p>}
+  {canChooseLeapPlan&&(!game||game.status!=="active")&&
+   <fieldset className="v2-consent" aria-label="Escolher a duração do plano">
+    <legend>Plano disponível no início do ano bissexto</legend>
+    <label><input type="radio" name="plan-length" checked={selectedPlan===365}
+      onChange={()=>setStartPlanLength(365)}/> Jornada livre — 365 etapas</label>
+    <label><input type="radio" name="plan-length" checked={selectedPlan===366}
+      onChange={()=>setStartPlanLength(366)}/> Calendário bissexto — 366 etapas</label>
+    <small>A opção de 366 etapas só pode ser iniciada em 1º de janeiro de um ano bissexto. O servidor valida essa data.</small>
+   </fieldset>}
   {!game&&<div className="v2-start" aria-label="Iniciar Jornada V2">
    <h2><BookOpen size={23}/> Começar em Gênesis</h2>
-   <p>O plano contém 365 etapas e os 1.189 capítulos da Bíblia. A primeira etapa só começa quando você clicar em ativar.</p>
+   <p>O plano contém {selectedPlan} etapas e os 1.189 capítulos da Bíblia. A primeira etapa só começa quando você clicar em ativar.</p>
    <p className="muted">Se você possui uma tentativa anterior em andamento, ela será encerrada e arquivada. Seu recorde e suas conquistas permanecem no histórico, sem transferir XP à nova sequência.</p>
    <label className="v2-consent"><input type="checkbox" checked={accept} onChange={e=>setAccept(e.target.checked)}/> Entendo que a Jornada V2 começa em zero XP e substitui minha tentativa em andamento.</label>
    <button className="primary-cta" disabled={!accept||busy} type="button" onClick={begin}>COMEÇAR NOVA JORNADA</button>
@@ -113,13 +126,13 @@ export function JourneyV2Panel({userId,onState}:Props){
   {game?.status==="failed"&&<div className="v2-start" role="status">
    <h2>Essa tentativa terminou.</h2>
    <p>O relógio e as vidas se esgotaram. O seu recorde continua guardado como uma marca a superar.</p>
-   <button type="button" className="primary-cta" disabled={busy} onClick={()=>void process(()=>startJourneyV2(365))}><RotateCcw size={18}/> RECOMEÇAR EM GÊNESIS 1</button>
+   <button type="button" className="primary-cta" disabled={busy} onClick={()=>void process(()=>startJourneyV2(selectedPlan))}><RotateCcw size={18}/> RECOMEÇAR EM GÊNESIS 1</button>
   </div>}
   {game?.status==="completed"&&<div className="v2-start" role="status">
    <h2><Crown size={27}/> Bíblia completa!</h2>
    <p>Você concluiu todas as etapas e leu os 1.189 capítulos. O próximo ciclo começará com zero XP, sem apagar esta conquista.</p>
    {game.cycle_award&&<p><strong>Coroa {game.cycle_award.cycle_number}</strong> · bônus +{game.cycle_award.bonus_xp.toLocaleString("pt-BR")} XP{game.cycle_award.perfect_constancy?" · Constância perfeita":""}</p>}
-   <button type="button" className="primary-cta" disabled={busy} onClick={()=>void process(()=>startJourneyV2(365))}><RotateCcw size={18}/> INICIAR PRÓXIMA BÍBLIA</button>
+   <button type="button" className="primary-cta" disabled={busy} onClick={()=>void process(()=>startJourneyV2(selectedPlan))}><RotateCcw size={18}/> INICIAR PRÓXIMA BÍBLIA</button>
   </div>}
   {game?.status==="active"&&<div className="v2-current">
    {newStage?<div className="v2-start">
