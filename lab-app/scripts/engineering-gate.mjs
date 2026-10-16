@@ -3,7 +3,7 @@
  * LABGAME engineering security baseline.
  * This is a static gate, NOT a pentest, comprehensive SAST or a replacement
  * for authenticated Supabase RLS and dependency audit tests.
- * Scope intentionally excludes legacy CRMIMOBI's `project/`.
+ * The LABGAME repository must reject legacy CRM trees at its root.
  */
 import {readFileSync,readdirSync,existsSync} from "node:fs";
 import {join,resolve,relative,dirname} from "node:path";
@@ -97,6 +97,14 @@ export function scanTrackedPrivateFiles(list){
 }
 export function verifyRepository(root=repoRoot){
  const failures=[];
+ // Product isolation is a P0 release invariant. A CRM root must never
+ // be reintroduced alongside LABGAME; the only Supabase source of truth
+ // is lab-app/supabase/.
+ for(const name of ["project","supabase"]){
+  if(existsSync(join(root,name))){
+   failures.push("P0 ISOLAMENTO: diretório legado de CRM proibido na raiz: "+name+"/");
+  }
+ }
  for(const name of required){
   if(!existsSync(join(root,name)))failures.push("Documento/contrato obrigatório ausente: "+name);
  }
