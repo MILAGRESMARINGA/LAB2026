@@ -138,6 +138,38 @@ jobs:
         env:
           LAB_SUPABASE_LOCAL_ENV_FILE: /tmp/labgame-supabase-ci.env
         run: node scripts/tests/local-v2-smoke.mjs
+      - name: Install Deno for local Edge Function validation
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Exercise account deletion against real local Auth and GC membership
+        run: |
+          set -a
+          source /tmp/labgame-supabase-ci.env
+          set +a
+          export SUPABASE_URL="$API_URL"
+          export SUPABASE_ANON_KEY="${ANON_KEY:-$PUBLISHABLE_KEY}"
+          export SUPABASE_SERVICE_ROLE_KEY="${SERVICE_ROLE_KEY:-$SECRET_KEY}"
+          nohup deno run -A supabase/functions/account-delete/index.ts > /tmp/lab-local-edge.log 2>&1 &
+          echo $! > /tmp/lab-local-edge.pid
+          ready=0
+          for i in $(seq 1 40); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8000/ || true)
+            if [ "$code" = 405 ]; then ready=1; break; fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then
+            echo "Local deletion function did not start; nonsecret error summary:";
+            grep -Ei 'error|exception|failed' /tmp/lab-local-edge.log | tail -15 || true;
+            exit 1;
+          fi
+          node scripts/tests/local-account-delete.mjs
+      - name: Stop local Edge Function
+        if: always()
+        run: |
+          if [ -f /tmp/lab-local-edge.pid ]; then
+            kill "$(cat /tmp/lab-local-edge.pid)" || true
+          fi
       - name: Tear down ephemeral test stack
         if: always()
         run: npx --yes supabase@latest stop --no-backup || true
