@@ -1,0 +1,89 @@
+import {supabase} from "../lib/supabase";
+
+/**
+ * Shadow V2 transport. Not imported by the live App or the V1 journey.
+ * Both checks are intentional:
+ * - VITE_LAB_V2_READY gates the client at build time (default OFF).
+ * - lab_v2_release_controls gates the PostgreSQL RPC (default OFF).
+ * Do not add V2 to navigation until migrations, staging E2E and opt-in migration.
+ */
+export type JourneyV2Length=365|366;
+export type JourneyV2Status="active"|"failed"|"completed";
+export type JourneyV2State={
+ run_id:string;
+ status:JourneyV2Status;
+ plan_length:JourneyV2Length;
+ stage:number|null;
+ activated_at:string|null;
+ completed_at:string|null;
+ next_eligible_at:string|null;
+ normal_deadline_at:string|null;
+ grace_deadline_at:string|null;
+ run_xp:number;
+ best_completed_stages:number;
+ remaining_lives_this_month:number;
+ server_at:string;
+};
+export type JourneyV2Chapter={day_number:number;slot:number;chapter_id:string};
+
+export function assertV2ClientEnabled():void{
+ if(import.meta.env.VITE_LAB_V2_READY!=="true")
+  throw Error("A Jornada V2 está em homologação e ainda não foi liberada neste aplicativo.");
+ if(!supabase)throw Error("Serviço da Jornada indisponível.");
+}
+function validRunId(runId:string):string{
+ if(!/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(runId))
+  throw Error("Identificador da jornada inválido.");
+ return runId;
+}
+function validStage(stage:number):number{
+ if(!Number.isSafeInteger(stage)||stage<1||stage>366)throw Error("Etapa inválida.");
+ return stage;
+}
+function validLength(days:number):JourneyV2Length{
+ if(days!==365&&days!==366)throw Error("Plano inválido.");
+ return days;
+}
+async function requestV2(rpc:string,args:Record<string,string|number>):Promise<JourneyV2State>{
+ assertV2ClientEnabled();
+ const {data,error}=await supabase!.rpc(rpc,args);
+ if(error)throw error;
+ const item=data as JourneyV2State|null;
+ if(!item||!["active","completed","failed"].includes(item.status)||
+    !Number.isFinite(item.run_xp)||item.run_xp<0)
+  throw Error("Resposta de Jornada V2 inválida. Nenhum progresso foi confirmado.");
+ return item;
+}
+
+/** User must explicitly choose and activate a 365/366 plan after eligibility checks. */
+export function startJourneyV2(days:JourneyV2Length){
+ return requestV2("lab_v2_start",{p_plan_length:validLength(days)});
+}
+/** Reads server-authoritative timestamps; never calculates a deadline to commit to SQL. */
+export function syncJourneyV2(runId:string){
+ return requestV2("lab_v2_sync",{p_run:validRunId(runId)});
+}
+export function activateJourneyV2(runId:string,stage:number){
+ return requestV2("lab_v2_activate",{
+  p_run:validRunId(runId),p_stage:validStage(stage)
+ });
+}
+export function confirmJourneyV2Chapter(runId:string,stage:number,chapterId:string){
+ if(!/^\d{1,2}:\d{1,3}$/.test(chapterId))throw Error("Capítulo inválido.");
+ return requestV2("lab_v2_confirm",{
+  p_run:validRunId(runId),p_stage:validStage(stage),p_chapter:chapterId
+ });
+}
+/** Read-only canonical reference; the server is the source of truth for progression. */
+export async function getJourneyV2Chapters(days:JourneyV2Length,stage:number):Promise<JourneyV2Chapter[]>{
+ assertV2ClientEnabled();
+ const {data,error}=await supabase!.from("lab_v2_plan_chapters")
+  .select("day_number,slot,chapter_id")
+  .eq("plan_length",validLength(days))
+  .eq("day_number",validStage(stage))
+  .order("slot",{ascending:true});
+ if(error)throw error;
+ const chapters=(data??[]) as JourneyV2Chapter[];
+ if(chapters.length<3||chapters.length>4)throw Error("Plano V2 incompleto neste servidor.");
+ return chapters;
+}
