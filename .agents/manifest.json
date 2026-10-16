@@ -37,7 +37,17 @@
     "production_mutations_from_ai_workflow": false,
     "llm_can_execute_commands": false,
     "llm_can_write_repository": false,
-    "live_backup_required_before_destructive_operations": true
+    "live_backup_required_before_destructive_operations": true,
+    "workflow_call_order": [
+      "backend-engineer",
+      "database-engineer",
+      "security-engineer",
+      "frontend-ux-engineer",
+      "qa-reliability-engineer",
+      "integration-engineer",
+      "platform-observability-engineer",
+      "ai-engineer"
+    ]
   },
   "agents": [
     {

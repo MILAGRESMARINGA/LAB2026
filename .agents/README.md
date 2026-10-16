@@ -16,7 +16,7 @@ As especialidades anteriores de arquitetura principal, cânon, plano anual e gam
 ## Execução e limites
 
 - LAB CI valida os contratos e executa testes determinísticos em ambientes efêmeros; não chama IA de produção nem altera produção.
-- `.github/workflows/ai-agent-orchestrator.yml` é um fluxo opcional, manual (`workflow_dispatch)), com uma chamada por agente em sequência, limite de uma execução por 24 horas e limites de entrada/saída do manifesto.
+- `.github/workflows/ai-agent-orchestrator.yml` é um fluxo opcional e manual (`workflow_dispatch`): chama os sete especialistas em sequência e passa suas notas validadas ao `ai-engineer` para síntese final, dentro de uma execução por 24 horas e dos limites de entrada/saída do manifesto.
 - O segredo `OPENAI_API_KEY` é opcional. Sem ele, o fluxo registra `SKIPPED` sem enviar qualquer requisição. Esta configuração não leu, criou ou alterou segredos; nenhuma inferência ao vivo foi executada aqui.
 - O workflow fornece somente permissões GitHub `contents:read` e `actions:read`. O modelo não recebe ferramentas, credenciais Supabase/Vercel, conteúdo de usuário, PII ou dumps. Nenhuma saída do modelo é executada, gravada no repositório ou usada para aprovar produção.
 - Chamadas de API podem gerar cobrança. A autorização de uso não representa custo zero: os limites rígidos estão em `manifest.json`. Não faça upgrade de planos nem repita chamadas para contornar quotas.

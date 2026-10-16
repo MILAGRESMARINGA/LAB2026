@@ -20,6 +20,16 @@ assert.equal(manifest.orchestration.llm_inference_enabled_by_default, false, "LL
 assert.equal(manifest.orchestration.production_mutations_from_ai_workflow, false, "AI workflow cannot mutate production");
 assert.equal(manifest.orchestration.llm_can_execute_commands, false, "LLM output must never execute commands");
 assert.equal(manifest.orchestration.llm_can_write_repository, false, "AI workflow must not write to the repository");
+assert.deepEqual(manifest.orchestration.workflow_call_order, [
+  "backend-engineer",
+  "database-engineer",
+  "security-engineer",
+  "frontend-ux-engineer",
+  "qa-reliability-engineer",
+  "integration-engineer",
+  "platform-observability-engineer",
+  "ai-engineer"
+], "AI runtime must run seven specialists sequentially and synthesize last with ai-engineer");
 assert.equal(manifest.cost_policy.incremental_cost_limit_brl, null, "do not claim a zero or unspecified BRL limit");
 assert.equal(manifest.cost_policy.api_usage, "owner-authorized-bounded-and-potentially-billable");
 assert.equal(manifest.cost_policy.no_paid_plan_upgrade, true);

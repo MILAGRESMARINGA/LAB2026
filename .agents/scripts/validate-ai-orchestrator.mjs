@@ -20,7 +20,20 @@ for (const forbidden of ["SUPABASE_ACCESS_TOKEN", "SUPABASE_DB_PASSWORD", "SUPAB
 assert.doesNotMatch(workflow, /supabase\s+(db\s+push|functions\s+deploy)/i);
 assert.match(runner, /if \(!process\.env\.OPENAI_API_KEY\)/, "missing key must fail closed before provider calls");
 assert.match(runner, /await enforceDailyRunLimit\(\)/);
-assert.match(runner, /for \(let index = 0; index < agents\.length; index\+\+\)/, "model calls must be sequential");
+assert.match(runner, /for \(const agent of agents\)/, "model calls must be sequential");
+assert.match(runner, /JSON\.stringify\(workflowCallOrder\)/);
+assert.match(runner, /Seven specialist notes \(JSON data\)/, "lead synthesis must receive specialist handoffs as data");
+assert.match(runner, /maximumOrchestratorRequest/, "worst-case synthesis input must be counted before the first call");
+assert.deepEqual(manifest.orchestration.workflow_call_order, [
+  "backend-engineer",
+  "database-engineer",
+  "security-engineer",
+  "frontend-ux-engineer",
+  "qa-reliability-engineer",
+  "integration-engineer",
+  "platform-observability-engineer",
+  "ai-engineer"
+]);
 assert.match(runner, /https:\/\/api\.openai\.com\/v1\/responses/);
 assert.match(runner, /max_output_tokens: caps\.max_output_tokens_per_call/);
 assert.match(runner, /store: false/);
