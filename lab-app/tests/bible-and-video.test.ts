@@ -40,8 +40,8 @@ describe("Vídeos BibleProject integrados",()=>{
   expect(player.exact).toBe(false);
   expect(player.src).toBeNull();
   const marcos=getBibleProjectVideoForChapter("Marcos",1)!;
-  expect(embeddedPlayer(marcos,"Marcos").src).toBeNull();
-  expect(embeddedPlayer(marcos,"Marcos").exact).toBe(false);
+  expect(embeddedPlayer(marcos,"Marcos").exact).toBe(true);
+  expect(embeddedPlayer(marcos,"Marcos").src).toMatch(/^https:\/\/player\.mux\.com\//);
  });
  it("não aceita referências bíblicas fora do cânon",async()=>{
   await expect(readBibleChapter("67:1")).rejects.toThrow("Referência inválida");
