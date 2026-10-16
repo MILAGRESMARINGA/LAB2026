@@ -50,12 +50,17 @@ Segunda 06:00 ativa etapa 1; segunda 08:00 conclui a leitura; terça 06:00 etapa
 - Se o capítulo gera +10 antes de fechar a etapa, penalidade de fechamento deve entrar no ledger como evento **único de ajuste**; `scorecard` reconcilia tudo de forma determinística, inclusive futuros bônus por Bíblia completa.
 - Não permitir saldo negativo por etapa. Saldos globais são resultados de fontes verificadas; não editar XP diretamente no cliente.
 
-## 5. Regra de vidas (**parte de negócio ainda em avaliação**)
+## 5. Regra de vidas (**renovação mensal aprovada; cota e gatilho espiritual ainda em avaliação**)
 - Padrão solicitado: três vidas mensais; ao consumir a terceira, o **próximo** vencimento sem vida encerra tentativa, retornando ao Gênesis/etapa 1; recordes e XP histórico preservados. Cada vencimento distinto consome no máximo uma vida em transação.
 - **PROPOSTA:** a vida permite UMA extensão de 24h para concluir a etapa atual ou iniciá-la se ainda READY. Se não cumprir, outra janela cobra outra vida. Não existe resgate automático de capítulo não lido.
 - Para impedir abuso na virada do mês, eventos de vencimento são processados em ordem cronológica, sem recomputar vidas retroativamente por alterar data/fuso, reabrir app ou redefinir sessão.
 - **Cuidado com a Santa Ceia:** a mecânica de +3 vidas por declaração de participação e +1 vida por não participação ainda **NÃO ESTÁ APROVADA**. É autodeclaração não verificável, pode incentivar falsidade e inferir dado religioso sensível. Recomenda-se **3 vidas a todos** por mês e estudo devocional sobre Santa Ceia completamente opcional e separado de XP/vidas; confirmar com responsável antes de implementar.
-- Ao entrar em um mês novo, o saldo é restaurado à cota mensal sem acumular 6, 9 ou 12 vidas; não há transferência de sobra. A cota do mês e o período devem ser calculados no servidor.
+- **REGRA APROVADA:** a virada do mês apenas **renova o saldo mensal de vidas disponíveis** (até a cota aprovada, sem acumulá-las). Ela **não reinicia o relógio de 24h**, **não zera a carência de 6h**, **não cancela penalidades**, **não perdoa eventos de vencimento anteriores** e **não reabre tentativas encerradas**. Saldo e mês calculados pelo servidor com fuso fixo da Jornada.
+- Para cada **incidente de atraso**, registrar `occurred_at`, `period_key` (YYYY-MM no fuso fixo), `stage_id`, `incident_id`, consumo(s) de vida e vencimento(s) da(s) extensão(ões) em um ledger próprio. **Vidas do mês seguinte não podem financiar nem prolongar um incidente iniciado no mês anterior.** Um incidente em andamento mantém seu prazo e o orçamento de resgate do mês de origem, mesmo após a virada, enquanto estiver recuperável.
+- **Precisão na virada:** se a etapa foi ativada em 31/10 às 22h, seu prazo normal termina em 01/11 às 22h e a carência em 02/11 às 04h. Não há falha automática às 00h de 01/11; caso venha a ocorrer um atraso pela primeira vez em novembro, ele pertence a novembro, não outubro.
+- Se um incidente ocorreu em 31/10 às 23h, vidas de novembro **não** podem resgatá-lo nem renovar suas extensões. Mesmo sem o jogador abrir o app, a sincronização posterior deve processar eventos **na ordem de seus timestamps reais** e encerrar a tentativa quando faltarem vidas no período devido; nunca reagendar falhas para depois da virada.
+- **Encerramento definitivo da tentativa:** se o quarto incidente exigir uma vida sem saldo no mês aplicável, a tentativa falha naquele instante, e permanece falha após 01/11. A nova tentativa inicia etapa 1 com 0 XP ativo, enquanto recordes e conquistas da tentativa encerrada ficam apenas na vitrine histórica, sem transferência para a nova sequência.
+- **Nunca usar o mês de abertura do aplicativo** para determinar o saldo aplicável a um atraso antigo. Regra antifraude válida para offline, diferença de fuso, alteração do relógio local, sessões paralelas e reabertura após semanas.
 - A melhor marca exibida só sobe quando etapas reais são concluídas. Recomendar exibir separadamente "sequência sem atrasos" e "etapas preservadas com vidas".
 
 ## 6. Pontuação por tentativa: marcas antigas são obstáculos, não saldo herdado (REGRA CONFIRMADA)
@@ -87,6 +92,16 @@ Segunda 06:00 ativa etapa 1; segunda 08:00 conclui a leitura; terça 06:00 etapa
 - Com ativações móveis de 24h, "ciclo de 365 etapas" não necessariamente termina em 365 dias civis se houver atraso tolerado ou vidas consumidas. Não anunciar "Bíblia inteira exatamente em 365 dias de calendário" quando o relógio rolante puder estender o ciclo.
 - Para 366, definir versão canônica separada e critério de elegibilidade (por ano civil de início? pelo calendário que inclui 29/02? escolha manual antes de começar?). Não inventar um 366º dia no plano atual.
 - O aplicativo usa São Paulo como referência em código para vários cálculos; tempos rolantes devem ser guardados em instantes UTC para evitar relógios diferentes e horário de verão, com timezone estável para renovação mensal de vidas.
+
+## 7A. Testes obrigatórios — virada do mês (aprovado)
+
+1. **Saldo não acumulativo:** 2 vidas restantes em outubro, cota de novembro restaurada ao valor mensal; saldo de outubro não soma ao de novembro para novos incidentes.
+2. **Prazo ativo atravessando o dia 1º:** etapa 31/10 22h → vence 01/11 22h → carência acaba 02/11 04h; não cobrar vida na virada.
+3. **Falha de outubro ainda aberta em novembro:** débito e extensões usam o saldo de outubro; não consumir vidas novas de novembro para o mesmo incidente.
+4. **Falha de outubro já fatal:** tentativa encerrada em outubro continua encerrada no dia 1º, com `run_xp=0` ao iniciar outra; histórico é só referência.
+5. **Ausência prolongada/offline:** o backend reconstrói prazos cronologicamente e aplica consequências retroativamente à hora **real** do vencimento, sem lançar etapas fictícias nem alterar períodos.
+6. **Duas sessões simultâneas:** ledger e lock garantem um único débito por evento e impedem despesas duplicadas/reabertura por corrida.
+7. **Desconto de XP:** um vencimento de prazo e carência existente não perde nem recupera penalidade no primeiro dia do mês.
 
 ## 8. Questões que exigem decisão ANTES de implementar
 1. **Antecipação versus congelamento:** aprovar janela de ativação de até **6 horas depois de READY**, seguida de consumo de vidas? A carência de leitura e a carência de ativação são conceitos diferentes.
