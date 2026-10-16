@@ -18,3 +18,8 @@ export function selectJourneyNotice(input:Input):JourneyNoticeKind|null{
  }
  return input.readingPopup?"reading":null;
 }
+
+/** One persisted foreground notice per user and journey day/stage. */
+export function dailyNoticeStorageKey(userId:string,journeyDay:string):string{
+ return "labgame-notice:"+userId+":"+journeyDay;
+}

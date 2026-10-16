@@ -1,6 +1,6 @@
 import {useEffect,useState} from "react";
 import {Bell,BookOpen,Clock3,Flame,X} from "lucide-react";
-import {selectJourneyNotice,type JourneyNoticeKind} from "../domain/journey-notice";
+import {dailyNoticeStorageKey,selectJourneyNotice,type JourneyNoticeKind} from "../domain/journey-notice";
 import {DEFAULT_NOTICES,loadNoticePreferencesOnly,type NoticePreferences} from "../features/profile-settings";
 
 type Props={
@@ -54,7 +54,7 @@ export function DailyInAppPopup({
  });
  useEffect(()=>{
   if(!userId||!day||!today||!kind||!visibleOnJourney){setOpen(null);return}
-  const key="labgame-notice:"+userId+":"+today;
+  const key=dailyNoticeStorageKey(userId,today);
   if(seen(key)){setOpen(null);return}
   // Mark on display so route changes/reloads cannot repeat a daily notice.
   markSeen(key);setOpen(kind);

@@ -1,5 +1,5 @@
 import {describe,expect,it} from "vitest";
-import {selectJourneyNotice} from "../src/domain/journey-notice";
+import {dailyNoticeStorageKey,selectJourneyNotice} from "../src/domain/journey-notice";
 
 const base={
  visibleOnJourney:true,readingComplete:false,now:Date.parse("2026-10-16T10:00:00Z"),
@@ -20,6 +20,12 @@ describe("Avisos gratuitos da jornada",()=>{
   expect(selectJourneyNotice({...base,readingComplete:true})).toBeNull();
   expect(selectJourneyNotice({...base,visibleOnJourney:false})).toBeNull();
   expect(selectJourneyNotice({...base,stagePopup:false})).toBe("reading");
+ });
+ it("limita a um aviso persistente por pessoa e etapa do dia",()=>{
+  const first=dailyNoticeStorageKey("reader-1","run-1:7");
+  expect(first).toBe(dailyNoticeStorageKey("reader-1","run-1:7"));
+  expect(first).not.toBe(dailyNoticeStorageKey("reader-1","run-1:8"));
+  expect(first).not.toBe(dailyNoticeStorageKey("reader-2","run-1:7"));
  });
  it("ignora prazos ausentes ou malformados e mantém só o lembrete autorizado",()=>{
   expect(selectJourneyNotice({...base,normalDeadlineAt:null})).toBe("reading");
