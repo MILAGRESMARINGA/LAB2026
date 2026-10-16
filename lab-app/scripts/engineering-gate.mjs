@@ -34,10 +34,9 @@ const required=[
  "lab-app/src/lib/supabase.ts"
 ];
 const specialistRoles=[
- "principal-architect","backend-engineer","database-engineer",
- "security-engineer","qa-reliability-engineer","frontend-ux-engineer",
- "integration-engineer","platform-observability-engineer","ai-engineer",
- "reading-plan-engineer","biblical-canon-engineer","gamification-engineer"
+ "ai-engineer","backend-engineer","database-engineer","security-engineer",
+ "frontend-ux-engineer","qa-reliability-engineer","integration-engineer",
+ "platform-observability-engineer"
 ];
 const errors=[];
 export function walk(root){
