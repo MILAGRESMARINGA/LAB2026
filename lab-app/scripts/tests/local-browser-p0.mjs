@@ -48,7 +48,7 @@ try{
  // Cancelling an irreversible action must never erase progress.
  await page.getByRole("button",{name:"ZERAR JORNADA",exact:true}).click();
  await page.getByRole("alertdialog").waitFor();
- await page.getByRole("button",{name:"CANCELAR"}).click();
+ await page.getByRole("alertdialog").getByRole("button",{name:"CANCELAR",exact:true}).click();
  assert.equal(await page.getByRole("alertdialog").count(),0);
 
  mkdirSync("/tmp/labgame-ux",{recursive:true});
