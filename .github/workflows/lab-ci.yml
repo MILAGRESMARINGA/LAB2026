@@ -220,3 +220,43 @@ jobs:
       - name: Tear down ephemeral test stack
         if: always()
         run: npx --yes supabase@latest stop --no-backup || true
+
+  agent-contract:
+    name: Validate the official eight-agent contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Validate manifest, prompts and shared guardrails
+        run: node .agents/scripts/validate-manifest.mjs
+
+  p0-orchestrator:
+    name: Assemble P0 closure evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [verify, v2-postgres, supabase-local-auth, agent-contract]
+    if: always()
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Publish evidence summary and enforce green gates
+        env:
+          LAB_VERIFY: ${{ needs.verify.result }}
+          LAB_POSTGRES: ${{ needs.v2-postgres.result }}
+          LAB_AUTH: ${{ needs.supabase-local-auth.result }}
+          LAB_AGENTS: ${{ needs.agent-contract.result }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: node .agents/scripts/write-p0-ci-report.mjs

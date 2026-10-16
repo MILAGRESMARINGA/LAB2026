@@ -1,52 +1,58 @@
-# LABGAME — Protocolo de agentes, handoffs e autorização
+# LABGAME 3.0 — protocolo oficial de execução
 
-**Owner:** principal-architect. **Status:** agentes são **contratos documentados**, não estão executando autonomamente nem têm autorização implícita para modificar a produção.
+## Escopo
 
-## Despacho por papel
+Repositório MILAGRESMARINGA/LAB2026, branch lab-rebuild-2026; código em lab-app/. CRMIMOBI é independente e está fora de escopo.
 
-| Papel | Quando acionar | Entrega obrigatória |
+Os prompts em agents/*/agent.md definem os papéis. GitHub Actions executa validações determinísticas e a suíte de CI; não há runtime de LLM conectado. O ai-engineer coordena o plano e evidencia resultados, sem tratar arquivos Markdown como agentes de IA ativos.
+
+## Orquestração
+
+| Ordem | Agente | Entrega |
 |---|---|---|
-| principal-architect | Mudança de escopo, arquitetura, integração, release | ADR/RFC, fronteiras, aceite e status |
-| biblical-canon-engineer | Alterar Bíblia/cânon/tradução | integridade 66/1.189, edição/licença/versificação |
-| reading-plan-engineer | Plano anual, calendários, fuso | 365/366, máximo 4/dia, compatibilidade v1 |
-| gamification-engineer | XP, recordes, chama, rankings | fórmulas SQL, idempotência, casos de fraude |
-| backend-engineer | API, RPC, edge function, autorização | contrato typed, validações, rate limits, testes |
-| database-engineer | Migration, RLS, schema, rollback | diff SQL, GRANT/REVOKE, backup/staging, testes multi-user |
-| frontend-ux-engineer | Tela mobile, onboarding, leitor, vídeos | acessibilidade, fluxos de erro e validação real |
-| ai-engineer | Exegese RAG, JSON Schema, flashcards | prompt/corpus/modelo versionados, fontes, benchmark, safety |
-| integration-engineer | Supabase Auth, SMTP, Vercel, BibleProject | teste end-to-end real, DNS/redirects, segredos server-side |
-| security-engineer | Mudança de auth, RLS, dados, links, IA, deploy | threat model, risco/severidade, testes e veto de release |
-| qa-reliability-engineer | Qualquer alteração de comportamento | casos positivos/negativos, testes e evidências |
-| platform-observability-engineer | CI/CD, logs, backups, incidentes, releases | gate, smoke/rollback, métricas, rastreabilidade |
+| 1 | ai-engineer | Plano, dependências, custo zero e estado por gate |
+| 2 | backend-engineer | APIs, RPCs e Edge Functions testáveis |
+| 3 | database-engineer | migrations incrementais, backup/restore e integridade |
+| 4 | integration-engineer | Auth, e-mail e webhooks gratuitos comprovados |
+| 5 | frontend-ux-engineer | fluxos acessíveis compatíveis com os contratos |
+| 6 | security-engineer | revisão independente de privilégios, RLS e privacidade |
+| 7 | qa-reliability-engineer | PG16/PG17, Auth/RLS e testes E2E |
+| 8 | platform-observability-engineer | CI, limites Free Tier, logs e rollback |
+| 9 | ai-engineer | integra evidências; encerra APROVADO, REPROVADO ou BLOQUEADO |
 
-## Handoff padronizado
+Só paralelize tarefas independentes. Security e QA revisam após as mudanças. Mudanças de autenticação, banco ou publicação exigem ambos os pareceres.
 
-```
-REQUISITO: LAB-<n>
-OBJETIVO / IMPACTO:
-SISTEMA E FRONTEIRA: Supabase LABGAME / lab-app / Vercel (não CRM)
-ARQUIVOS E MIGRAÇÕES ALTERADOS:
-DECISÃO / ADR:
-RISCOS: segredos, LGPD, RLS, XP, IA, direitos autorais, acessibilidade
-TESTES EXECUTADOS: comandos, CI run, SQL testes, screenshots sem PII
-RESULTADO: verde, amarelo (bloqueado), vermelho (falha)
-ROLLBACK:
-PENDÊNCIAS E APROVAÇÃO HUMANA:
-```
+## Autonomia permitida
 
-## Política de veto e separação de poderes
-1. Security pode bloquear alteração de auth, RLS, dados, deploy e chaves mesmo com build verde; decisão escrita em relatório.
-2. QA pode bloquear entrega sem evidência de comportamento real exigido.
-3. database-engineer não executa migration destrutiva nem troca de projeto Supabase sem aprovação e backup.
-4. ai-engineer não publica conteúdo exegético sem fonte e revisão e não possui RPC de pontuação.
-5. Nenhum papel pode alegar revisão autônoma ou testes que não realizou. O arquiteto integra evidências, não substitui auditoria especializada independente.
-6. `main` não deve ser alterada automaticamente. Branch de reconstrução preserva o legado até plano de retirada aprovado.
+- Inspecionar, implementar e testar código/documentação LABGAME; criar commits em lab-rebuild-2026; rodar GitHub Actions gratuito.
+- Consultar o Supabase LABGAME azejfxvaamgkmfmwdzjn em modo somente leitura.
+- Corrigir falhas de CI e repetir os testes necessários.
+- Não fazer push em main, não alterar CRM e não publicar automaticamente.
 
-## Graus de autonomia
-- **Nível 0 agora:** especificações/checklists e assistência supervisionada.
-- **Nível 1 futuro:** agentes sugerem patches em branch sem credenciais, com logs e revisão humana.
-- **Nível 2 futuro:** agentes podem executar testes em ambientes isolados, jamais enviar e-mail de produção ou alterar dados sem autorização explícita.
-- **Autonomia em produção:** proibida até governança, credenciais escopadas, logs, rollback, aprovação e mitigação de prompt injection.
+## Gates de produção
 
-## Ordem mínima por mudança
-Requisito → principal-architect → especialistas afetados → segurança/QA → GitHub CI → deploy preview → validação humana → release e atualização documental.
+Antes de migration ou publicação de função, comprovar todos os itens:
+
+1. Custo incremental zero e projeto alvo confirmado como LABGAME.
+2. Backup atual fora do GitHub, manifesto SHA-256 e restauração em PostgreSQL isolado.
+3. Contagens/inventário comparados e migrations ensaiadas na cópia restaurada.
+4. Migrations reconciliadas com supabase_migrations.schema_migrations do banco real; divergências entre fontes bloqueiam.
+5. Parecer de segurança e QA, smoke tests e rollback praticável.
+6. Segredos confirmados no cofre do serviço, nunca em commit ou log.
+7. Ação de produção despachada explicitamente por pessoa autorizada. CI normal jamais executa migration, deploy, envio de e-mail ou exclusão.
+
+Dump e banco restaurado ficam no computador do responsável. Não envie backup para GitHub, artefatos, issues, ChatGPT ou serviços externos.
+
+## Sequência de fechamento P0
+
+Backup e restore → ensaio gratuito das migrations → auditoria das funções SECURITY DEFINER e proteção de senha vazada → migrations compatíveis em produção com V2 desligada → publicação de account-delete após validação de dependências e consentimento → e-mail opcional somente com provedor/remetente gratuitos verificados, consentimento e segredo cron forte → smoke, advisors, contagens e documentação.
+
+notify-reading-email não pode ser publicada/ativada sem provedor gratuito comprovado e segredo cron forte. Não presuma que Resend, SMTP ou domínio esteja configurado.
+
+## Relatório obrigatório
+
+Registre requisito, agente, alvo, alterações, custo, riscos, comandos, links de CI, testes reais, rollback, revisão de segurança/QA e pendências. Evidência ausente é BLOQUEADA.
+
+## Limite do orquestrador
+
+ai-engineer coordena sete especialistas e integra evidências. O workflow desta entrega valida contratos e testes do repositório; não possui credenciais, não chama LLM e não faz mutações de produção.

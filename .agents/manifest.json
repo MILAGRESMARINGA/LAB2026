@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "project": "LABGAME 3.0",
+  "repository": "MILAGRESMARINGA/LAB2026",
+  "working_branch": "lab-rebuild-2026",
+  "production_project_ref": "azejfxvaamgkmfmwdzjn",
+  "incremental_cost_limit_brl": 0,
+  "orchestration": {
+    "lead": "ai-engineer",
+    "runtime": "github-actions-deterministic-gates",
+    "llm_inference_configured": false,
+    "production_mutations_from_ci": false,
+    "live_backup_required_before_destructive_operations": true
+  },
+  "agents": [
+    {
+      "id": "ai-engineer",
+      "path": "agents/ai-engineer/agent.md",
+      "scope": "Orchestrate seven agents, sequence P0 closure, cost and evidence gates."
+    },
+    {
+      "id": "backend-engineer",
+      "path": "agents/backend-engineer/agent.md",
+      "scope": "Business logic, Deno/TypeScript Edge Functions, APIs, gamification, clock and timezone."
+    },
+    {
+      "id": "database-engineer",
+      "path": "agents/database-engineer/agent.md",
+      "scope": "PostgreSQL, Supabase migrations, Bible plan integrity and free pg_dump backup/restore."
+    },
+    {
+      "id": "security-engineer",
+      "path": "agents/security-engineer/agent.md",
+      "scope": "RLS, 13 app SECURITY DEFINER RPCs, search_path, server password validation and leaked-password protection."
+    },
+    {
+      "id": "frontend-ux-engineer",
+      "path": "agents/frontend-ux-engineer/agent.md",
+      "scope": "React/TypeScript UI, profile, notifications, account deletion and timezone."
+    },
+    {
+      "id": "qa-reliability-engineer",
+      "path": "agents/qa-reliability-engineer/agent.md",
+      "scope": "PG16/PG17, Auth/RLS, anti-CRM guard and end-to-end validation."
+    },
+    {
+      "id": "integration-engineer",
+      "path": "agents/integration-engineer/agent.md",
+      "scope": "Free transactional email, signup confirmation, recovery, redirects and webhooks."
+    },
+    {
+      "id": "platform-observability-engineer",
+      "path": "agents/platform-observability-engineer/agent.md",
+      "scope": "GitHub Actions, Vercel, secrets boundaries, logs and Free Tier monitoring."
+    }
+  ]
+}
