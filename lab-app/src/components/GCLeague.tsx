@@ -1,9 +1,11 @@
 import {useEffect,useState} from "react";
 import {CheckCircle2,Flame,ShieldCheck,Trophy,Users,RefreshCw} from "lucide-react";
 import {getGCLeague,setGCCompetition,type GCLeagueEntry} from "../features/lab-game";
+import {getV2GCLeague} from "../features/journey-v2";
 import type {ReadingGroup} from "../features/groups";
 
 type Props={userId:string;groups:ReadingGroup[];onGroupsChange:()=>Promise<void>};
+const leagueRequest=()=>import.meta.env.VITE_LAB_V2_READY==="true"?getV2GCLeague():getGCLeague();
 const errorText=(e:unknown)=>e instanceof Error?e.message:"Erro ao carregar a liga";
 export function GCLeague({userId,groups,onGroupsChange}:Props){
  const [rows,setRows]=useState<GCLeagueEntry[]>([]);
@@ -13,14 +15,14 @@ export function GCLeague({userId,groups,onGroupsChange}:Props){
  const load=async()=>{
   if(!participating){setRows([]);return}
   setBusy(true);setMessage("");
-  try{setRows(await getGCLeague())}
+  try{setRows(await leagueRequest())}
   catch(e){setRows([]);setMessage(errorText(e))}
   finally{setBusy(false)}
  };
  useEffect(()=>{
   if(!participating){setRows([]);return}
   let active=true;
-  void getGCLeague().then(data=>{if(active)setRows(data)}).catch(e=>{if(active)setMessage(errorText(e))});
+  void leagueRequest().then(data=>{if(active)setRows(data)}).catch(e=>{if(active)setMessage(errorText(e))});
   return()=>{active=false};
  },[participating,groups.map(g=>g.id+":"+g.competition_opt_in).join("|")]);
  const toggle=async(id:string,opt:boolean)=>{
