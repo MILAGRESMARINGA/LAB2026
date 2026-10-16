@@ -59,7 +59,9 @@ export async function resendSignUpConfirmation(email:string):Promise<void>{
 }
 export async function signOut(){
  if(!supabase)throw Error("Supabase não configurado");
- const {error}=await supabase.auth.signOut();
+ // End only this browser/device session. A global revoke can fail on unstable networks
+ // and should not be needed to switch accounts on the same device.
+ const {error}=await supabase.auth.signOut({scope:"local"});
  if(error)throw error;
 }
 export async function requestPasswordReset(email:string):Promise<void>{
