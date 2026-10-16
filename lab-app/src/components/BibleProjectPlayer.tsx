@@ -1,6 +1,6 @@
 import {useEffect,useRef,useState} from "react";
 import {CheckCircle2,ExternalLink,Expand,Video,X} from "lucide-react";
-import type {BibleProjectResource} from "../domain/bibleproject";
+import {getBibleProjectVideos,type BibleProjectResource} from "../domain/bibleproject";
 import {supabase} from "../lib/supabase";
 
 const OFFICIAL_MUX_PLAYBACK_IDS:Readonly<Record<string,string>>={
@@ -27,7 +27,35 @@ const OFFICIAL_MUX_PLAYBACK_IDS:Readonly<Record<string,string>>={
  "videos:jeremias":"3ceqGaBTq7r5DNblE01019mQOV3Rj7ypc3JN5uJj59Zus",
  "videos:joao-1-12":"6Jv9irM02dGz7GMMZNNcqjfmzmXZBiH78BmASX3pzhqs",
  "videos:joao-13-21":"UEnjYRzfjKhaFvkq948Ckssn01buvkwk1mLKXBYdyUaE",
- "videos:salmos":"FlTguobiqO4NInc005m6CA4H3cDTkdm7uyqB2ZT4fc3Q",
+ "videos:mateus-1-13":"nfYNd800BhBFWohsDw00LfoAz4f021EjnzmU5E02Y7VMoEU",
+ "videos:mateus-14-28":"bK7g4dG1WnZcl02pEPcb02br3H8S1xiSstDdLRrqgZ02KE",
+ "videos:marcos-2":"CRMK021k00QXKBKV4s1ExWhLJKN8uaLBu24FgP2vzY5CE",
+ "videos:lucas-1-9":"PWk9pxAM2NhklJKJomFac52fgNJuRMONul01KxM5RXcI",
+ "videos:lucas-10-24":"ipWkLjl5oGmG19xEcVbrupDMvgIlz43d2ORlxwsf6Xc",
+ "videos:atos-1-12":"rWSJyUjSiv5s00MavFUlRqqEZulMq802L2hLSVkI7SchU",
+ "videos:atos-13-28":"Utitpuot2bNP02dXpd6N7c2InESXk01NARvOEKQQyn7aY",
+ "videos:romanos-1-4":"2hGAOu44gIuAOe2z8kqXZhYTK1YUqx82IiYuyMq4KBM",
+ "videos:romanos-5-16":"qZ5Mg1DuchbtbAcPep1A602uvYPlbM1v2F01ZlQ7Ai55g",
+ "videos:1corintios":"AtYnAO01XUFOFrAaqkORbxv3OCAxW6vdLAaLSaqgewNA",
+ "videos:2corintios":"nIdmJHKx6f8IVFHpKnQop02E7kyPA9tEZ4hdwrMi7w8c",
+ "videos:galatas":"oLjxjLIkZpSbJJ9WJcdhs39clc02nEOpwNtiffe8p0038",
+ "videos:efesios":"EuMR02UspOSJHfbOY43OfJI8qk4wjlJhmt1KIHztJDcU",
+ "videos:filipenses":"6hlPcqnFt7E02QWG6TAiJ2M9IvV6vzv2VZW6gb1AfopQ",
+ "videos:colossenses":"hMz3Wx97IovrTutPF3OqLqzIZfwplS5DlIhoGi9eadA",
+ "videos:1tessalonicenses":"o02ToAoND02VLhYwCvG1O02MpCKN502CLJcpD22tGz2pR7Y",
+ "videos:2tessalonicenses":"Q65fnMLb1Uyz7PWk01VQVlyEds5IFWKmCYvAMpMNAcVg",
+ "videos:1timoteo":"u800xuNT7mqErGQdH3gU26DJBcHgOmF8OLP00uDcu01HIw",
+ "videos:2timoteo":"YPntXEQqKujGMS02pFmfN6Q18r29iow5jwpLB2PrUpCs",
+ "videos:tito":"VwkCMdh6DlZl02vmv02wtbzYBQkS4UQuqABHoRgjZv2ug",
+ "guides:1-3-joao":"AqUl2T01yD2bH2I9P8yuQZ4EC14SRMmMe01LzA24y5bhE",
+ "videos:filemom":"a3lwrpVU01GSECxh9rhATXLe5m8rTVAk011Js01vdW4T9M",
+ "videos:hebreus":"cspbnTdGU7A9Y1oY1KphzyZtndjKtpIu2022FPQVq7GI",
+ "videos:tiago":"mz025eqzhDIv63JVb7HKkEpa3BYCR8gIp1018FkcEg8WQ",
+ "videos:1pedro":"1za5vooWRn17hqXiBeownSito1ecWb01LvhFfoPGIZqY",
+ "videos:2pedro":"l9xZsV2eK5nkD8vkAhuvDT4sPIPTNtnwmU02O8wNeNyA",
+ "guides:judas":"nlXju3pDdAwSxzcCKF2Mew007Z2qXCvdn02xqSjTk4oKY",
+ "videos:apocalipse-12-22":"WaVo01zoFRLZr005yk001qCOjbM9juOtJjk2BeKyaNG016s",
+  "videos:salmos":"FlTguobiqO4NInc005m6CA4H3cDTkdm7uyqB2ZT4fc3Q",
  "videos:apocalipse-1-11":"bUN4JzBxt601knsms5I0201NA46LUH8DxAdHUyaxwdBbxc"
 };
 export function videoKeyFromUrl(url:string):string{
@@ -38,6 +66,8 @@ export function videoKeyFromUrl(url:string):string{
  return parts.slice(-2).join(":");
 }
 export function embeddedPlayer(resource:BibleProjectResource,_book:string):{src:string;exact:true}|{src:null;exact:false}{
+ const matchesBook=getBibleProjectVideos(book).some(item=>item.url===resource.url);
+ if(!matchesBook)return {src:null,exact:false};
  const key=videoKeyFromUrl(resource.url);
  const playback=OFFICIAL_MUX_PLAYBACK_IDS[key];
  if(playback)return {src:"https://player.mux.com/"+playback,exact:true};
