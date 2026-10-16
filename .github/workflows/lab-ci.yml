@@ -5,14 +5,12 @@ on:
     branches: [lab-rebuild-2026]
     paths:
       - 'lab-app/**'
-      - 'docs/**'
       - '.agents/**'
       - '.github/workflows/lab-ci.yml'
       - '.github/PULL_REQUEST_TEMPLATE.md'
   pull_request:
     paths:
       - 'lab-app/**'
-      - 'docs/**'
       - '.agents/**'
       - '.github/workflows/lab-ci.yml'
       - '.github/PULL_REQUEST_TEMPLATE.md'
@@ -120,11 +118,25 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Boot disposable Supabase locally (Auth, REST, Postgres)
         run: |
-          npx --yes supabase@latest start --exclude realtime,storage,functions,studio,analytics,pooler > /tmp/labgame-supabase-start.log 2>&1 || {
-            echo "Local Supabase failed to initialize; safe migration/error lines:";
-            grep -Ei 'migration|error|failed|fatal' /tmp/labgame-supabase-start.log | tail -30 || true;
+          # The runner is temporary. Remove only containers belonging to this
+          # LABGAME test project if an earlier canceled run left them behind.
+          npx --yes supabase@latest stop --no-backup >/dev/null 2>&1 || true
+          docker ps -aq --filter 'name=supabase_.*_labgame-free-ci' | xargs -r docker rm -f >/dev/null 2>&1 || true
+          success=0
+          for attempt in 1 2 3; do
+            if npx --yes supabase@latest start --exclude realtime,storage,functions,studio,analytics,pooler > /tmp/labgame-supabase-start.log 2>&1; then
+              success=1
+              break
+            fi
+            echo "Local test infrastructure unavailable (attempt $attempt of 3)"
+            grep -Ei 'toomanyrequests|address already in use|failed to start docker' /tmp/labgame-supabase-start.log | tail -8 || true
+            npx --yes supabase@latest stop --no-backup >/dev/null 2>&1 || true
+            if [ "$attempt" -lt 3 ]; then sleep $((attempt*10)); fi
+          done
+          if [ "$success" -ne 1 ]; then
+            echo "Failed to boot ephemeral Supabase; never fall back to production.";
             exit 1;
-          }
+          fi
           npx --yes supabase@latest status -o env > /tmp/labgame-supabase-ci.env
       - name: Exercise two real local Auth sessions and RLS
         env:
