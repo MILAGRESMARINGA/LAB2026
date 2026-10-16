@@ -17,6 +17,7 @@ const pwd="labLOCAL-strong-4game-2026!";
 function seedEphemeralBibleVerses(){
  // Local Supabase has no Bible import; synthetic rows stay inside the disposable test DB.
  const sql=[
+  "INSERT INTO public.lab_bible_chapters(edition,chapter_id,book_name,chapter_number,verses)\nVALUES\n ('ALM1911','1:1','Gênesis',1,'[{\"verse_number\":1,\"text\":\"Fixture local de Gênesis 1:1.\"}]'::jsonb),\n ('ALM1911','19:1','Salmos',1,'[{\"verse_number\":1,\"text\":\"Fixture local de Salmos 1:1.\"}]'::jsonb),\n ('ALM1911','43:1','João',1,'[{\"verse_number\":1,\"text\":\"Fixture local de João 1:1.\"}]'::jsonb)\nON CONFLICT(edition,chapter_id) DO NOTHING;",
   "CREATE TABLE IF NOT EXISTS public.lab_bible_verses(edition text NOT NULL,chapter_id text NOT NULL,verse_number smallint NOT NULL,verse_text text NOT NULL,PRIMARY KEY(edition,chapter_id,verse_number));",
   "ALTER TABLE public.lab_bible_verses ENABLE ROW LEVEL SECURITY;",
   "REVOKE ALL ON public.lab_bible_verses FROM PUBLIC,anon,authenticated;",
