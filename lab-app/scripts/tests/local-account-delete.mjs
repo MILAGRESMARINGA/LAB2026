@@ -42,7 +42,9 @@ try{
  const [a,b]=actors;
  assert.equal((await request(null,"EXCLUIR CONTA",a.email)).status,401);
  assert.equal((await request(a.token,"INVALIDO",a.email)).status,400);
- assert.equal((await request(a.token,"EXCLUIR CONTA",b.email)).status,400);\n assert.equal((await request(a.token,"EXCLUIR CONTA",a.email,undefined,"")).status,400);\n assert.equal((await request(a.token,"EXCLUIR CONTA",a.email,undefined,"incorrect-pass")).status,403);
+ assert.equal((await request(a.token,"EXCLUIR CONTA",b.email)).status,400);
+ assert.equal((await request(a.token,"EXCLUIR CONTA",a.email,undefined,"")).status,400);
+ assert.equal((await request(a.token,"EXCLUIR CONTA",a.email,undefined,"incorrect-pass")).status,403);
  assert.equal((await request(a.token,"EXCLUIR CONTA",a.email,"https://evil.example")).status,403);
 
  const {data:group,error:groupError}=await admin.from("reading_groups")

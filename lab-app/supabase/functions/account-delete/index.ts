@@ -48,7 +48,15 @@ Deno.serve(async req=>{
   if(authError||!user?.id||!user.email)return response(401,{message:"Sessão inválida."},origin);
   if(user.email.trim().toLowerCase()!==payload.email_confirmation.trim().toLowerCase())
    return response(400,{message:"E-mail não corresponde à conta."},origin);
-  // Never rely only on auth.users.last_sign_in_at: it is shared across all\n  // devices/sessions. Require this request to prove the account password.\n  // Do not log, persist or return the password or the sign-in tokens.\n  const {data:reauthenticated,error:passwordError}=await authClient.auth.signInWithPassword({\n   email:user.email,password:payload.password\n  });\n  if(passwordError||reauthenticated.user?.id!==user.id)\n   return response(403,{message:"Confirme sua senha para excluir a conta."},origin);\n  const admin=createClient(url,serviceKey,{auth:{autoRefreshToken:false,persistSession:false}});
+  // Never rely only on auth.users.last_sign_in_at: it is shared across all
+  // devices/sessions. Require this request to prove the account password.
+  // Do not log, persist or return the password or the sign-in tokens.
+  const {data:reauthenticated,error:passwordError}=await authClient.auth.signInWithPassword({
+   email:user.email,password:payload.password
+  });
+  if(passwordError||reauthenticated.user?.id!==user.id)
+   return response(403,{message:"Confirme sua senha para excluir a conta."},origin);
+  const admin=createClient(url,serviceKey,{auth:{autoRefreshToken:false,persistSession:false}});
   const {data:{user:verified},error:adminError}=await admin.auth.admin.getUserById(user.id);
   if(adminError||!verified)return response(403,{message:"Não foi possível verificar a conta."},origin);
   const signedIn=Date.parse(verified.last_sign_in_at??"");

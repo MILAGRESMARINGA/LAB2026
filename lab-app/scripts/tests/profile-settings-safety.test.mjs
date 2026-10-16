@@ -32,7 +32,9 @@ test("full reset requires a recently reauthenticated user and explicit typed phr
 test("account deletion is server-only and blocks GCs that have other members",()=>{
  assert.match(edge,/SUPABASE_SERVICE_ROLE_KEY/);
  assert.match(edge,/auth\.getUser\(jwt\)/);
- assert.match(edge,/auth\.admin\.getUserById\(user\.id\)/);\n assert.match(edge,/auth\.signInWithPassword\(/);\n assert.match(edge,/reauthenticated\.user\?\.id!==user\.id/);
+ assert.match(edge,/auth\.admin\.getUserById\(user\.id\)/);
+ assert.match(edge,/auth\.signInWithPassword\(/);
+ assert.match(edge,/reauthenticated\.user\?\.id!==user\.id/);
  assert.match(edge,/auth\.admin\.deleteUser\(user\.id\)/);
  assert.match(edge,/confirmation!=="EXCLUIR CONTA"/);
  assert.match(edge,/\.neq\("user_id",user\.id\)/);
