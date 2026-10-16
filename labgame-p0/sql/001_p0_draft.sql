@@ -33,9 +33,11 @@ create index if not exists lab_notifications_user_created_idx on public.lab_noti
 alter table public.lab_notifications enable row level security;
 create policy "p0_notifications_select_own" on public.lab_notifications for select to authenticated using ((select auth.uid()) = user_id);
 -- Envio de notificações reservado ao backend confiável. Cliente não pode inventar notificações.
+-- Apenas leitura e alteração da coluna read_at. Operações de INSERT/DELETE reservadas ao backend.
+revoke insert, delete, update on public.lab_notifications from anon, authenticated;
+grant select on public.lab_notifications to authenticated;
+grant update (read_at) on public.lab_notifications to authenticated;
 create policy "p0_notifications_update_own" on public.lab_notifications for update to authenticated
 using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
 commit;
--- ATENÇÃO: UPDATE amplo permite alterar conteúdo de notificações do próprio usuário.
--- Antes da aplicação: restringir campos mutáveis a read_at por RPC segura ou papel/trigger;
--- revisar privilégios UPDATE para não liberar title/body/kind.
+-- Antes da aplicação, auditar GRANTs efetivos e políticas concorrentes. Rascunho, não homologado.
