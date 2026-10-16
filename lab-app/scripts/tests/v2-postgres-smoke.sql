@@ -391,3 +391,27 @@ BEGIN
 END $notice$;
 RESET ROLE;
 SELECT 'LAB PROFILE AND NOTIFICATION MATRIX PASSED' AS result;
+
+
+-- Optional email audit has private, append-only browser visibility.
+\i supabase/migrations/202610160107_notification_delivery_audit.sql
+INSERT INTO public.lab_notification_deliveries
+ (user_id,category,channel,local_day,status)
+ VALUES('11111111-1111-4111-8111-111111111111','reading','email',DATE '2026-10-16','reserved');
+SELECT set_config('app.test_user','22222222-2222-4222-8222-222222222222',false);
+SET ROLE authenticated;
+DO $notice$
+DECLARE n integer;
+BEGIN
+ SELECT COUNT(*) INTO n FROM public.lab_notification_deliveries;
+ IF n<>0 THEN RAISE EXCEPTION 'FAIL: email delivery audit visible to another user'; END IF;
+ BEGIN
+  INSERT INTO public.lab_notification_deliveries
+   (user_id,category,channel,local_day)
+  VALUES(auth.uid(),'reading','email',DATE '2026-10-16');
+  RAISE EXCEPTION 'FAIL: browser inserted an email delivery';
+ EXCEPTION WHEN insufficient_privilege THEN NULL;
+ END;
+END $notice$;
+RESET ROLE;
+SELECT 'LAB OPTIONAL EMAIL DELIVERY SECURITY PASSED' AS result;
