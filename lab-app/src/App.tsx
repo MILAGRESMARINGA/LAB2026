@@ -89,8 +89,8 @@ export default function App(){
  useEffect(()=>{if(!user){setGame(null);setScorecard(null);setV2Game(null);setGroups([]);return}if(passwordRecoveryMode)return;
   if(v2Enabled){
    let active=true;
-   void supabase?.from("lab_game_stats").select("display_name,leaderboard_opt_in")
-    .eq("user_id",user.id).maybeSingle().then(({data})=>{
+   void Promise.resolve(supabase!.from("lab_game_stats").select("display_name,leaderboard_opt_in")
+    .eq("user_id",user.id).maybeSingle()).then(({data})=>{
      if(active){setProfileName(data?.display_name??"Leitor LAB");setOptIn(Boolean(data?.leaderboard_opt_in))}}).catch(()=>undefined);
    return()=>{active=false};
   }
