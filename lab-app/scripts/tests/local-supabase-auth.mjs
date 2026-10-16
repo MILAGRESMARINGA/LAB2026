@@ -130,12 +130,44 @@ try{
  assert.ok(verified.session);
  await unverified.auth.signOut({scope:"local"});
 
+ // Password recovery follows the real Mailpit message, not an admin bypass.
+ const {error:recoveryRequestError}=await a.auth.resetPasswordForEmail(emails[0],{
+  redirectTo:"http://localhost:5173/auth/reset-password"
+ });
+ assert.ifError(recoveryRequestError);
+ const recoveryLink=await localMessageLink(emails[0]);
+ const recovery=await fetch(recoveryLink,{redirect:"manual"});
+ assert.ok([302,303].includes(recovery.status),"Recovery link must redirect with session credentials");
+ const location=recovery.headers.get("location")||"";
+ const recoveryUrl=new URL(location);
+ assert.equal(recoveryUrl.hostname,"localhost");
+ const fragment=new URLSearchParams(recoveryUrl.hash.replace(/^#/,""));
+ const access_token=fragment.get("access_token");
+ const refresh_token=fragment.get("refresh_token");
+ assert.ok(access_token&&refresh_token,"Recovery must provide a real password reset session");
+ const recoveryClient=userClient();
+ const {error:setRecoverySessionError}=await recoveryClient.auth.setSession({
+  access_token,refresh_token
+ });
+ assert.ifError(setRecoverySessionError);
+ const newPassword=password+"-renewed";
+ const {error:changePasswordError}=await recoveryClient.auth.updateUser({password:newPassword});
+ assert.ifError(changePasswordError);
+ await recoveryClient.auth.signOut({scope:"local"});
+ const newLogin=userClient();
+ const {data:passwordUpdated,error:passwordUpdatedError}=await newLogin.auth.signInWithPassword({
+  email:emails[0],password:newPassword
+ });
+ assert.ifError(passwordUpdatedError);
+ assert.ok(passwordUpdated.session,"Password recovery should allow login with the new password");
+ await newLogin.auth.signOut({scope:"local"});
+
  const {error:signoutError}=await a.auth.signOut({scope:"local"});
  assert.ifError(signoutError);
  const {data:afterSignout}=await a.auth.getSession();
  assert.equal(afterSignout.session,null);
 
- console.log("PASS: Real local GoTrue sign-in, confirmed signup via Mailpit, isolated profile and preferences, V2 kill switch and sign-out");
+ console.log("PASS: Real local GoTrue sign-in, confirmed signup and password recovery via Mailpit, isolated profile and preferences, V2 kill switch and sign-out");
 }finally{
  for(const id of ids){
   await admin.auth.admin.deleteUser(id).catch(()=>undefined);
