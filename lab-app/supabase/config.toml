@@ -33,3 +33,8 @@ enabled = false
 
 [storage]
 enabled = false
+
+# Dedicated local SMTP catcher, avoids collisions with shared runner ports.
+[inbucket]
+enabled = true
+port = 55324
