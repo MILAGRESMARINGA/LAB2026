@@ -761,12 +761,15 @@ BEGIN
  THEN RAISE EXCEPTION 'FAIL: study cache key omits journey/day/references/layer/version'; END IF;
 END $study_seed$;
 
--- Replaying the same versioned cache key is idempotent and cannot mint a second row.
+-- Replaying a cache tuple under a different study ID cannot insert a duplicate.
+INSERT INTO public.lab_v2_study_catalog(study_key,title,xp)
+VALUES ('ci-duplicate-cache-key','Fixture duplicate cache unit',15)
+ON CONFLICT (study_key) DO NOTHING;
 INSERT INTO public.lab_v2_study_content
-  (study_key,journey_key,journey_day,chapter_refs,layer,content_version,
+  (study_key,journey_key,journey_day,chapter_refs,layer,content_version,cache_key,
    source_kind,publication_status,title,content)
-SELECT study_key,journey_key,journey_day,chapter_refs,layer,content_version,
-       source_kind,publication_status,title,content
+SELECT 'ci-duplicate-cache-key',journey_key,journey_day,chapter_refs,layer,
+       content_version,cache_key,source_kind,publication_status,title,content
   FROM public.lab_v2_study_content
  WHERE study_key='d1-genesis1-john1-layer1-2026-10-v1'
 ON CONFLICT DO NOTHING;
@@ -784,10 +787,11 @@ INSERT INTO public.lab_v2_study_catalog(study_key,title,xp)
 VALUES ('d1-genesis1-john1-layer1-2026-10-v2','Fixture alternate study version',15)
 ON CONFLICT (study_key) DO NOTHING;
 INSERT INTO public.lab_v2_study_content
-  (study_key,journey_key,journey_day,chapter_refs,layer,content_version,
+  (study_key,journey_key,journey_day,chapter_refs,layer,content_version,cache_key,
    source_kind,publication_status,title,content)
 SELECT 'd1-genesis1-john1-layer1-2026-10-v2',journey_key,journey_day,chapter_refs,
-       layer,'ci-v2','curated','published','Fixture alternate study version',content
+       layer,'ci-v2','bible-annual:1:1:1,43:1:L1:ci-v2',
+       'curated','published','Fixture alternate study version',content
   FROM public.lab_v2_study_content
  WHERE study_key='d1-genesis1-john1-layer1-2026-10-v1'
 ON CONFLICT DO NOTHING;
@@ -798,12 +802,12 @@ INSERT INTO public.lab_v2_study_catalog(study_key,title,xp) VALUES
  ('ci-layer2-unlock-v1','Fixture: camada 2',15),
  ('ci-layer3-unlock-v1','Fixture: camada 3',15);
 INSERT INTO public.lab_v2_study_content
- (study_key,journey_key,journey_day,chapter_refs,layer,content_version,
+ (study_key,journey_key,journey_day,chapter_refs,layer,content_version,cache_key,
   source_kind,publication_status,title,content)
 VALUES
- ('ci-layer2-unlock-v1','bible-annual',1,ARRAY['1:1']::text[],2,'ci-v1',
+ ('ci-layer2-unlock-v1','bible-annual',1,ARRAY['1:1']::text[],2,'ci-v1','bible-annual:1:1:1:L2:ci-v1',
   'curated','published','Fixture: camada 2','{"title":"Fixture"}'::jsonb),
- ('ci-layer3-unlock-v1','bible-annual',1,ARRAY['1:1']::text[],3,'ci-v1',
+ ('ci-layer3-unlock-v1','bible-annual',1,ARRAY['1:1']::text[],3,'ci-v1','bible-annual:1:1:1:L3:ci-v1',
   'curated','published','Fixture: camada 3','{"title":"Fixture"}'::jsonb);
 
 INSERT INTO auth.users(id) VALUES
