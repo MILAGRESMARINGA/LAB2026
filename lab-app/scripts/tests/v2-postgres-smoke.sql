@@ -142,6 +142,16 @@ BEGIN
 END
 $test$;
 
+-- The 366-step plan is not a selectable shortcut in a non-leap October.
+DO $test$
+BEGIN
+ BEGIN
+  PERFORM public.lab_v2_start(366);
+  RAISE EXCEPTION 'FAIL: 366-day plan was enabled outside leap-year January 1';
+ EXCEPTION WHEN OTHERS THEN
+  IF SQLERRM NOT LIKE 'Plano de 366 etapas disponível somente%' THEN RAISE; END IF;
+ END;
+END $test$;
 -- Second user must neither read nor mutate the first participant's run.
 SELECT set_config('app.test_user','22222222-2222-4222-8222-222222222222',false);
 DO $test$
@@ -157,7 +167,7 @@ BEGIN
  END;
 END
 $test$;
-SELECT (public.lab_v2_start(366)->>'run_id')::uuid AS second_run \gset
+SELECT (public.lab_v2_start(365)->>'run_id')::uuid AS second_run \gset
 SELECT public.lab_v2_activate(:'second_run'::uuid,1);
 SELECT public.lab_v2_confirm(:'second_run'::uuid,1,'1:1');
 DO $test$
