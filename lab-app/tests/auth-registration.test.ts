@@ -17,7 +17,7 @@ describe("Confirmação de cadastro Supabase",()=>{
  it("permite reenviar confirmação pela API Auth existente",async()=>{
   resend.mockResolvedValue({error:null});
   await expect(resendSignUpConfirmation(" LEITOR@example.com ")).resolves.toBeUndefined();
-  expect(resend).toHaveBeenCalledWith("signup","leitor@example.com",{emailRedirectTo:confirmationRedirectUrl()});
+  expect(resend).toHaveBeenCalledWith({type:"signup",email:"leitor@example.com",options:{emailRedirectTo:confirmationRedirectUrl()}});
  });
  it("trata colisão de cadastro sem afirmar se o endereço tem conta",()=>{
   expect(authErrorMessage(new Error("User already registered"))).toBe(

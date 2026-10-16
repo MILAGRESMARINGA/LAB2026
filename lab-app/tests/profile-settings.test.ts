@@ -28,7 +28,7 @@ describe("Configurações privadas LABGAME",()=>{
    accountEmail:"a@example.org",onReset:async()=>{},onDeleted:()=>{}
   }));
   expect(html).toContain("Notificações");
-  expect(html).toContain("Próxima etapa disponível");
+  expect(html).toContain("Ritmo e prazo da jornada");
   expect(html).toContain("Pop-up");
   expect(html).toContain("E-mail");
   expect(html).toContain("E-mails automáticos ainda não estão disponíveis");
