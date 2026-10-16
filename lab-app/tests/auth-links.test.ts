@@ -18,6 +18,10 @@ describe("P0: links de confirmação e recuperação",()=>{
   expect(resolvePublicAppOrigin(previous,"labgame-biblia-clucu9isf-antonios-projects-0bf892e8.vercel.app"))
    .toBe(LAB_REBUILD_APP_ORIGIN);
   expect(resolvePublicAppOrigin(previous,"labgame-biblia.vercel.app")).toBe(previous);
+  // A promoted preview build embeds a branch URL at build time. Public host
+  // must STILL send confirmation and reset links to the public canonical site.
+  expect(resolvePublicAppOrigin(LAB_REBUILD_APP_ORIGIN,"labgame-biblia.vercel.app"))
+   .toBe(previous);
   expect(resolvePublicAppOrigin(previous,"localhost")).toBe(previous);
   expect(resolvePublicAppOrigin(previous,"attacker.example")).toBe(previous);
   expect(resolvePublicAppOrigin("http://unsafe.example","attacker.example")).toBe(previous);
