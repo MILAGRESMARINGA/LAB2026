@@ -342,11 +342,22 @@ Detalhes: `docs/JOURNEY-ROLLING-24H-GAME-RULES-DESIGN.md`.
 - [x] Verificado em produção: `lab_game_stats.total_xp` e `lab_game_scorecard` somam pontos entre tentativas; divergência com regra de `run_xp=0` a cada nova sequência.
 - [x] Verificado em produção: vídeo usa 90s desde início sem prova contínua de reprodução, XP por usuário/recurso e não por run; Liga GC baseada em datas civis, não em 24h rolantes.
 - [x] Verificado em produção: conta Auth única; teste real duas contas e concorrência pendente. RLS consultada apenas via catálogo; teste funcional em staging ainda obrigatório.
-- [ ] Homologar **tolerância única de 6h** para término de etapa/ativação, sem dupla carência.
-- [ ] Homologar **3 vidas mensais iguais para todos** versus participação na Santa Ceia, duração da extensão e XP durante resgate.
+- [x] **Regulamento-base APROVADO:** tolerância única de 6h para término de etapa/ativação, sem dupla carência.
+- [x] **Regulamento-base APROVADO:** 3 vidas mensais iguais para todos, independentes de Santa Ceia; uma vida concede 24h, sem carregar eventos de meses anteriores.
+- [ ] Especificar detalhadamente o XP de uma etapa salva com vida, o ledger transacional e interfaces de concordância.
 - [ ] Homologar versão de 365/366 etapas e critério de bissexto para jornadas iniciadas fora de 1º de janeiro.
-- [ ] Homologar sequência pontual versus percurso concluído com vidas, distinção de coroa integral e insígnia de constância perfeita.
+- [x] **Regulamento-base APROVADO:** coroação por Bíblia integral distinta de título adicional por constância perfeita; histórico nunca vira XP da tentativa nova.
 - [ ] Aprovar política de XP de vídeo e estudo por tentativa e fazer migração de livro-caixa antes de bônus anual.
 - [ ] Implementar e testar mudanças do servidor e do plano em staging com duas contas, fronteiras de relógio/mês, GCs e reset.
 - [ ] **Após gates de regras:** avançar à Central de Configurações (meus dados, igreja/GC facultativos, notificações opt-in, segurança/logout, reset total e exclusão de conta com confirmação forte), conforme `docs/PROFILE-SETTINGS-NOTIFICATIONS-PRIVACY-PROPOSAL.md`.
 - **NÃO houve modificação do banco nem mudança de regras de produção nesta auditoria.**
+
+
+## Início da implementação segura do regulamento-base — 16/10/2026
+- [x] Criado gerador **V2 isolado** (`lab-app/src/domain/game-plan-next.ts`), sem trocar o cronograma V1 de produção, para 365 etapas (271×3+94×4) e 366 etapas (275×3+91×4).
+- [x] Testes `lab-app/tests/game-plan-next.test.ts` comprovam total 1.189, ordem de AT/Salmos/NT, início GN 1/SL 1/JO 1 e limites 3–4. CI nº 319 `success`.
+- [x] Implementado modelo puro `lab-app/src/domain/journey-clock-next.ts` e seus testes `lab-app/tests/journey-clock-next.test.ts`: relógio 24h, uma carência 6h, descontos -3/-6, extensões de 24h, vida de mês de origem, nova sequência sem XP anterior. CI nº 322 `success`.
+- [ ] Construir migração **não aplicada** de RLS/RPC/ledger em ambiente isolado e validar duas contas, concorrência, simulação de fronteiras, cronologia e fallback; evitar qualquer efeito no LABGAME real.
+- [ ] Elaborar política de migração de tentativas já existentes, versão do plano, 365/366 para início livre, XP pós-resgate, XP de vídeo/estudos na nova tentativa, GC e coroas antes da implantação.
+- [ ] Depois de estabilizar a mecânica da Jornada, implementar Central de Configurações com logout visível, notificações granulares, perfil opcional, reset total e autodeleção com confirmações.
+- [ ] **Publicação:** somente após P0 Auth/SMTP + 2 contas + backup/restore off-site + CI/staging E2E. Nenhuma mudança de servidor ou domínios no presente pacote.
