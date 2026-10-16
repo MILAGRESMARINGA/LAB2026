@@ -58,19 +58,26 @@ Segunda 06:00 ativa etapa 1; segunda 08:00 conclui a leitura; terça 06:00 etapa
 - Ao entrar em um mês novo, o saldo é restaurado à cota mensal sem acumular 6, 9 ou 12 vidas; não há transferência de sobra. A cota do mês e o período devem ser calculados no servidor.
 - A melhor marca exibida só sobe quando etapas reais são concluídas. Recomendar exibir separadamente "sequência sem atrasos" e "etapas preservadas com vidas".
 
-## 6. Antifraude crítico: recompensar capítulos repetidos após reinício automático
+## 6. Pontuação por tentativa: marcas antigas são obstáculos, não saldo herdado (REGRA CONFIRMADA)
 
-**Fragilidade concreta do esquema atual:** `lab_game_chapter_checks` tem unicidade **(run_id,day_number,chapter_id)**. O servidor credita +10 a cada nova confirmação na run; ao falhar após a etapa 1 e iniciar uma run nova, poderia conceder +10 outra vez por Gênesis 1, mesmo sem concluir a Bíblia. O sistema atual não garante unicidade de XP por capítulo ao longo de tentativas interrompidas.
+**Correção explícita do responsável em 16/10/2026:** em qualquer recomeço automático a tentativa nova entra na etapa 1 com **0 dias e 0 XP ativos**. Valores anteriores não são somados ou transferidos como saldo, medalha desbloqueada, sequência, vidas ou recompensa da nova tentativa; são preservados **somente no histórico e como recordes a superar**. A mesma regra vale para novas sequências após a conclusão normal de um ciclo: a nova sequência tem seu próprio progresso.
 
-**REGRA RECOMENDADA para corrigir, sujeita a decisão de economia:**
-- Uma `progress_generation` ou `cycle_generation` identifica a fase entre duas Bíblias integralmente concluídas.
-- Cada capítulo é exigido novamente em uma tentativa interrompida, mas **só rende XP uma vez por geração/ciclo válido**: `UNIQUE(user_id, progress_generation, chapter_id, reward_kind)`.
-- O usuário que perder no dia 265 recomeça lendo Gênesis, mas não ganha novamente XP pelos capítulos já recompensados nessa geração até ultrapassar o marco anterior; seu histórico e recorde permanecem. Isso impede fazenda de XP repetindo dia 1.
-- Depois de completar os 1.189 capítulos, pode iniciar novo ciclo: nova geração elegível para pontuar capítulos de novo e conquistar nova coroa/bonus com crédito único.
-- "Zerar tudo" autorizado apaga todas as gerações, XP, coroas e recordes, reinicia em 0. Não usar reset para criar XP fictício. Ao excluir conta, conta nova não herda XP anterior.
-- Leituras do mesmo capítulo dentro de uma run atual permanecem idempotentes; recompensas anuais precisam também `UNIQUE(user_id,run_id)` e transação atômica, como especificado em migração pendente.
-- Revisar cuidadosamente o cálculo de XP de vídeos: preservar unicidade por recurso dentro da geração e não liberar infinitos XP ao reiniciar tentativas.
-- Criar testes de concorrência, 2 contas, falha/vida, reset voluntário e reconciliação do scorecard em PostgreSQL isolado.
+### Placar separado por escopo
+- **Tentativa ativa:** `run_id`, `day`, `run_xp`, `run_streak`, marcos e medalhas **conquistados nesta tentativa**. Começa em 0 a cada tentativa nova.
+- **Melhores marcas históricas:** `best_streak`, `best_run_xp` e vitrine de medalhas/coroas antigas como resultados arquivados. Não liberam recompensas na tentativa atual e não determinam a pontuação da nova sequência.
+- **Histórico de estudos / Bíblias completas:** contadores verificáveis ao longo da conta (quantas Bíblias concluídas, quantos estudos concluídos) preservados ao recomeçar, porém **não convertidos em XP da nova tentativa**. A progressão de estudos pode ter seu próprio escopo, independente do desafio de leitura.
+- **Reset total por solicitação:** zera tanto tentativa ativa quanto histórico de melhores marcas, XP arquivado, Bíblias, estudos, coroas e medalhas; única ação que efetivamente elimina essas barreiras históricas.
+- **Exibir:** "XP nesta tentativa" e "Seu recorde de XP" em contextos diferentes; nunca mostrar a soma vitalícia como se fossem XP ganhados **na sequência atual**.
+
+### Antifraude e economia de XP
+- Cada capítulo obrigatório pode render +10 XP **uma vez por tentativa, dentro da etapa e horário autorizados**, inclusive se o participante precisar relê-lo depois de uma tentativa interrompida. Assim há incentivo real na nova sequência.
+- A unicidade é `(run_id,day_number,chapter_id)` para confirmação + um ledger de recompensa vinculado à mesma `run_id`. Repetição da mesma confirmação, corrida entre dois aparelhos e troca de relógio nunca premiam outra vez **na mesma tentativa**.
+- **Nunca somar XP de tentativas interrompidas para classificar o participante, elevar níveis/medalhas atuais ou disparar bônus de nova sequência.** Em lugar de `SUM(all runs)`, os indicadores competitivos são `current_run_xp` e `best_run_xp` como recorde; cada tentativa arquivada guarda os próprios eventos de XP por auditoria.
+- Um jogador que reinicia Gênesis 1 cem vezes não poderá elevar sua **melhor marca** além dos +10 por capítulo de sua tentativa com mais pontos, nem desbloquear medalhas do novo desafio por XP de tentativas arquivadas. A nova tentativa ainda terá XP legítimo pelas leituras que efetivamente realizou.
+- Os bônus progressivos por Bíblia concluída (+10.000/+12.500/...) ficam **associados ao ciclo integral efetivamente concluído**, jamais são herdados como saldo inicial da próxima sequência. São preservados como conquistas no histórico com o contador vitalício de Bíblias.
+- Os +5 XP de vídeo e eventuais XP de estudo devem ter **escopo explícito** (tentativa ativa, curso, ou ciclo) e unicidade por evento; vídeo reassistido dentro da mesma tentativa não gera pontos repetidos. Não considerar XP de estudo permanente como XP de leitura para desbloquear dias.
+- **A implementação atual NÃO cumpre esta separação:** `lab_game_stats.total_xp` é soma vitalícia de capítulos/vídeos. O código de bônus anual preparado também usa saldo acumulado. Antes de ativar essas regras, precisamos refatorar scorecard, migração de prêmios, rankings individuais/coletivos e interface para expor ambos os escopos sem quebrar eventos existentes.
+- Não alterar schema/SQL de produção até migração versionada, inventário do legado e ensaios com duas contas em staging.
 
 ## 7. Integralidade e ano bissexto
 
@@ -85,7 +92,7 @@ Segunda 06:00 ativa etapa 1; segunda 08:00 conclui a leitura; terça 06:00 etapa
 1. **Antecipação versus congelamento:** aprovar janela de ativação de até **6 horas depois de READY**, seguida de consumo de vidas? A carência de leitura e a carência de ativação são conceitos diferentes.
 2. **Vidas:** três mensais para todos, sem Santa Ceia como requisito? Qual XP para leitura concluída na janela de vida?
 3. **Recordes:** ter dois contadores (sequência perfeita e progresso salvo com vidas), mantendo XP e quantidade histórica de Bíblias?
-4. **Antifraude:** aprovar XP único por capítulo por geração/ciclo integral, evitando repetições remuneradas após tentativas falhadas?
+4. **Antifraude / ranking:** a regra agora é XP por tentativa sem soma entre tentativas; detalhar scorecard, XP de estudos/vídeos e tratamento de recompensas de Bíblias concluídas em histórico antes de migrar.
 5. **Ano bissexto:** qual regra de adesão para 366 etapas em jornada iniciada em datas móveis?
 
 ## 9. Gate técnico
