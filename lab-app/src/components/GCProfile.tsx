@@ -2,6 +2,7 @@ import {useCallback,useEffect,useState} from "react";
 import {Award,BookOpen,Flame,Medal,RefreshCw,ShieldCheck,Trophy,Users,UserRound} from "lucide-react";
 import {combinedMilestone,groupMilestones} from "../domain/progression-v3";
 import {getGameRanking,loadGroupSummary,type GCGroupSummary,type LabRankingEntry} from "../features/lab-game";
+import {getV2GroupRanking,getV2GroupSummary} from "../features/journey-v2";
 import type {ReadingGroup} from "../features/groups";
 type Props={group:ReadingGroup;userId:string;personalXp?:number|null;onPersonalProfile:()=>void};
 const errorText=(e:unknown)=>e instanceof Error?e.message:"Não foi possível abrir o perfil do GC";
@@ -13,8 +14,10 @@ export function GCProfile({group,userId,personalXp,onPersonalProfile}:Props){
  const refresh=useCallback(async()=>{
   setLoading(true);setError("");
   try{
+   const v2=import.meta.env.VITE_LAB_V2_READY==="true";
    const [info,people]=await Promise.all([
-    loadGroupSummary(group.id),getGameRanking(group.id)
+    v2?getV2GroupSummary(group.id):loadGroupSummary(group.id),
+    v2?getV2GroupRanking(group.id):getGameRanking(group.id)
    ]);
    setSummary(info);setRanking(people);
   }catch(e){setSummary(null);setRanking([]);setError(errorText(e))}
@@ -64,7 +67,7 @@ export function GCProfile({group,userId,personalXp,onPersonalProfile}:Props){
   <div className="gc-profile-ranking">
    <span className="eyebrow">CLASSIFICAÇÃO INDIVIDUAL NO GC</span>
    <h3>Ranking dos leitores</h3>
-   <p className="muted">Ordem: melhor sequência → total de dias concluídos → XP acumulado. Só aparecem participantes que ativaram a participação no ranking.</p>
+   <p className="muted">Ordem: melhor sequência → dias concluídos → XP da tentativa atual (sem acumular tentativas anteriores na V2). Só aparecem participantes que ativaram a participação no ranking.</p>
    {loading?<p className="muted">Carregando as classificações...</p>:ranking.length===0?<p className="muted">Ainda não há participantes que autorizaram aparecer neste ranking. Ative essa opção no seu perfil pessoal.</p>:
     <div className="gc-profile-people">{ranking.map((entry,index)=><div className="gc-profile-person" key={index}>
      <strong className="gc-profile-rank">#{index+1}</strong>
