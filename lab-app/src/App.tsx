@@ -20,7 +20,7 @@ import type {BibleProjectResource} from "./domain/bibleproject";
 import {readOnboardingProgress,saveOnboardingProgress} from "./domain/onboarding";
 import {ChallengeJourney} from "./components/ChallengeJourney";
 import {JourneyV2Panel} from "./components/JourneyV2Panel";
-import {syncJourneyV2,type JourneyV2State} from "./features/journey-v2";
+import {syncJourneyV2,getV2StudyRewards,confirmV2Study,type JourneyV2State} from "./features/journey-v2";
 import {FormationLibrary} from "./components/FormationLibrary";
 import {ProfileSettings} from "./components/ProfileSettings";
 import {DailyInAppPopup} from "./components/DailyInAppPopup";
@@ -60,6 +60,8 @@ export default function App(){
  const [invites,setInvites]=useState<Record<string,string>>({});
  const [rankingGroup,setRankingGroup]=useState("");
  const [selectedStudy,setSelectedStudy]=useState(STUDY_BLOCKS[0].id);
+ const [studyAcknowledged,setStudyAcknowledged]=useState(false);
+ const [studyRewarded,setStudyRewarded]=useState<string[]>([]);
  const [selectedBook,setSelectedBook]=useState<string>("Gênesis");
  const [showStages,setShowStages]=useState(28);
  useEffect(()=>{saveOnboardingProgress({step:introStep,mode:preferredMode,viewAuth})},[introStep,preferredMode,viewAuth]);
@@ -102,7 +104,14 @@ export default function App(){
   void listReadingGroups().then(data=>{if(active){setGroups(data);setRankingGroup(prev=>prev||data[0]?.id||"")}}).catch(e=>{if(active)setGroupMessage(describeError(e))});
   return()=>{active=false};
  },[tab,user?.id]);
- const stage=game?plan[Math.max(0,Math.min(GAME_DAYS-1,game.day-1))]:plan[0];
+ useEffect(()=>{
+  if(!v2Enabled||!v2Game||tab!=="studies")return;
+  let active=true;
+  void getV2StudyRewards(v2Game.run_id).then(keys=>{if(active)setStudyRewarded(keys)})
+   .catch(e=>{if(active)setMessage(describeError(e))});
+  return()=>{active=false};
+ },[tab,v2Game?.run_id,user?.id]);
+  const stage=game?plan[Math.max(0,Math.min(GAME_DAYS-1,game.day-1))]:plan[0];
  const completedIds=new Set(game?.checked??[]);
  const nextChapter=stage.chapters.find(ch=>!completedIds.has(ch.id));
  const nextVideo=nextChapter?getBibleProjectVideoForChapter(nextChapter.book,nextChapter.chapter):undefined;
@@ -124,7 +133,18 @@ export default function App(){
  }catch(e){setRecoveryNotice(describeError(e))}finally{setBusy(false)}};
  const confirm=async()=>{if(!nextChapter||!user||busy)return;setBusy(true);setMessage("");try{const chapter=nextChapter;const updated=await confirmGameChapter(chapter.id);setGame(updated);setLastConfirmed({book:chapter.book,chapter:chapter.chapter});void refreshScorecard()}catch(e){setMessage(describeError(e));void refreshGame()}finally{setBusy(false)}};
  const restartChallenge=async()=>{if(!user||busy)return;setBusy(true);setMessage("");try{const next=await startNewGameCycle();setGame(next);setLessonOpen(false);setLastConfirmed(null);void refreshScorecard()}catch(e){setMessage(describeError(e))}finally{setBusy(false)}};
- const refreshGroups=async()=>{const data=await listReadingGroups();setGroups(data);if(!rankingGroup&&data[0])setRankingGroup(data[0].id)};
+ const finishStudyV2=async()=>{
+  if(!v2Game||!studyAcknowledged||busy||v2Game.status!=="active")return;
+  setBusy(true);setMessage("");
+  try{
+   const answer=await confirmV2Study(v2Game.run_id,selectedStudy,true);
+   setStudyRewarded(prev=>prev.includes(selectedStudy)?prev:[...prev,selectedStudy]);
+   setV2Game(await syncJourneyV2(v2Game.run_id));
+   setStudyAcknowledged(false);
+   setMessage(answer.awarded?"Estudo concluído: +15 XP nesta tentativa.":"Estudo já premiado nesta tentativa.");
+  }catch(e){setMessage(describeError(e))}finally{setBusy(false)}
+ };
+  const refreshGroups=async()=>{const data=await listReadingGroups();setGroups(data);if(!rankingGroup&&data[0])setRankingGroup(data[0].id)};
  const createGroup=async()=>{setGroupBusy(true);setGroupMessage("");try{await createReadingGroup(groupName);setGroupName("");await refreshGroups();setGroupMessage("Seu GC foi criado.")}catch(e){setGroupMessage(describeError(e))}finally{setGroupBusy(false)}};
  const joinGroup=async()=>{setGroupBusy(true);setGroupMessage("");try{await joinReadingGroup(inviteCode);setInviteCode("");await refreshGroups();setGroupMessage("Você entrou no GC.")}catch(e){setGroupMessage(describeError(e))}finally{setGroupBusy(false)}};
  const viewInvite=async(groupId:string)=>{setGroupBusy(true);try{const token=await getGroupInvite(groupId);setInvites(prev=>({...prev,[groupId]:token}))}catch(e){setGroupMessage(describeError(e))}finally{setGroupBusy(false)}};
@@ -174,7 +194,14 @@ export default function App(){
       <section className="connections-panel"><span className="eyebrow">CONEXÕES DA PALAVRA</span><h3>Estude além do capítulo</h3><p>Explore temas, contextos e conexões entre livros sem alterar a regra da leitura diária.</p><button className="secondary-cta" onClick={()=>goTab("studies")}>EXPLORAR ESTUDOS <ArrowRight size={17}/></button></section></>}
    </div>}
    {tab==="bible"&&<BibleLibrary signedIn={Boolean(user)} onVideo={openVideo}/>}
-   {tab==="studies"&&<section className="game-panel"><span className="eyebrow">BIBLIOTECA LAB</span><h1>Estudos e <em>conexões.</em></h1><p className="muted">Panoramas literários, históricos e teológicos para acompanhar a leitura, sem pontuação de capítulos.</p><div className="study-grid">{STUDY_BLOCKS.map(b=><button key={b.id} className={"study-tile "+(selectedStudy===b.id?"selected":"")} onClick={()=>setSelectedStudy(b.id)}><Library size={24}/><strong>{b.title}</strong><small>{b.type==="conexão"?"Conexão bíblica":"Tema de estudo"}</small></button>)}</div><article className="study-detail"><span className="eyebrow">APROFUNDAMENTO</span><h2>{selectedBlock.title}</h2><p>{selectedBlock.intro}</p><h3>Leia e compare</h3><div className="reference-list">{selectedBlock.references.map(ref=><span key={ref}><BookOpen size={15}/>{ref}</span>)}</div><p className="small-caption">Estas conexões são roteiros de estudo. A exegese capítulo a capítulo será publicada após revisão bíblica e teológica.</p></article><FormationLibrary/><article className="study-detail bibleproject-section">
+   {tab==="studies"&&<section className="game-panel"><span className="eyebrow">BIBLIOTECA LAB</span><h1>Estudos e <em>conexões.</em></h1><p className="muted">Panoramas literários, históricos e teológicos para acompanhar a leitura, sem pontuação de capítulos.</p><div className="study-grid">{STUDY_BLOCKS.map(b=><button key={b.id} className={"study-tile "+(selectedStudy===b.id?"selected":"")} onClick={()=>{setSelectedStudy(b.id);setStudyAcknowledged(false)}}><Library size={24}/><strong>{b.title}</strong><small>{b.type==="conexão"?"Conexão bíblica":"Tema de estudo"}</small></button>)}</div><article className="study-detail"><span className="eyebrow">APROFUNDAMENTO</span><h2>{selectedBlock.title}</h2><p>{selectedBlock.intro}</p><h3>Leia e compare</h3><div className="reference-list">{selectedBlock.references.map(ref=><span key={ref}><BookOpen size={15}/>{ref}</span>)}</div><p className="small-caption">Estas conexões são roteiros de estudo. A exegese capítulo a capítulo será publicada após revisão bíblica e teológica.</p>{v2Enabled&&<div className="v2-study-check" aria-label="Pontuação opcional do estudo">
+  <h3>Conclusão de estudo · +15 XP</h3>
+  {!v2Game||v2Game.status!=="active"?<p className="muted">Ative uma Jornada V2 para registrar este estudo na tentativa atual.</p>:
+   studyRewarded.includes(selectedStudy)?<p role="status"><CheckCircle2 size={17}/> Este estudo já recebeu 15 XP nesta tentativa.</p>:<>
+    <label className="v2-consent"><input type="checkbox" checked={studyAcknowledged} onChange={e=>setStudyAcknowledged(e.target.checked)}/> Examinei as referências indicadas e concluí a reflexão sobre este estudo.</label>
+    <button type="button" className="secondary-cta" disabled={busy||!studyAcknowledged} onClick={()=>void finishStudyV2()}>CONFIRMAR ESTUDO · +15 XP</button>
+   </>}
+ </div>}</article><FormationLibrary/><article className="study-detail bibleproject-section">
  <span className="eyebrow">66 LIVROS · VÍDEOS EM PORTUGUÊS</span>
  <h2>Panoramas BibleProject</h2>
  <p>Assista a um panorama antes ou depois de ler. Alguns livros têm dois vídeos e outros compartilham um panorama. Os vídeos não alteram a pontuação nem a sequência diária.</p>
