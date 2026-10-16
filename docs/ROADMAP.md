@@ -384,3 +384,17 @@ Detalhes: `docs/JOURNEY-ROLLING-24H-GAME-RULES-DESIGN.md`.
 - [x] CI #382 verde: https://github.com/MILAGRESMARINGA/LAB2026/actions/runs/38923291741.
 - [ ] Bloqueios externos e de publicação: staging Supabase Auth real/custos, backend email opt-in auditado, implantar e testar Edge Function de exclusão, duas contas reais, validação mobile, backup off-site, rollout das migrações, reprocessamento GC e promoção controlada Vercel.
 - [ ] **Não prometer conclusão em produção sem homologação.** Plano executivo: `docs/LABGAME-RELEASE-READINESS-2026-10-16.md`.
+
+
+## Aceite técnico P0 gratuito — 16/10/2026
+- [x] Regulamento V2 homologado em modelos e SQL testados: 365/366 etapas, 1.189 capítulos, 24h ativação + 6h carência única, 3 vidas/mês, +24h por vida, renovação sem retroatividade, XP por tentativa, coroas e constância perfeita.
+- [x] Teste completo de coroas 1.189 capítulos, penalidade por atraso, reset integral com GC preservado e novo run 0 XP — `lab-app/scripts/tests/v2-annual-awards-smoke.sql`.
+- [x] Corrigida a ordem cronológica das migrações Perfil → V2 nos testes de PostgreSQL; reduz risco de aprovar uma função de reset legada.
+- [x] Corrigida atomicidade de falha após vidas: as RPCs `lab_v2_activate` e `lab_v2_confirm` agora retornam o estado FAILED sem dar rollback em saldo/terminalidade; migração `202610160108_lab_v2_terminal_state.sql` + testes.
+- [x] **GitHub CI #428 aprovado em todos os quatro jobs:** compilação/JS/segurança, PostgreSQL16, PostgreSQL17, Supabase Auth real local/Chromium com duas contas/SMTP local/exclusão/UX mobile. https://github.com/MILAGRESMARINGA/LAB2026/actions/runs/38936664134
+- [x] Sem custos extras: desenvolvimento em Supabase CLI/Docker local e CI gratuito do repositório público, sem branch paga ou plano novo.
+- [ ] **P0 produção — bloqueio real:** executar backup PostgreSQL17 **atual** e restaurá-lo em banco isolado; certificar preservação de dados das runs V1 antes de aplicar migrations. O script seguro `lab-app/scripts/backup-labgame.ps1` está disponível, mas backup verificável do estado mais recente ainda não foi comprovado por esta entrega.
+- [ ] Aplicar migrations incrementais à instância LABGAME Free existente com V2 desligada, verificar RLS e perfis em dados reais sem indisponibilizar o V1; só depois ativar V2 para novas contas e promover frontend.
+- [ ] Testar e implantar a Edge de exclusão, comunicação SMTP e envios opcionais conforme infraestrutura gratuita disponível; notificações de e-mail de cinco categorias ainda não são serviços plenamente operacionais.
+- [ ] Validação pós-publicação: V1 preservada, integração visual/mobile, GC, painel de notificações, integridade mensal, replay, backup/recovery e monitoramento de erros sem tocar no CRM legado.
+- **Distinção obrigatória:** `P0 de engenharia/local QA = validado`; `P0 operacional e lançamento público = pendente`. Documento detalhado: `docs/P0-ENGINEERING-ACCEPTANCE-2026-10-16.md`. Não confundir CI verde com produção pronta.
