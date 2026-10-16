@@ -20,6 +20,12 @@ export type JourneyV2State={
  normal_deadline_at:string|null;
  grace_deadline_at:string|null;
  run_xp:number;
+ reading_xp?:number;
+ cycle_bonus_xp?:number;
+ checked?:string[];
+ completed_stages?:number;
+ completed_bibles_historical?:number;
+ cycle_award?:{cycle_number:number;bonus_xp:number;perfect_constancy:boolean;awarded_at:string}|null;
  best_completed_stages:number;
  remaining_lives_this_month:number;
  server_at:string;
@@ -86,4 +92,22 @@ export async function getJourneyV2Chapters(days:JourneyV2Length,stage:number):Pr
  const chapters=(data??[]) as JourneyV2Chapter[];
  if(chapters.length<3||chapters.length>4)throw Error("Plano V2 incompleto neste servidor.");
  return chapters;
+}
+
+/** No legacy lab_game_sync side effect: reads only V2 runs under RLS. */
+export async function loadLatestJourneyV2():Promise<JourneyV2State|null>{
+ assertV2ClientEnabled();
+ const {data,error}=await supabase!.from("lab_v2_runs")
+  .select("id,status,started_at").order("started_at",{ascending:false}).limit(1).maybeSingle();
+ if(error)throw error;
+ if(!data)return null;
+ return syncJourneyV2(data.id as string);
+}
+export async function getJourneyV2Checks(runId:string,stage:number):Promise<string[]>{
+ assertV2ClientEnabled();
+ const {data,error}=await supabase!.from("lab_v2_chapter_checks")
+  .select("chapter_id").eq("run_id",validRunId(runId))
+  .eq("day_number",validStage(stage));
+ if(error)throw error;
+ return (data??[]).map(row=>row.chapter_id as string);
 }
