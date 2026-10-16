@@ -23,6 +23,8 @@ CREATE TABLE public.lab_game_stats(
  display_name text NOT NULL DEFAULT 'Leitor LAB',
  leaderboard_opt_in boolean NOT NULL DEFAULT false
 );
+CREATE TABLE public.lab_game_video_resources(video_key text PRIMARY KEY);
+INSERT INTO public.lab_game_video_resources VALUES('videos:genesis-1-11');
 CREATE TABLE public.lab_game_video_sessions(user_id uuid NOT NULL REFERENCES auth.users(id));
 CREATE TABLE public.lab_game_video_rewards(user_id uuid NOT NULL REFERENCES auth.users(id));
 CREATE TABLE public.reading_completions(user_id uuid NOT NULL REFERENCES auth.users(id));
@@ -42,6 +44,7 @@ CREATE TABLE public.reading_group_members(
 \i supabase/migrations/202610160101_lab_v2_plans_seed.sql
 \i supabase/migrations/202610160102_lab_v2_awards_and_unified_reset.sql
 \i supabase/migrations/202610160103_lab_v2_gc_rankings.sql
+\i supabase/migrations/202610160104_lab_v2_video_xp.sql
 
 INSERT INTO auth.users(id) VALUES
 ('11111111-1111-4111-8111-111111111111'),
@@ -93,6 +96,40 @@ BEGIN
  END;
 END
 $test$;
+
+-- V2 video credit only when the server has accumulated actual session
+-- heartbeat windows (the test injects times only into the disposable DB).
+SELECT public.lab_v2_video_begin(:'first_run'::uuid,'videos:genesis-1-11');
+DO $test$
+BEGIN
+ BEGIN
+  PERFORM public.lab_v2_video_confirm((SELECT id FROM public.lab_v2_runs
+    WHERE user_id=auth.uid() AND status='active'),'videos:genesis-1-11');
+  RAISE EXCEPTION 'FAIL: unobserved video granted XP';
+ EXCEPTION WHEN OTHERS THEN
+  IF SQLERRM NOT LIKE 'Assista ao panorama%' THEN RAISE; END IF;
+ END;
+END $test$;
+RESET ROLE;
+UPDATE public.lab_v2_video_sessions SET heartbeat_at=statement_timestamp()-interval '15 seconds'
+ WHERE run_id=:'first_run'::uuid;
+SET ROLE authenticated;
+SELECT public.lab_v2_video_ping(:'first_run'::uuid,'videos:genesis-1-11');
+RESET ROLE;
+UPDATE public.lab_v2_video_sessions SET active_seconds=90
+ WHERE run_id=:'first_run'::uuid;
+SET ROLE authenticated;
+SELECT public.lab_v2_video_confirm(:'first_run'::uuid,'videos:genesis-1-11');
+SELECT public.lab_v2_video_confirm(:'first_run'::uuid,'videos:genesis-1-11');
+DO $test$
+DECLARE score jsonb;
+BEGIN
+ SELECT public.lab_v2_sync((SELECT id FROM public.lab_v2_runs
+  WHERE user_id=auth.uid() AND status='active')) INTO score;
+ IF (score->>'video_xp')::integer<>5 OR (score->>'run_xp')::integer<>35 THEN
+  RAISE EXCEPTION 'FAIL: V2 video duplicated or missing: %',score;
+ END IF;
+END $test$;
 
 -- Controlled fault-injection: backdate one stage in the isolated DB so no
 -- tests need to wait 24-104 real hours.
