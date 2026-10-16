@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 
 const sql=readFileSync(new URL("../../supabase/migrations/202610160001_profile_notification_preferences.sql",import.meta.url),"utf8");
+const sqlCode=sql.split("\n").filter(line=>!line.trimStart().startsWith("--")).join("\n");
 const edge=readFileSync(new URL("../../supabase/functions/account-delete/index.ts",import.meta.url),"utf8");
 const frontend=readFileSync(new URL("../../src/components/ProfileSettings.tsx",import.meta.url),"utf8");
 test("personal and religious data tables are private and self-owned",()=>{
@@ -15,7 +16,7 @@ test("personal and religious data tables are private and self-owned",()=>{
  assert.match(sql,/user_id=\(SELECT auth\.uid\(\)\)/);
  assert.match(sql,/religious_data_consent_at/);
  assert.match(sql,/ministry_consent_required/);
- assert.doesNotMatch(sql,/\b(?:cpf|rg_number|passport_number)\b/i);
+ assert.doesNotMatch(sqlCode,/\b(?:cpf|rg_number|passport_number)\b/i);
 });
 test("full reset requires a recently reauthenticated user and explicit typed phrase",()=>{
  assert.match(sql,/FUNCTION public\.lab_game_full_reset\(p_confirmation text\)/);
@@ -42,7 +43,7 @@ test("account deletion is server-only and blocks GCs that have other members",()
  assert.match(frontend,/EXCLUIR CONTA/);
 });
 test("does not auto-send email or enable browser notifications without opt-in",()=>{
- assert.doesNotMatch(sql,/pg_net|http_post|smtp|email_send/i);
+ assert.doesNotMatch(sqlCode,/pg_net|http_post|smtp|email_send/i);
  assert.match(sql,/enabled boolean NOT NULL DEFAULT false/);
  assert.match(sql,/email boolean NOT NULL DEFAULT false/);
  assert.match(sql,/in_app_popup boolean NOT NULL DEFAULT false/);
