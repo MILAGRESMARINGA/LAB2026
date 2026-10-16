@@ -332,3 +332,21 @@ Documento completo: `docs/PROFILE-SETTINGS-NOTIFICATIONS-PRIVACY-PROPOSAL.md`.
 - [ ] Testar controle de concorrência e ledger de vidas com viagens de fuso, períodos offline, duas sessões e datas de virada em staging. O backend atual de data civil ainda **não** implementa estas regras.
 - [ ] Finalizar quantidade de vidas e eventual associação à Santa Ceia, mecanismo da janela de recuperação e modelo final de XP antes de programar. Não interpretar a aprovação da renovação mensal como aprovação destes itens.
 Detalhes: `docs/JOURNEY-ROLLING-24H-GAME-RULES-DESIGN.md`.
+
+
+## Auditoria das regras da Jornada — 16/10/2026
+**Status:** AUDITORIA DE REGRAS DOCUMENTAL + LEITURA DO BANCO CONCLUÍDA; correções P0 e opções pendentes impedem homologação do regulamento. Documento de referência: [AUDIT-JOURNEY-RULES-GAMEPLAY-SECURITY-2026-10-16.md](AUDIT-JOURNEY-RULES-GAMEPLAY-SECURITY-2026-10-16.md).
+
+- [x] Verificado em produção: **51 etapas de 2 capítulos**, 169 de 3 e 145 de 4 (1.189 capítulos, 365 dias). Violação do mínimo 3 / máximo 4; planejar nova versão, sem modificar runs existentes.
+- [x] Verificado em produção: progressão por data civil e funções sem `activated_at`; 24h após ativação, carência e vidas não implementadas.
+- [x] Verificado em produção: `lab_game_stats.total_xp` e `lab_game_scorecard` somam pontos entre tentativas; divergência com regra de `run_xp=0` a cada nova sequência.
+- [x] Verificado em produção: vídeo usa 90s desde início sem prova contínua de reprodução, XP por usuário/recurso e não por run; Liga GC baseada em datas civis, não em 24h rolantes.
+- [x] Verificado em produção: conta Auth única; teste real duas contas e concorrência pendente. RLS consultada apenas via catálogo; teste funcional em staging ainda obrigatório.
+- [ ] Homologar **tolerância única de 6h** para término de etapa/ativação, sem dupla carência.
+- [ ] Homologar **3 vidas mensais iguais para todos** versus participação na Santa Ceia, duração da extensão e XP durante resgate.
+- [ ] Homologar versão de 365/366 etapas e critério de bissexto para jornadas iniciadas fora de 1º de janeiro.
+- [ ] Homologar sequência pontual versus percurso concluído com vidas, distinção de coroa integral e insígnia de constância perfeita.
+- [ ] Aprovar política de XP de vídeo e estudo por tentativa e fazer migração de livro-caixa antes de bônus anual.
+- [ ] Implementar e testar mudanças do servidor e do plano em staging com duas contas, fronteiras de relógio/mês, GCs e reset.
+- [ ] **Após gates de regras:** avançar à Central de Configurações (meus dados, igreja/GC facultativos, notificações opt-in, segurança/logout, reset total e exclusão de conta com confirmação forte), conforme `docs/PROFILE-SETTINGS-NOTIFICATIONS-PRIVACY-PROPOSAL.md`.
+- **NÃO houve modificação do banco nem mudança de regras de produção nesta auditoria.**
