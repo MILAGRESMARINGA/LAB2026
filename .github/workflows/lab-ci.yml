@@ -170,6 +170,41 @@ jobs:
           if [ -f /tmp/lab-local-edge.pid ]; then
             kill "$(cat /tmp/lab-local-edge.pid)" || true
           fi
+      - name: Install headless Chromium for responsive UI smoke
+        run: |
+          npm install --no-save --no-audit --no-fund playwright
+          npx playwright install --with-deps chromium
+      - name: Validate real LABGAME profile and mobile flow
+        run: |
+          set -a
+          source /tmp/labgame-supabase-ci.env
+          set +a
+          export VITE_SUPABASE_URL="$API_URL"
+          export VITE_SUPABASE_ANON_KEY="${ANON_KEY:-$PUBLISHABLE_KEY}"
+          nohup npm run dev -- --host 127.0.0.1 --port 5173 --strictPort > /tmp/lab-local-vite.log 2>&1 &
+          echo $! > /tmp/lab-local-vite.pid
+          ready=0
+          for i in $(seq 1 40); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5173/ || true)
+            if [ "$code" = 200 ]; then ready=1; break; fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then echo "Free local Vite server did not start"; exit 1; fi
+          node scripts/tests/local-browser-p0.mjs
+      - name: Preserve UX screenshots from fake accounts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: labgame-p0-desktop-mobile
+          path: /tmp/labgame-ux/
+          if-no-files-found: ignore
+          retention-days: 5
+      - name: Stop local Vite server
+        if: always()
+        run: |
+          if [ -f /tmp/lab-local-vite.pid ]; then
+            kill "$(cat /tmp/lab-local-vite.pid)" || true
+          fi
       - name: Tear down ephemeral test stack
         if: always()
         run: npx --yes supabase@latest stop --no-backup || true
