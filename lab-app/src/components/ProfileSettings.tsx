@@ -100,7 +100,7 @@ export function ProfileSettings({accountEmail,onReset,onDeleted}:Props){
   <div className="ps-heading"><UserCircle size={24}/><div><span className="eyebrow">CONFIGURAÇÕES</span><h2>Seu perfil, suas escolhas</h2><p className="muted">Tudo aqui é opcional. Compartilhe apenas as informações que desejar.</p></div></div>
   {loading&&<p role="status" className="muted">Consultando configurações protegidas...</p>}
   {!ready&&!loading&&<p role="status" className="ps-unavailable"><LockKeyhole size={17}/> As novas configurações dependem da migração de segurança em homologação. Nenhum dado será enviado enquanto ela não estiver ativa.</p>}
-  <details className="ps-section" open>
+  <details className="ps-section">
    <summary><span><UserCircle size={19}/> Dados pessoais e endereço</span><ChevronDown size={18}/></summary>
    <form onSubmit={e=>{e.preventDefault();void persistProfile()}}>
     <fieldset disabled={!ready||saving} className="ps-fieldset">
@@ -145,7 +145,7 @@ export function ProfileSettings({accountEmail,onReset,onDeleted}:Props){
     </fieldset>
    </form>
   </details>
-  <details className="ps-section" open>
+  <details className="ps-section">
    <summary><span><Bell size={19}/> Notificações</span><ChevronDown size={18}/></summary>
    <div className="ps-settings-body">
     <p className="muted">Você escolhe quais lembretes deseja. Padrão: nenhum aviso. Mensagens essenciais de segurança da conta não são desativadas aqui.</p>
