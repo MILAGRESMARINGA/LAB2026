@@ -42,3 +42,7 @@ port = 55324
 [functions.study-generate]
 # The Edge handler also resolves the bearer token with Supabase Auth.
 verify_jwt = true
+
+[functions.account-delete]
+# Destructive account actions require a valid Supabase JWT.
+verify_jwt = true

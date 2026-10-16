@@ -1,5 +1,7 @@
 # LABGAME P0 — backup e restauração verificáveis, sem custo extra
 
+> O workflow [P0-CI-BACKUP-RESTORE-GATE.md](P0-CI-BACKUP-RESTORE-GATE.md) descreve o drill automatizado do GitHub Actions. Ele restaura em banco efêmero e apaga o dump no fim; é uma prova de restauração limitada, não uma cópia retida ou um backup completo de Auth/Storage. Preserve o procedimento local abaixo para criar e conservar uma cópia controlada, e não trate o drill do CI como cobertura contra perda de dados.
+
 A publicação web pode ter status **READY** enquanto novas tabelas/funções ainda não existem no Supabase público. O release P0 que inclui dados pessoais, notificações e exclusão só pode prosseguir depois de prova de restauração do banco atual.
 
 1. Execute localmente `pwsh -File ./scripts/backup-labgame.ps1` a partir da pasta `lab-app/`. Ele pede a senha **Supabase** diretamente no PC, cria um `.dump` privado e um manifesto com SHA256 (sem enviar credenciais para o GitHub/ChatGPT).

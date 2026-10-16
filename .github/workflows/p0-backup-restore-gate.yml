@@ -284,12 +284,12 @@ jobs:
         run: |
           set -euo pipefail
           release_log="$RUNNER_TEMP/labgame-supabase-release-$GITHUB_RUN_ID.log"
-          if ! npx --yes supabase@latest link \
+          if ! npx --yes supabase@2.121.0 link \
             --project-ref azejfxvaamgkmfmwdzjn >"$release_log" 2>&1; then
             echo "Fail closed: could not link the audited Supabase project."
             exit 1
           fi
-          if ! npx --yes supabase@latest db push --linked --dry-run >"$release_log" 2>&1; then
+          if ! npx --yes supabase@2.121.0 db push --linked --dry-run >"$release_log" 2>&1; then
             echo "Fail closed: Supabase migration dry run failed."
             exit 1
           fi
@@ -300,7 +300,7 @@ jobs:
         run: |
           set -euo pipefail
           release_log="$RUNNER_TEMP/labgame-supabase-release-$GITHUB_RUN_ID.log"
-          if ! npx --yes supabase@latest db push --linked --yes >"$release_log" 2>&1; then
+          if ! npx --yes supabase@2.121.0 db push --linked --yes >"$release_log" 2>&1; then
             echo "Migration application failed; CLI output is withheld to protect credentials."
             exit 1
           fi
@@ -313,3 +313,103 @@ jobs:
         run: |
           rm -f "$RUNNER_TEMP/labgame-supabase-release-$GITHUB_RUN_ID.log"
           rm -rf supabase/.temp
+
+  deploy-approved-edge-functions:
+    needs: [backup-and-restore, apply-p0-migrations]
+    if: >-
+      needs.backup-and-restore.result == 'success' &&
+      needs.backup-and-restore.outputs.restore_verified == 'true' &&
+      needs.apply-p0-migrations.result == 'success' &&
+      github.ref == 'refs/heads/main' &&
+      ((github.event_name == 'push' &&
+        github.event.head_commit.message == 'release: p0 backup-restore-deploy') ||
+       (github.event_name == 'workflow_dispatch' &&
+        inputs.apply_p0_to_production == 'APPLY_P0_TO_PRODUCTION'))
+    name: Deploy reviewed JWT-protected LABGAME Edge Functions
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: p0-production-migrations
+    defaults:
+      run:
+        working-directory: lab-app
+    env:
+      EXPECTED_PROJECT_REF: azejfxvaamgkmfmwdzjn
+      CONFIGURED_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+    steps:
+      - name: Fail closed unless restore, migrations, project and deploy credential are verified
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "Fail closed: Edge Function deployment is restricted to main."
+            exit 1
+          fi
+          python3 - <<'PY'
+          import os
+          import re
+
+          expected = os.environ.get("EXPECTED_PROJECT_REF", "")
+          configured = os.environ.get("CONFIGURED_PROJECT_REF", "")
+          token = os.environ.get("SUPABASE_ACCESS_TOKEN", "")
+          if not expected or not configured or not token:
+              raise SystemExit("Fail closed: project variable or Supabase deploy token is missing.")
+          if expected != "azejfxvaamgkmfmwdzjn" or configured != expected:
+              raise SystemExit("Fail closed: function target differs from the audited LABGAME project.")
+          if not re.fullmatch(r"[a-z0-9]{20}", expected):
+              raise SystemExit("Fail closed: target project ref has invalid shape.")
+          print("Edge deployment target and credential presence confirmed; values remain masked.")
+          PY
+
+      - name: Checkout reviewed function source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node 20 for pinned Supabase CLI
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verify pinned Supabase CLI and JWT requirements
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(npx --yes supabase@2.121.0 --version)"
+          if [[ "$version" != "2.121.0" ]]; then
+            echo "Fail closed: Supabase CLI version did not match pinned 2.121.0."
+            exit 1
+          fi
+          python3 - <<'PY'
+          import pathlib
+          import tomllib
+
+          config = tomllib.loads(pathlib.Path("supabase/config.toml").read_text(encoding="utf-8"))
+          for function_name in ("account-delete", "study-generate"):
+              if config.get("functions", {}).get(function_name, {}).get("verify_jwt") is not True:
+                  raise SystemExit(f"Fail closed: {function_name} must require JWT verification.")
+              if not pathlib.Path(f"supabase/functions/{function_name}/index.ts").is_file():
+                  raise SystemExit(f"Fail closed: reviewed source for {function_name} is missing.")
+          print("Pinned Supabase CLI and JWT requirements verified.")
+          PY
+
+      - name: Deploy only account deletion and fail-closed study generation
+        shell: bash
+        run: |
+          set -euo pipefail
+          deploy_log="$RUNNER_TEMP/labgame-edge-deploy-$GITHUB_RUN_ID.log"
+          for function_name in account-delete study-generate; do
+            if ! npx --yes supabase@2.121.0 functions deploy "$function_name" \
+              --project-ref "$EXPECTED_PROJECT_REF" >"$deploy_log" 2>&1; then
+              echo "Fail closed: deployment of $function_name failed; CLI output is withheld."
+              exit 1
+            fi
+            printf 'gate=EDGE_FUNCTION_DEPLOYED function=%s project_ref=%s jwt=required\n' \
+              "$function_name" "$EXPECTED_PROJECT_REF"
+          done
+          echo "No notification, email, or cron function is deployed by this workflow."
+
+      - name: Remove temporary Edge Function CLI logs
+        if: always()
+        shell: bash
+        run: rm -f "$RUNNER_TEMP/labgame-edge-deploy-$GITHUB_RUN_ID.log"

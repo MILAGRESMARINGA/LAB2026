@@ -19,6 +19,18 @@ Crie os environments `p0-backup-read-only` e `p0-production-migrations`, ambos r
 
 O dispatch manual deve selecionar `APPLY_P0_TO_PRODUCTION`; o gatilho por push requer o arquivo marcador `.github/p0-release.trigger` adicionado ou alterado no próprio head commit e a mensagem exata `release: p0 backup-restore-deploy`. Não crie esse marcador até a revisão e promoção autorizadas.
 
+## Limites da prova de restore e retenção
+
+O job cria um dump temporário de `public`, copia somente os UUIDs de `auth.users` para satisfazer as FKs, restaura em um PostgreSQL 17 descartável, compara contagens por tabela e os três agregados canônicos, registra o SHA-256 e apaga os arquivos e o container. O SHA identifica o dump daquele job; o dump **não é guardado** como backup externo. A comparação não é checksum linha a linha.
+
+Esse drill não contém senhas, e-mails ou metadados internos do Auth e não inclui os bytes do Storage. Portanto, comprova somente a restauração do escopo descrito; não oferece recuperação completa de Auth/Storage nem retenção de backup. Não remover dados de produção com base apenas nesse drill.
+
+## Deploy de Edge Functions após as migrations
+
+Depois de restore verificado e migrations aplicadas, o job `deploy-approved-edge-functions` usa a mesma referência e environment protegido, exige `SUPABASE_ACCESS_TOKEN`, verifica a CLI Supabase fixada em `2.121.0` e publica em sequência somente `account-delete` e `study-generate`, ambas com verificação JWT. Não publica funções de e-mail, notificação ou cron.
+
+O job não configura nem imprime secrets de runtime. `study-generate` permanece fail-closed e não gera conteúdo enquanto `OPENAI_API_KEY` não estiver configurada com segurança no Supabase. O job não altera flags da Vercel que liberam exclusão ou Jornada V2.
+
 ## Fórmula do ranking das células
 
 A liga V2 calcula, na janela dos últimos sete dias-calendário de São Paulo:

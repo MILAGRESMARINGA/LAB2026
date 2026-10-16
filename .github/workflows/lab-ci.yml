@@ -7,21 +7,27 @@ on:
       - 'lab-app/**'
       - '.agents/**'
       - '.github/workflows/lab-ci.yml'
+      - '.github/workflows/p0-backup-restore-gate.yml'
       - '.github/PULL_REQUEST_TEMPLATE.md'
       - 'docs/ENGINEERING-STANDARDS.md'
       - 'docs/ENGINEERING-BASELINE-AUDIT.md'
       - 'docs/INDEX.md'
       - 'docs/ROADMAP.md'
+      - 'docs/P0-CI-BACKUP-RESTORE-GATE.md'
+      - 'docs/P0-BACKUP-RESTORE-GATE.md'
   pull_request:
     paths:
       - 'lab-app/**'
       - '.agents/**'
       - '.github/workflows/lab-ci.yml'
+      - '.github/workflows/p0-backup-restore-gate.yml'
       - '.github/PULL_REQUEST_TEMPLATE.md'
       - 'docs/ENGINEERING-STANDARDS.md'
       - 'docs/ENGINEERING-BASELINE-AUDIT.md'
       - 'docs/INDEX.md'
       - 'docs/ROADMAP.md'
+      - 'docs/P0-CI-BACKUP-RESTORE-GATE.md'
+      - 'docs/P0-BACKUP-RESTORE-GATE.md'
   workflow_dispatch:
 
 permissions:
@@ -48,6 +54,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Verify pinned Supabase CLI without production credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(npx --yes supabase@2.121.0 --version)"
+          if [[ "$version" != "2.121.0" ]]; then
+            echo "Expected Supabase CLI 2.121.0, got an unexpected version."
+            exit 1
+          fi
+          echo "Supabase CLI 2.121.0 verified without linking to a project."
       - name: Install dependencies (temporary until lockfile is committed)
         run: npm install --no-audit --no-fund
       - name: Parse database backup PowerShell syntax without executing it
