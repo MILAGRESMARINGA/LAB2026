@@ -22,6 +22,28 @@ const password="lab-LOCAL-TEST-2026-Strong-53!";
 const prefix="lab-ci-"+process.pid+"-"+Date.now();
 const emails=[prefix+"-a@example.test",prefix+"-b@example.test"];
 const ids=[];
+async function localMessageLink(recipient){
+ const mailBase=kv.MAILPIT_URL||kv.INBUCKET_URL||"http://127.0.0.1:54324";
+ assert.ok(/^http:\/\/(127\.0\.0\.1|localhost):\d+\/?$/.test(mailBase),"Local mail catcher only");
+ for(let attempt=0;attempt<25;attempt++){
+  const response=await fetch(mailBase+"/api/v1/messages");
+  if(response.ok){
+   const box=await response.json();
+   for(const message of box.messages??[]){
+    const addresses=(message.To??[]).map(item=>String(item.Address||item.address||item.Email||"").toLowerCase());
+    if(!addresses.includes(recipient.toLowerCase()))continue;
+    const detail=await fetch(mailBase+"/api/v1/message/"+encodeURIComponent(message.ID));
+    if(!detail.ok)continue;
+    const data=await detail.json();
+    const body=[data.HTML,data.Text,data.HTMLBody,data.TextBody].filter(Boolean).join(" ");
+    const url=body.replaceAll("&amp;","&").match(/https?:\/\/(?:localhost|127\.0\.0\.1):54321\/auth\/v1\/verify\?[^\s"'<>]+/i)?.[0];
+    if(url)return url;
+   }
+  }
+  await new Promise(resolve=>setTimeout(resolve,300));
+ }
+ throw Error("No confirmation URL arrived in the free local mail catcher");
+}
 try{
  for(const email of emails){
   const {data,error}=await admin.auth.admin.createUser({email,password,email_confirm:true});
@@ -79,12 +101,41 @@ try{
  const {error:anonymousError}=await publicClient.rpc("lab_v2_sync",{p_run:ids[0]});
  assert.ok(anonymousError,"Anonymous access to V2 RPC must fail");
 
+ // Real signup must require email verification before the first login.
+ const emailToVerify=prefix+"-verify@example.test";
+ const unverified=userClient();
+ const {data:signup,error:signupErr}=await unverified.auth.signUp({
+  email:emailToVerify,password
+ });
+ assert.ifError(signupErr);
+ assert.ok(signup?.user?.id);
+ assert.equal(signup.session,null,"Registration must wait for email confirmation");
+ ids.push(signup.user.id);
+ const {error:deniedLogin}=await unverified.auth.signInWithPassword({
+  email:emailToVerify,password
+ });
+ assert.ok(deniedLogin?.message?.match(/not confirmed/i),
+  "Email not confirmed must prevent password authentication");
+ const localUrl=await localMessageLink(emailToVerify);
+ const parsed=new URL(localUrl);
+ assert.ok(parsed.hostname==="localhost"||parsed.hostname==="127.0.0.1");
+ assert.equal(parsed.pathname,"/auth/v1/verify");
+ const confirmed=await fetch(localUrl,{redirect:"manual"});
+ assert.ok([200,302,303].includes(confirmed.status),
+  "Verification link from local SMTP must be accepted");
+ const {data:verified,error:verifiedErr}=await unverified.auth.signInWithPassword({
+  email:emailToVerify,password
+ });
+ assert.ifError(verifiedErr);
+ assert.ok(verified.session);
+ await unverified.auth.signOut({scope:"local"});
+
  const {error:signoutError}=await a.auth.signOut({scope:"local"});
  assert.ifError(signoutError);
  const {data:afterSignout}=await a.auth.getSession();
  assert.equal(afterSignout.session,null);
 
- console.log("PASS: Real local GoTrue sign-in, isolated profile and preferences, V2 kill switch and sign-out for two accounts");
+ console.log("PASS: Real local GoTrue sign-in, confirmed signup via Mailpit, isolated profile and preferences, V2 kill switch and sign-out");
 }finally{
  for(const id of ids){
   await admin.auth.admin.deleteUser(id).catch(()=>undefined);
