@@ -2,7 +2,7 @@ name: LAB CI
 
 on:
   push:
-    branches: [lab-rebuild-2026]
+    branches: [lab-rebuild-2026, main]
     paths:
       - 'lab-app/**'
       - '.agents/**'
