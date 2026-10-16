@@ -1,8 +1,10 @@
 import {useEffect,useState} from "react";
-import {CheckCircle2,Flame,ShieldCheck,Trophy,Users,RefreshCw} from "lucide-react";
+import {Bell,CheckCircle2,Flame,ShieldCheck,Trophy,Users,RefreshCw,X} from "lucide-react";
 import {getGCLeague,setGCCompetition,type GCLeagueEntry} from "../features/lab-game";
 import {getV2GCLeague} from "../features/journey-v2";
 import type {ReadingGroup} from "../features/groups";
+import {loadNoticePreferencesOnly} from "../features/profile-settings";
+import {gcAggregateNoticeStorageKey,GC_AGGREGATE_NOTICE_COPY,saoPauloWeekStart,shouldShowGcAggregateNotice} from "../domain/notification-period";
 
 type Props={userId:string;groups:ReadingGroup[];onGroupsChange:()=>Promise<void>};
 const leagueRequest=()=>import.meta.env.VITE_LAB_V2_READY==="true"?getV2GCLeague():getGCLeague();
@@ -11,7 +13,21 @@ export function GCLeague({userId,groups,onGroupsChange}:Props){
  const [rows,setRows]=useState<GCLeagueEntry[]>([]);
  const [busy,setBusy]=useState(false);
  const [message,setMessage]=useState("");
+ const [aggregateNotice,setAggregateNotice]=useState(false);
  const participating=groups.some(g=>g.competition_opt_in);
+ const aggregateKey=userId?gcAggregateNoticeStorageKey(userId,saoPauloWeekStart(Date.now())):null;
+ useEffect(()=>{
+  let active=true;
+  setAggregateNotice(false);
+  if(!participating||!aggregateKey)return()=>{active=false};
+  try{if(window.localStorage.getItem(aggregateKey))return()=>{active=false}}catch{/* private browsing */}
+  void loadNoticePreferencesOnly().then(preferences=>{
+   if(!active||!shouldShowGcAggregateNotice(participating,preferences.enabled,preferences.gc_popup))return;
+   try{window.localStorage.setItem(aggregateKey,"shown")}catch{/* private browsing */}
+   setAggregateNotice(true);
+  }).catch(()=>undefined);
+  return()=>{active=false};
+ },[aggregateKey,participating]);
  const load=async()=>{
   if(!participating){setRows([]);return}
   setBusy(true);setMessage("");
@@ -38,6 +54,11 @@ export function GCLeague({userId,groups,onGroupsChange}:Props){
   <div className="gc-league-heading"><div className="gc-league-icon"><Trophy size={25}/></div>
    <div><span className="eyebrow">GC CONTRA GC</span><h2>Liga de constância</h2><p>Resultados coletivos dos últimos sete dias. Grupos maiores não ganham vantagem somente pelo tamanho.</p></div>
   </div>
+  {aggregateNotice&&<aside className="gc-aggregate-notice" role="status">
+   <Bell size={20} aria-hidden="true"/><div><strong>{GC_AGGREGATE_NOTICE_COPY.title}</strong>
+    <p>{GC_AGGREGATE_NOTICE_COPY.body}</p></div>
+   <button type="button" aria-label="Dispensar aviso coletivo" onClick={()=>setAggregateNotice(false)}><X size={17}/></button>
+  </aside>}
   <div className="gc-league-consent">
    <h3><ShieldCheck size={19}/> Participação voluntária dos GCs</h3>
    <p>Somente o líder pode inscrever o GC. Para aparecer na classificação, o grupo precisa ter ao menos três integrantes que permitiram participar de rankings no perfil.</p>

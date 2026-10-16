@@ -1,7 +1,7 @@
 import {useEffect,useRef,useState} from "react";
 import {BookOpen,CheckCircle2,ChevronDown,Minus,Plus,RefreshCw} from "lucide-react";
 import {readBibleChapter,type BibleChapter} from "../features/bible";
-export function BibleReader({chapterId,onConfirm,busy=false,highlightVerse}:{chapterId:string;onConfirm?:()=>void;busy?:boolean;highlightVerse?:number|null}){
+export function BibleReader({chapterId,onConfirm,onOpen,busy=false,highlightVerse}:{chapterId:string;onConfirm?:()=>void;onOpen?:(chapterId:string)=>Promise<unknown>;busy?:boolean;highlightVerse?:number|null}){
  const [chapter,setChapter]=useState<BibleChapter|null>(null);
  const [error,setError]=useState("");
  const [loading,setLoading]=useState(true);
@@ -9,10 +9,21 @@ export function BibleReader({chapterId,onConfirm,busy=false,highlightVerse}:{cha
  const [readToEnd,setReadToEnd]=useState(false);
  const [reload,setReload]=useState(0);
  const scrollRef=useRef<HTMLDivElement>(null);
+ const onOpenRef=useRef(onOpen);
+ onOpenRef.current=onOpen;
  useEffect(()=>{
   let current=true;
   setLoading(true);setChapter(null);setError("");setReadToEnd(false);
-  void readBibleChapter(chapterId).then(data=>{if(current){setChapter(data);setLoading(false)}}).catch(e=>{if(current){setError(e instanceof Error?e.message:"Erro ao carregar Bíblia");setLoading(false)}});
+  void (async()=>{
+   try{
+    // The server records the start before the chapter becomes visible; no client clock is submitted.
+    await onOpenRef.current?.(chapterId);
+    const data=await readBibleChapter(chapterId);
+    if(current){setChapter(data);setLoading(false)}
+   }catch(e){
+    if(current){setError(e instanceof Error?e.message:"Erro ao carregar Bíblia");setLoading(false)}
+   }
+  })();
   return()=>{current=false};
  },[chapterId,reload]);
  useEffect(()=>{

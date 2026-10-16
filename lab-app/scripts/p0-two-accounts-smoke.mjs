@@ -108,6 +108,10 @@ export async function executeP0({env=process.env,log=report}={}){
  // Out-of-plan chapter is rejected before writing XP.
  const invalid=await a.rpc("lab_game_confirm_chapter",{p_chapter_id:"66:22"});
  assert(Boolean(invalid.error),"Capítulo fora da etapa foi aceito indevidamente");
+ const timer=ensureSuccess(await a.rpc("lab_game_begin_chapter",{p_chapter_id:"1:1"}),"Iniciar timer de Gênesis 1");
+ assert(Number.isSafeInteger(timer.minimum_read_seconds)&&timer.minimum_read_seconds>=30,
+  "O servidor não calculou duração mínima para o capítulo");
+ await new Promise(resolve=>setTimeout(resolve,timer.minimum_read_seconds*1000));
  const first=ensureSuccess(await a.rpc("lab_game_confirm_chapter",{p_chapter_id:"1:1"}),"Confirmar Gênesis 1");
  assert(first.total_xp===startingXpA+10,"Confirmação válida não concedeu exatamente 10 XP");
  const retry=ensureSuccess(await a.rpc("lab_game_confirm_chapter",{p_chapter_id:"1:1"}),"Repetição Gênesis 1");

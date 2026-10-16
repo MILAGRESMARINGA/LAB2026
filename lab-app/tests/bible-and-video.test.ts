@@ -1,5 +1,5 @@
 import {describe,expect,it} from "vitest";
-import {getBibleProjectVideoForChapter} from "../src/domain/bibleproject";
+import {getBibleProjectVideoForChapter,getNewTestamentVideoCatalog} from "../src/domain/bibleproject";
 import {embeddedPlayer,videoKeyFromUrl} from "../src/components/BibleProjectPlayer";
 import {readBibleChapter} from "../src/features/bible";
 
@@ -22,13 +22,26 @@ describe("Vídeos BibleProject integrados",()=>{
   const kings=getBibleProjectVideoForChapter("1 Reis",1)!;
   expect(embeddedPlayer(kings,"1 Reis").src).toMatch(/^https:\/\/player\.mux\.com\//);
  });
+ it("reproduz no player integrado todos os panoramas verificados do catálogo oficial do NT",()=>{
+  const catalog=getNewTestamentVideoCatalog();
+  expect(catalog.length).toBeGreaterThanOrEqual(30);
+  for(const {book,resource} of catalog){
+   const player=embeddedPlayer(resource,book);
+   expect(player.exact,book+" · "+resource.title).toBe(true);
+   expect(player.src).toMatch(/^https:\/\/player\.mux\.com\/[A-Za-z0-9]+$/);
+  }
+ });
+ it("mantém o fallback externo quando o recurso não pertence ao livro solicitado",()=>{
+  const matthew=getBibleProjectVideoForChapter("Mateus",1)!;
+  expect(embeddedPlayer(matthew,"Lucas")).toEqual({src:null,exact:false});
+ });
  it("evita atribuir vídeo de Mateus a outro livro sem Mux verificado",()=>{
   const player=embeddedPlayer(joel,"Joel");
   expect(player.exact).toBe(false);
   expect(player.src).toBeNull();
   const marcos=getBibleProjectVideoForChapter("Marcos",1)!;
-  expect(embeddedPlayer(marcos,"Marcos").src).toBeNull();
-  expect(embeddedPlayer(marcos,"Marcos").exact).toBe(false);
+  expect(embeddedPlayer(marcos,"Marcos").exact).toBe(true);
+  expect(embeddedPlayer(marcos,"Marcos").src).toMatch(/^https:\/\/player\.mux\.com\//);
  });
  it("não aceita referências bíblicas fora do cânon",async()=>{
   await expect(readBibleChapter("67:1")).rejects.toThrow("Referência inválida");

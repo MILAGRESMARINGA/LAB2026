@@ -4,6 +4,7 @@ import {
  Gift,Leaf,LockKeyhole,Medal,Sparkles,Star,Trophy
 } from "lucide-react";
 import type {GameDay} from "../domain/game-plan";
+import {ConsistencyFlame} from "./ConsistencyFlame";
 import {GAME_DAYS} from "../domain/game-plan";
 import type {LabGameState} from "../features/lab-game";
 import {individualMilestone,nextIndividualMilestone} from "../domain/progression-v3";
@@ -63,6 +64,7 @@ export function ChallengeJourney({plan,game,totalXP,preview=false,onStart,onRest
    <div className="lab-quest-progress-track" role="progressbar" aria-valuenow={completedDays} aria-valuemin={0} aria-valuemax={GAME_DAYS} aria-label="Progresso da jornada atual"><div style={{width:(completedDays/GAME_DAYS*100)+"%"}}/></div>
    <Crown size={21} aria-hidden="true"/>
   </div>
+  <ConsistencyFlame completedDays={completedDays} status={finished?"completed":game?"active":"inactive"}/>
   <div className="lab-quest-feature">
    <span className="lab-quest-eyebrow">ETAPA {activeDay} · {finished?"PLANO CONCLUÍDO":done?"LEITURA REGISTRADA":"DESAFIO DE HOJE"}</span>
    <h1>{finished?"Toda a Bíblia. Uma jornada concluída.":done?"Seu desafio de hoje está completo.":activeDay===1?"Sua jornada começa aqui.":"Continue sua jornada."}</h1>

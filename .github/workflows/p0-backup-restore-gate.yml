@@ -1,0 +1,415 @@
+name: P0 backup, restore and controlled migration release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/p0-release.trigger'
+  workflow_dispatch:
+    inputs:
+      apply_p0_to_production:
+        description: Apply pending migrations after the restore gate passes
+        required: true
+        type: choice
+        options:
+          - NO
+          - APPLY_P0_TO_PRODUCTION
+        default: NO
+
+permissions:
+  contents: read
+
+concurrency:
+  group: p0-verified-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  backup-and-restore:
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      ((github.event_name == 'push' &&
+        github.event.head_commit.message == 'release: p0 backup-restore-deploy') ||
+       (github.event_name == 'workflow_dispatch' &&
+        inputs.apply_p0_to_production == 'APPLY_P0_TO_PRODUCTION'))
+    name: pg_dump and ephemeral PostgreSQL 17 restore
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: p0-backup-read-only
+    outputs:
+      restore_verified: ${{ steps.restore_drill.outputs.verified }}
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      EXPECTED_PROJECT_REF: azejfxvaamgkmfmwdzjn
+      CONFIGURED_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      APPLY_P0_TO_PRODUCTION: ${{ inputs.apply_p0_to_production }}
+    steps:
+      - name: Confirm explicit trigger, exact target and secret presence
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "Fail closed: release may run only from main."
+            exit 1
+          fi
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          from urllib.parse import unquote, urlparse
+
+          expected = os.environ.get("EXPECTED_PROJECT_REF", "")
+          configured = os.environ.get("CONFIGURED_PROJECT_REF", "")
+          database_url = os.environ.get("SUPABASE_DB_URL", "")
+          event_name = os.environ.get("GITHUB_EVENT_NAME", "")
+          if event_name == "push":
+              with open(os.environ["GITHUB_EVENT_PATH"], encoding="utf-8") as event_file:
+                  event = json.load(event_file)
+              head = event.get("head_commit") or {}
+              changed = set(head.get("added", [])) | set(head.get("modified", []))
+              if head.get("message") != "release: p0 backup-restore-deploy":
+                  raise SystemExit("Fail closed: push release marker commit message does not match exactly.")
+              if ".github/p0-release.trigger" not in changed:
+                  raise SystemExit("Fail closed: the exact release marker path was not changed by head commit.")
+          elif event_name == "workflow_dispatch":
+              if os.environ.get("APPLY_P0_TO_PRODUCTION", "") != "APPLY_P0_TO_PRODUCTION":
+                  raise SystemExit("Fail closed: explicit production migration choice is required.")
+          else:
+              raise SystemExit("Fail closed: unsupported release trigger.")
+          if not expected or not configured or not database_url:
+              raise SystemExit("Fail closed: required project variable or backup secret is missing.")
+          if expected != "azejfxvaamgkmfmwdzjn" or configured != expected:
+              raise SystemExit("Fail closed: configured project ref does not equal the audited target.")
+          if not re.fullmatch(r"[a-z0-9]{20}", expected):
+              raise SystemExit("Fail closed: configured Supabase project ref has invalid shape.")
+          parsed = urlparse(database_url)
+          host = (parsed.hostname or "").lower()
+          username = unquote(parsed.username or "")
+          query = dict(part.split("=", 1) for part in parsed.query.split("&") if "=" in part)
+          direct_host = host == f"db.{expected}.supabase.co"
+          pooler_user = expected in username.split(".")
+          if not (direct_host or pooler_user):
+              raise SystemExit("Fail closed: backup URL does not identify the audited project ref.")
+          if query.get("sslmode") not in ("require", "verify-ca", "verify-full"):
+              raise SystemExit("Fail closed: backup URL must require TLS.")
+          print("Trigger and target confirmed; URL and credentials remain masked.")
+          PY
+      - name: Back up public schema and verify restore in disposable PostgreSQL 17
+        id: restore_drill
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          backup_dir="$RUNNER_TEMP/labgame-p0-backup-$GITHUB_RUN_ID"
+          container="labgame-pg17-restore-$GITHUB_RUN_ID"
+          mkdir -p "$backup_dir"
+          cleanup() {
+            docker rm -f "$container" >/dev/null 2>&1 || true
+            rm -rf -- "$backup_dir"
+          }
+          trap cleanup EXIT
+
+          docker run --detach --name "$container" \
+            --env POSTGRES_DB=labgame_restore \
+            --env POSTGRES_PASSWORD="$(openssl rand -hex 32)" \
+            --volume "$backup_dir:/backup" \
+            postgres:17 >/dev/null
+          ready=0
+          for attempt in $(seq 1 45); do
+            if docker exec "$container" pg_isready -U postgres -d labgame_restore >/dev/null 2>&1; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+          if [[ "$ready" != "1" ]]; then
+            echo "Fail closed: disposable PostgreSQL 17 did not become ready."
+            exit 1
+          fi
+
+          docker exec "$container" psql -X -U postgres -d labgame_restore -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE ROLE anon NOLOGIN;
+          CREATE ROLE authenticated NOLOGIN;
+          CREATE ROLE service_role NOLOGIN BYPASSRLS;
+          CREATE SCHEMA auth;
+          CREATE TABLE auth.users (id uuid PRIMARY KEY);
+          CREATE OR REPLACE FUNCTION auth.uid()
+          RETURNS uuid LANGUAGE sql STABLE SET search_path = ''
+          AS 'SELECT NULL::uuid';
+          CREATE SCHEMA extensions;
+          CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
+          SQL
+
+          docker run --rm --network host \
+            --env SUPABASE_DB_URL \
+            --volume "$backup_dir:/backup" \
+            postgres:17 sh -ec \
+            'pg_dump --schema=public --format=custom --no-owner --no-privileges --file=/backup/public.dump "$SUPABASE_DB_URL"' \
+            > "$backup_dir/pg-dump.log" 2>&1 || { echo "Fail closed: pg_dump did not complete."; exit 1; }
+          chmod 600 "$backup_dir/public.dump"
+          dump_sha256="$(sha256sum "$backup_dir/public.dump" | awk '{print $1}')"
+
+          docker run --rm --network host --env SUPABASE_DB_URL \
+            postgres:17 psql --dbname="$SUPABASE_DB_URL" -XAt -v ON_ERROR_STOP=1 \
+            -c 'SELECT id::text FROM auth.users ORDER BY id' \
+            > "$backup_dir/auth-user-ids.csv" 2> "$backup_dir/auth-export.log" \
+            || { echo "Fail closed: Auth UUID export did not complete."; exit 1; }
+          chmod 600 "$backup_dir/auth-user-ids.csv"
+          docker exec -i "$container" psql -X -U postgres -d labgame_restore \
+            -v ON_ERROR_STOP=1 \
+            -c '\copy auth.users(id) FROM STDIN WITH (FORMAT csv)' \
+            < "$backup_dir/auth-user-ids.csv" \
+            > "$backup_dir/auth-import.log" 2>&1 \
+            || { echo "Fail closed: temporary Auth UUID restore did not complete."; exit 1; }
+          docker exec "$container" psql -XAt -U postgres -d labgame_restore \
+            -c 'SELECT id::text FROM auth.users ORDER BY id' \
+            > "$backup_dir/auth-user-ids-restored.csv"
+          if ! cmp -s "$backup_dir/auth-user-ids.csv" "$backup_dir/auth-user-ids-restored.csv"; then
+            echo "Fail closed: Auth UUID rows differ after PostgreSQL 17 restore."
+            exit 1
+          fi
+
+          cat > "$backup_dir/table-counts.sql" <<'SQL'
+          SELECT format(
+            'SELECT %L || ''|'' || count(*)::text FROM %I.%I;',
+            schemaname || '.' || tablename, schemaname, tablename
+          )
+            FROM pg_catalog.pg_tables
+           WHERE schemaname = 'public'
+           ORDER BY tablename;
+          \gexec
+          SQL
+          chmod 600 "$backup_dir/table-counts.sql"
+
+          docker run --rm --network host --env SUPABASE_DB_URL \
+            --volume "$backup_dir:/backup" \
+            postgres:17 psql --dbname="$SUPABASE_DB_URL" -XAt -v ON_ERROR_STOP=1 \
+            -f /backup/table-counts.sql > "$backup_dir/source.counts" \
+            2> "$backup_dir/source-counts.log" \
+            || { echo "Fail closed: source aggregate query did not complete."; exit 1; }
+          docker exec "$container" pg_restore --exit-on-error --no-owner --no-privileges \
+            --dbname=labgame_restore /backup/public.dump \
+            > "$backup_dir/pg-restore.log" 2>&1 \
+            || { echo "Fail closed: PostgreSQL 17 restore did not complete."; exit 1; }
+          docker exec "$container" psql -XAt -U postgres -d labgame_restore \
+            -v ON_ERROR_STOP=1 -f /backup/table-counts.sql \
+            > "$backup_dir/restore.counts" 2> "$backup_dir/restore-counts.log" \
+            || { echo "Fail closed: restored aggregate query did not complete."; exit 1; }
+          if ! cmp -s "$backup_dir/source.counts" "$backup_dir/restore.counts"; then
+            echo "Fail closed: public table row counts differ after PostgreSQL 17 restore."
+            exit 1
+          fi
+
+          if ! docker exec "$container" psql -XAt -U postgres -d labgame_restore \
+            -v ON_ERROR_STOP=1 -c \
+            "SELECT (SELECT count(*) FROM public.lab_bible_verses)::text || '|' || (SELECT count(*) FROM public.lab_game_plan_chapters WHERE version=1)::text || '|' || (SELECT count(DISTINCT day_number) FROM public.lab_game_plan_chapters WHERE version=1)::text" \
+            > "$backup_dir/core.counts" 2> "$backup_dir/core-counts.log"; then
+            echo "Fail closed: restored canonical aggregates could not be queried."
+            exit 1
+          fi
+          core_counts="$(cat "$backup_dir/core.counts")"
+          if [[ "$core_counts" != "31101|1189|365" ]]; then
+            echo "Fail closed: restored canonical Bible/plan aggregates do not match expected counts."
+            exit 1
+          fi
+
+          public_table_count="$(wc -l < "$backup_dir/source.counts" | tr -d ' ')"
+          public_row_total="$(awk -F '|' '{sum += $NF} END {printf "%.0f", sum}' "$backup_dir/source.counts")"
+          auth_id_count="$(wc -l < "$backup_dir/auth-user-ids.csv" | tr -d ' ')"
+          printf 'gate=RESTORE_DRILL_VERIFIED public_tables=%s public_rows=%s auth_user_ids=%s bible_verses=31101 plan_chapters=1189 plan_days=365 dump_sha256=%s\n' \
+            "$public_table_count" "$public_row_total" "$auth_id_count" "$dump_sha256"
+          echo "verified=true" >> "$GITHUB_OUTPUT"
+
+      - name: Remove any remaining disposable dump and container
+        if: always()
+        shell: bash
+        run: |
+          docker rm -f "labgame-pg17-restore-$GITHUB_RUN_ID" >/dev/null 2>&1 || true
+          rm -rf -- "$RUNNER_TEMP/labgame-p0-backup-$GITHUB_RUN_ID"
+
+  apply-p0-migrations:
+    needs: backup-and-restore
+    if: >-
+      needs.backup-and-restore.result == 'success' &&
+      needs.backup-and-restore.outputs.restore_verified == 'true' &&
+      github.ref == 'refs/heads/main' &&
+      ((github.event_name == 'push' &&
+        github.event.head_commit.message == 'release: p0 backup-restore-deploy') ||
+       (github.event_name == 'workflow_dispatch' &&
+        inputs.apply_p0_to_production == 'APPLY_P0_TO_PRODUCTION'))
+    name: Apply pending Supabase migrations after verified restore
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: p0-production-migrations
+    defaults:
+      run:
+        working-directory: lab-app
+    env:
+      EXPECTED_PROJECT_REF: azejfxvaamgkmfmwdzjn
+      CONFIGURED_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+    steps:
+      - name: Fail closed before any Supabase CLI access if secrets or ref are missing
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "Fail closed: migration target must be main."
+            exit 1
+          fi
+          python3 - <<'PY'
+          import os
+          import re
+
+          expected = os.environ.get("EXPECTED_PROJECT_REF", "")
+          configured = os.environ.get("CONFIGURED_PROJECT_REF", "")
+          token = os.environ.get("SUPABASE_ACCESS_TOKEN", "")
+          password = os.environ.get("SUPABASE_DB_PASSWORD", "")
+          if not expected or not configured or not token or not password:
+              raise SystemExit("Fail closed: required migration project variable or secret is missing.")
+          if expected != "azejfxvaamgkmfmwdzjn" or configured != expected:
+              raise SystemExit("Fail closed: migration project ref differs from the audited target.")
+          if not re.fullmatch(r"[a-z0-9]{20}", expected):
+              raise SystemExit("Fail closed: target project ref has invalid shape.")
+          print("Migration target and required secrets confirmed; values remain masked.")
+          PY
+
+      - name: Checkout reviewed migrations
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Link exact audited project and preview pending migrations
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_log="$RUNNER_TEMP/labgame-supabase-release-$GITHUB_RUN_ID.log"
+          if ! npx --yes supabase@2.121.0 link \
+            --project-ref azejfxvaamgkmfmwdzjn >"$release_log" 2>&1; then
+            echo "Fail closed: could not link the audited Supabase project."
+            exit 1
+          fi
+          if ! npx --yes supabase@2.121.0 db push --linked --dry-run >"$release_log" 2>&1; then
+            echo "Fail closed: Supabase migration dry run failed."
+            exit 1
+          fi
+          echo "Dry run completed; pending migration details are withheld from logs."
+
+      - name: Apply pending migrations after successful restore and dry run
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_log="$RUNNER_TEMP/labgame-supabase-release-$GITHUB_RUN_ID.log"
+          if ! npx --yes supabase@2.121.0 db push --linked --yes >"$release_log" 2>&1; then
+            echo "Migration application failed; CLI output is withheld to protect credentials."
+            exit 1
+          fi
+          applied_count="$(grep -Ec '^Applying migration ' "$release_log" || true)"
+          printf 'gate=SUPABASE_MIGRATIONS_APPLIED project_ref=azejfxvaamgkmfmwdzjn migrations=%s\n' "$applied_count"
+
+      - name: Remove temporary Supabase release files
+        if: always()
+        shell: bash
+        run: |
+          rm -f "$RUNNER_TEMP/labgame-supabase-release-$GITHUB_RUN_ID.log"
+          rm -rf supabase/.temp
+
+  deploy-approved-edge-functions:
+    needs: [backup-and-restore, apply-p0-migrations]
+    if: >-
+      needs.backup-and-restore.result == 'success' &&
+      needs.backup-and-restore.outputs.restore_verified == 'true' &&
+      needs.apply-p0-migrations.result == 'success' &&
+      github.ref == 'refs/heads/main' &&
+      ((github.event_name == 'push' &&
+        github.event.head_commit.message == 'release: p0 backup-restore-deploy') ||
+       (github.event_name == 'workflow_dispatch' &&
+        inputs.apply_p0_to_production == 'APPLY_P0_TO_PRODUCTION'))
+    name: Deploy reviewed JWT-protected LABGAME Edge Functions
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: p0-production-migrations
+    defaults:
+      run:
+        working-directory: lab-app
+    env:
+      EXPECTED_PROJECT_REF: azejfxvaamgkmfmwdzjn
+      CONFIGURED_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+    steps:
+      - name: Fail closed unless restore, migrations, project and deploy credential are verified
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "Fail closed: Edge Function deployment is restricted to main."
+            exit 1
+          fi
+          python3 - <<'PY'
+          import os
+          import re
+
+          expected = os.environ.get("EXPECTED_PROJECT_REF", "")
+          configured = os.environ.get("CONFIGURED_PROJECT_REF", "")
+          token = os.environ.get("SUPABASE_ACCESS_TOKEN", "")
+          if not expected or not configured or not token:
+              raise SystemExit("Fail closed: project variable or Supabase deploy token is missing.")
+          if expected != "azejfxvaamgkmfmwdzjn" or configured != expected:
+              raise SystemExit("Fail closed: function target differs from the audited LABGAME project.")
+          if not re.fullmatch(r"[a-z0-9]{20}", expected):
+              raise SystemExit("Fail closed: target project ref has invalid shape.")
+          print("Edge deployment target and credential presence confirmed; values remain masked.")
+          PY
+
+      - name: Checkout reviewed function source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node 20 for pinned Supabase CLI
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verify pinned Supabase CLI and JWT requirements
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(npx --yes supabase@2.121.0 --version)"
+          if [[ "$version" != "2.121.0" ]]; then
+            echo "Fail closed: Supabase CLI version did not match pinned 2.121.0."
+            exit 1
+          fi
+          python3 - <<'PY'
+          import pathlib
+          import tomllib
+
+          config = tomllib.loads(pathlib.Path("supabase/config.toml").read_text(encoding="utf-8"))
+          for function_name in ("account-delete", "study-generate"):
+              if config.get("functions", {}).get(function_name, {}).get("verify_jwt") is not True:
+                  raise SystemExit(f"Fail closed: {function_name} must require JWT verification.")
+              if not pathlib.Path(f"supabase/functions/{function_name}/index.ts").is_file():
+                  raise SystemExit(f"Fail closed: reviewed source for {function_name} is missing.")
+          print("Pinned Supabase CLI and JWT requirements verified.")
+          PY
+
+      - name: Deploy only account deletion and fail-closed study generation
+        shell: bash
+        run: |
+          set -euo pipefail
+          deploy_log="$RUNNER_TEMP/labgame-edge-deploy-$GITHUB_RUN_ID.log"
+          for function_name in account-delete study-generate; do
+            if ! npx --yes supabase@2.121.0 functions deploy "$function_name" \
+              --project-ref "$EXPECTED_PROJECT_REF" >"$deploy_log" 2>&1; then
+              echo "Fail closed: deployment of $function_name failed; CLI output is withheld."
+              exit 1
+            fi
+            printf 'gate=EDGE_FUNCTION_DEPLOYED function=%s project_ref=%s jwt=required\n' \
+              "$function_name" "$EXPECTED_PROJECT_REF"
+          done
+          echo "No notification, email, or cron function is deployed by this workflow."
+
+      - name: Remove temporary Edge Function CLI logs
+        if: always()
+        shell: bash
+        run: rm -f "$RUNNER_TEMP/labgame-edge-deploy-$GITHUB_RUN_ID.log"

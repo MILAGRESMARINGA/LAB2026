@@ -79,6 +79,15 @@ export function activateJourneyV2(runId:string,stage:number){
   p_run:validRunId(runId),p_stage:validStage(stage)
  });
 }
+/** Start the chapter timer on the database server; callers never submit timestamps. */
+export async function beginJourneyV2Chapter(runId:string,stage:number,chapterId:string):Promise<void>{
+ assertV2ClientEnabled();
+ if(!/^\d{1,2}:\d{1,3}$/.test(chapterId))throw Error("Capítulo inválido.");
+ const {error}=await supabase!.rpc("lab_v2_begin_chapter",{
+  p_run:validRunId(runId),p_stage:validStage(stage),p_chapter:chapterId
+ });
+ if(error)throw error;
+}
 export function confirmJourneyV2Chapter(runId:string,stage:number,chapterId:string){
  if(!/^\d{1,2}:\d{1,3}$/.test(chapterId))throw Error("Capítulo inválido.");
  return requestV2("lab_v2_confirm",{

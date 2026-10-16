@@ -1,0 +1,35 @@
+name: Optional AI agent orchestration
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: labgame-ai-orchestration
+  cancel-in-progress: false
+
+jobs:
+  review:
+    if: github.ref == 'refs/heads/lab-rebuild-2026'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact branch without persisted credentials
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run bounded read-only eight-agent review
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_REF: ${{ github.ref }}
+        run: node .agents/scripts/run-ai-orchestrator.mjs

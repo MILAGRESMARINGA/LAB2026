@@ -10,7 +10,7 @@
 | 1 | Fundamentos de IA e LLMs | Estudos editoriais determinísticos em `src/domain/studies.ts` | PARCIAL: não existe chamada LLM em produção | Política de modelos, avaliação factual, custos, injeção de prompts e limites |
 | 2 | APIs de IA generativa / prompts | Supabase RPC para leitura; ausência de API de geração | AUSENTE | Backend autenticado `generate-study`, versionamento de prompt e saída com JSON Schema |
 | 3 | MCP | Conectores de desenvolvimento usados externamente, sem servidor MCP próprio do LABGAME | AUSENTE no produto (opcional) | Avaliar se MCP agrega valor para ferramentas autorizadas, sem expor dados/segredos |
-| 4 | Agentes autônomos | 12 arquivos `.agents/agents/*/agent.md` | PARCIAL: papéis escritos, **não são agentes executando** | Contrato de delegação, evidências, escopo, aprovação e veto de segurança |
+| 4 | Agentes autônomos | 8 prompts oficiais em .agents/manifest.json; GitHub Actions valida contratos e agrega relatório P0 | PARCIAL: sem runtime de LLM; a CI executa gates determinísticos, não os prompts | Runtime do orquestrador somente com custo, permissões, evidências e revisão de segurança verificados |
 | 5 | UX/UI com IA | React SPA, leitor, jornada, GCs, vídeos e autenticação | PARCIAL: telas existentes; sem avaliação WCAG/E2E | Design system, WCAG 2.2 AA, fluxo mobile, testes visuais e com usuários |
 | 6 | IA/automação em DevOps | GitHub Actions testa + compila; Vercel deploy | PARCIAL: falta controle de permissões e security gates | CI com gates, inventário de dependências, scans e trilha de release |
 | 7 | Gestão de projetos com IA | `docs/ROADMAP.md` com pendências e etapas | PARCIAL: sem ADRs e traceabilidade formal | Template PR, RFC, ADR, DoD, risco, dono e aceite reproduzível |
