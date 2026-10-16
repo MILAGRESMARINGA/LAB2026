@@ -20,7 +20,7 @@ import type {BibleProjectResource} from "./domain/bibleproject";
 import {readOnboardingProgress,saveOnboardingProgress} from "./domain/onboarding";
 import {ChallengeJourney} from "./components/ChallengeJourney";
 import {JourneyV2Panel} from "./components/JourneyV2Panel";
-import type {JourneyV2State} from "./features/journey-v2";
+import {syncJourneyV2,type JourneyV2State} from "./features/journey-v2";
 import {FormationLibrary} from "./components/FormationLibrary";
 import {ProfileSettings} from "./components/ProfileSettings";
 import {DailyInAppPopup} from "./components/DailyInAppPopup";
@@ -229,7 +229,10 @@ export default function App(){
 <ProfileSettings accountEmail={user.email} onReset={async()=>{if(v2Enabled){setV2Game(null);setV2Epoch(n=>n+1)}else{await refreshGame();await refreshScorecard()}setLessonOpen(false);setLastConfirmed(null);setTab("journey")}} onDeleted={()=>{setUser(null);setGame(null);setV2Game(null);setScorecard(null);setGroups([]);setInvites({});setLessonOpen(false);setTab("profile");setMessage("Conta excluída. Você pode criar uma nova conta quando quiser.")}}/>{message&&<p role="status" className="feedback-message">{message}</p>}</>}<InstallApp/></section>}
   </main>
   <nav className="game-bottom-nav" aria-label="Menu LABGAME">{tabs.map(t=><button key={t.id} type="button" className={tab===t.id?"active":""} onClick={()=>goTab(t.id)} aria-current={tab===t.id?"page":undefined}><t.icon size={21}/><span>{t.label}</span></button>)}</nav>
-  {activeVideo&&<BibleProjectPlayer key={activeVideo.resource.url} resource={activeVideo.resource} book={activeVideo.book} signedIn={Boolean(user)} onClose={()=>setActiveVideo(null)} onBonus={total=>{setGame(prev=>prev?{...prev,total_xp:total}:prev);void refreshScorecard()}}/>}
+  {activeVideo&&<BibleProjectPlayer key={activeVideo.resource.url} resource={activeVideo.resource} book={activeVideo.book} signedIn={Boolean(user)} runId={v2Enabled?v2Game?.status==="active"?v2Game.run_id:null:null} onClose={()=>setActiveVideo(null)} onBonus={total=>{
+    if(v2Enabled){if(v2Game)void syncJourneyV2(v2Game.run_id).then(next=>setV2Game(next)).catch(e=>setMessage(describeError(e)))}
+    else {setGame(prev=>prev?{...prev,total_xp:total}:prev);void refreshScorecard()}
+   }}/>}
   {passwordRecoveryMode&&<div className="password-recovery-mask">
    <form className="password-recovery-modal" aria-label="Criar nova senha" onSubmit={e=>{e.preventDefault();void changePassword()}}>
     <span className="eyebrow">SEGURANÇA DA CONTA</span>
