@@ -24,7 +24,7 @@ export function DailyInAppPopup({userId,day,today,readingComplete,visibleOnJourn
   try{if(sessionStorage.getItem(key)==="dismissed"){setOpen(false);return}}catch{/* ephemeral private mode */}
   void loadNoticePreferencesOnly().then(settings=>{
    if(!active)return;
-   setOpen(settings.enabled&&settings.in_app_popup&&settings.reading_reminders);
+   setOpen(settings.enabled&&settings.reading_popup);
   }).catch(()=>{if(active)setOpen(false)});
   return()=>{active=false};
  },[userId,today,day,readingComplete,visibleOnJourney,key]);
