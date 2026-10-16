@@ -28,21 +28,40 @@ describe("Configurações privadas LABGAME",()=>{
    accountEmail:"a@example.org",onReset:async()=>{},onDeleted:()=>{}
   }));
   expect(html).toContain("Notificações");
-  expect(html).toContain("Pop-ups dentro do aplicativo");
-  expect(html).toContain("envios automáticos ainda não estão ativados");
+  expect(html).toContain("Próxima etapa disponível");
+  expect(html).toContain("Pop-up");
+  expect(html).toContain("E-mail");
+  expect(html).toContain("E-mails automáticos ainda não estão disponíveis");
   expect(html).toContain("Zerar toda a minha jornada");
   expect(html).toContain("Excluir minha conta definitivamente");
   expect(html).toContain("Documentos (CPF/RG)");
  });
  it("notificações desligadas anulam todos os canais e categorias no banco",async()=>{
   await saveNoticePreferences({
-   enabled:false,in_app_popup:true,email:true,
+   ...DEFAULT_NOTICES,enabled:false,in_app_popup:true,email:true,
    reading_reminders:true,gc_activity:true,milestones:true
   });
   expect(upsert).toHaveBeenCalledWith({
    user_id:"member-one",enabled:false,in_app_popup:false,email:false,
-   reading_reminders:false,gc_activity:false,milestones:false
+   reading_reminders:false,gc_activity:false,milestones:false,
+   reading_popup:false,reading_email:false,stage_popup:false,stage_email:false,
+   gc_popup:false,gc_email:false,achievement_popup:false,achievement_email:false,
+   study_popup:false,study_email:false
   },{onConflict:"user_id"});
+ });
+ it("mantém opções de canal independentes sem habilitar outras categorias",async()=>{
+  await saveNoticePreferences({...DEFAULT_NOTICES,enabled:true,
+   reading_popup:true,gc_email:true,study_email:true});
+  const saved=upsert.mock.calls[0][0];
+  expect(saved.reading_popup).toBe(true);
+  expect(saved.reading_email).toBe(false);
+  expect(saved.gc_email).toBe(true);
+  expect(saved.gc_popup).toBe(false);
+  expect(saved.study_email).toBe(true);
+  expect(saved.achievement_email).toBe(false);
+  expect(saved.enabled).toBe(true);
+  expect(saved.in_app_popup).toBe(true);
+  expect(saved.email).toBe(true);
  });
  it("grava dados ministeriais apenas com consentimento explícito",async()=>{
   await saveMemberProfile({...EMPTY_MEMBER_PROFILE,church_name:"Igreja Exemplo"},true);
