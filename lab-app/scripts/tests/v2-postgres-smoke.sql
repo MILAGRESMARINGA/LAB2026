@@ -168,6 +168,8 @@ BEGIN
 END
 $test$;
 -- Simulate an almost-complete annual run in the ephemeral DB only.
+-- Stage 364 was activated 26h earlier; activating stage 365 is 2h late,
+-- hence -3 XP and NO perfect badge. The crown must still be awarded.
 -- No production account is used and no reward is manually written.
 SELECT set_config('app.test_user','11111111-1111-4111-8111-111111111111',false);
 RESET ROLE;
@@ -191,8 +193,8 @@ DECLARE s jsonb;c integer;
 BEGIN
  SELECT public.lab_v2_sync((SELECT id FROM public.lab_v2_runs WHERE user_id=auth.uid() AND status='completed' LIMIT 1)) INTO s;
  SELECT COUNT(*) INTO c FROM public.lab_v2_cycle_awards WHERE run_id=(SELECT id FROM public.lab_v2_runs WHERE user_id=auth.uid() AND status='completed' LIMIT 1);
- IF s->>'status'<>'completed' OR (s->>'run_xp')::integer<>21890 OR c<>1 OR
-   s->'cycle_award'->>'perfect_constancy'<>'true' THEN
+ IF s->>'status'<>'completed' OR (s->>'run_xp')::integer<>21887 OR c<>1 OR
+   s->'cycle_award'->>'perfect_constancy'<>'false' THEN
   RAISE EXCEPTION 'FAIL: V2 annual bonus/perfect badge: % count %',s,c;
  END IF;
 END $test$;
