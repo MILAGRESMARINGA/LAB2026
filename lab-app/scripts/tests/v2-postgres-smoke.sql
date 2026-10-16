@@ -1012,7 +1012,9 @@ DECLARE
   listed integer;
 BEGIN
  SELECT public.lab_v2_gc_group_scorecard(current_setting('app.group_small')::uuid) INTO small;
+ PERFORM pg_catalog.set_config('app.test_user','80000000-0000-4000-8000-000000000005',false);
  SELECT public.lab_v2_gc_group_scorecard(current_setting('app.group_large')::uuid) INTO large;
+ PERFORM pg_catalog.set_config('app.test_user','80000000-0000-4000-8000-000000000001',false);
  IF (small->>'average_xp_per_member')::numeric<>30
     OR (large->>'average_xp_per_member')::numeric<>30
     OR (small->>'score')::numeric<>(large->>'score')::numeric
