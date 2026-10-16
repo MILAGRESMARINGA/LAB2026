@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+<title>LABGAME — Bíblia e chama</title>
+<rect width="512" height="512" rx="116" fill="#142629"/>
+<rect x="42" y="42" width="428" height="428" rx="106" fill="#1e3532" stroke="#9dd33e" stroke-width="11"/>
+<path d="M112 300 Q178 275 256 320 Q334 275 400 300 L400 390 Q332 366 256 410 Q180 366 112 390Z" fill="#c6ee71"/>
+<path d="M256 320 V410 M132 318 Q194 309 242 340 M380 318 Q318 309 270 340" stroke="#43662d" stroke-width="9" fill="none" stroke-linecap="round"/>
+<path d="M258 83 C294 133 319 157 307 213 C333 189 341 161 335 146 C400 225 360 302 283 316 C199 331 160 258 192 206 C199 240 217 248 221 229 C225 194 217 162 258 83Z" fill="#a5df3e"/>
+<path d="M254 192 C274 225 291 245 274 270 C266 283 248 284 239 270 C218 244 244 221 254 192Z" fill="#e6f799"/>
+</svg>

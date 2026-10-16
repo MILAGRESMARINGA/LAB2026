@@ -1,0 +1,222 @@
+name: LAB CI
+
+on:
+  push:
+    branches: [lab-rebuild-2026, main]
+    paths:
+      - 'lab-app/**'
+      - '.agents/**'
+      - '.github/workflows/lab-ci.yml'
+      - '.github/PULL_REQUEST_TEMPLATE.md'
+  pull_request:
+    paths:
+      - 'lab-app/**'
+      - '.agents/**'
+      - '.github/workflows/lab-ci.yml'
+      - '.github/PULL_REQUEST_TEMPLATE.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lab-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Test, architecture, security and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: lab-app
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Node 20 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies (temporary until lockfile is committed)
+        run: npm install --no-audit --no-fund
+      - name: Parse database backup PowerShell syntax without executing it
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $syntaxErrors = $null
+          $path = (Resolve-Path "./scripts/backup-labgame.ps1").Path
+          [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$tokens, [ref]$syntaxErrors) | Out-Null
+          if ($syntaxErrors.Count -gt 0) {
+            $syntaxErrors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }
+      - name: Validate engineering documentation and security baselines
+        run: npm run verify:engineering
+      - name: Run unit tests
+        run: npm test
+      - name: Check TypeScript and build Vite
+        run: npm run build
+
+  v2-postgres:
+    name: V2 isolated PostgreSQL ${{ matrix.postgres }} integration and RLS
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        postgres: ['16', '17']
+    defaults:
+      run:
+        working-directory: lab-app
+    services:
+      postgres:
+        image: postgres:${{ matrix.postgres }}
+        env:
+          POSTGRES_DB: labgame_v2_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: labv2_ci_local_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d labgame_v2_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install PostgreSQL client
+        run: sudo apt-get update -qq && sudo apt-get install -y postgresql-client
+      - name: Execute V2 shadow schema and tests against temporary PostgreSQL only
+        env:
+          PGPASSWORD: labv2_ci_local_only
+        run: psql -h 127.0.0.1 -p 5432 -U postgres -d labgame_v2_ci -v ON_ERROR_STOP=1 -f scripts/tests/v2-postgres-smoke.sql
+
+
+  supabase-local-auth:
+    name: Free local Supabase Auth + two-account RLS E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: lab-app
+    steps:
+      - name: Checkout test commit (no production secrets)
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install LAB client SDK
+        run: npm install --no-audit --no-fund
+      - name: Boot disposable Supabase locally (Auth, REST, Postgres)
+        run: |
+          # The runner is temporary. Remove only containers belonging to this
+          # LABGAME test project if an earlier canceled run left them behind.
+          npx --yes supabase@latest stop --no-backup >/dev/null 2>&1 || true
+          docker ps -aq --filter 'name=supabase_.*_labgame-free-ci' | xargs -r docker rm -f >/dev/null 2>&1 || true
+          success=0
+          for attempt in 1 2 3; do
+            if npx --yes supabase@latest start --exclude realtime,storage,functions,studio,analytics,pooler > /tmp/labgame-supabase-start.log 2>&1; then
+              success=1
+              break
+            fi
+            echo "Local test infrastructure unavailable (attempt $attempt of 3)"
+            grep -Ei 'toomanyrequests|address already in use|failed to start docker' /tmp/labgame-supabase-start.log | tail -8 || true
+            npx --yes supabase@latest stop --no-backup >/dev/null 2>&1 || true
+            if [ "$attempt" -lt 3 ]; then sleep $((attempt*10)); fi
+          done
+          if [ "$success" -ne 1 ]; then
+            echo "Failed to boot ephemeral Supabase; never fall back to production.";
+            exit 1;
+          fi
+          npx --yes supabase@latest status -o env > /tmp/labgame-supabase-ci.env
+      - name: Exercise two real local Auth sessions and RLS
+        env:
+          LAB_SUPABASE_LOCAL_ENV_FILE: /tmp/labgame-supabase-ci.env
+        run: node scripts/tests/local-supabase-auth.mjs
+      - name: Enable V2 only inside ephemeral database
+        run: |
+          docker exec supabase_db_labgame-free-ci psql -U postgres -d postgres -v ON_ERROR_STOP=1 \
+            -c "UPDATE public.lab_v2_release_controls SET enabled=true WHERE singleton=true"
+      - name: Exercise real signed-in V2 reading, RLS and reset
+        env:
+          LAB_SUPABASE_LOCAL_ENV_FILE: /tmp/labgame-supabase-ci.env
+        run: node scripts/tests/local-v2-smoke.mjs
+      - name: Install Deno for local Edge Function validation
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Exercise account deletion against real local Auth and GC membership
+        run: |
+          set -a
+          source /tmp/labgame-supabase-ci.env
+          set +a
+          export SUPABASE_URL="$API_URL"
+          export SUPABASE_ANON_KEY="${ANON_KEY:-$PUBLISHABLE_KEY}"
+          export SUPABASE_SERVICE_ROLE_KEY="${SERVICE_ROLE_KEY:-$SECRET_KEY}"
+          nohup deno run -A supabase/functions/account-delete/index.ts > /tmp/lab-local-edge.log 2>&1 &
+          echo $! > /tmp/lab-local-edge.pid
+          ready=0
+          for i in $(seq 1 40); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8000/ || true)
+            if [ "$code" = 405 ]; then ready=1; break; fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then
+            echo "Local deletion function did not start; nonsecret error summary:";
+            grep -Ei 'error|exception|failed' /tmp/lab-local-edge.log | tail -15 || true;
+            exit 1;
+          fi
+          node scripts/tests/local-account-delete.mjs
+      - name: Stop local Edge Function
+        if: always()
+        run: |
+          if [ -f /tmp/lab-local-edge.pid ]; then
+            kill "$(cat /tmp/lab-local-edge.pid)" || true
+          fi
+      - name: Install headless Chromium for responsive UI smoke
+        run: |
+          npm install --no-save --no-audit --no-fund playwright
+          npx playwright install --with-deps chromium
+      - name: Validate real LABGAME profile and mobile flow
+        run: |
+          set -a
+          source /tmp/labgame-supabase-ci.env
+          set +a
+          export VITE_SUPABASE_URL="$API_URL"
+          export VITE_SUPABASE_ANON_KEY="${ANON_KEY:-$PUBLISHABLE_KEY}"
+          nohup npm run dev -- --host 127.0.0.1 --port 5173 --strictPort > /tmp/lab-local-vite.log 2>&1 &
+          echo $! > /tmp/lab-local-vite.pid
+          ready=0
+          for i in $(seq 1 40); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5173/ || true)
+            if [ "$code" = 200 ]; then ready=1; break; fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then echo "Free local Vite server did not start"; exit 1; fi
+          node scripts/tests/local-browser-p0.mjs
+      - name: Preserve UX screenshots from fake accounts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: labgame-p0-desktop-mobile
+          path: /tmp/labgame-ux/
+          if-no-files-found: ignore
+          retention-days: 5
+      - name: Stop local Vite server
+        if: always()
+        run: |
+          if [ -f /tmp/lab-local-vite.pid ]; then
+            kill "$(cat /tmp/lab-local-vite.pid)" || true
+          fi
+      - name: Tear down ephemeral test stack
+        if: always()
+        run: npx --yes supabase@latest stop --no-backup || true
