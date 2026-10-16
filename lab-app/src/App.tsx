@@ -19,6 +19,8 @@ import {BibleProjectPlayer} from "./components/BibleProjectPlayer";
 import type {BibleProjectResource} from "./domain/bibleproject";
 import {readOnboardingProgress,saveOnboardingProgress} from "./domain/onboarding";
 import {ChallengeJourney} from "./components/ChallengeJourney";
+import {JourneyV2Panel} from "./components/JourneyV2Panel";
+import type {JourneyV2State} from "./features/journey-v2";
 import {FormationLibrary} from "./components/FormationLibrary";
 import {ProfileSettings} from "./components/ProfileSettings";
 import {DailyInAppPopup} from "./components/DailyInAppPopup";
@@ -27,6 +29,7 @@ type Tab="today"|"bible"|"journey"|"studies"|"groups"|"profile";
 const tabs=[{id:"journey",label:"Jornada",icon:Compass},{id:"studies",label:"Estudos",icon:Library},{id:"bible",label:"Bíblia",icon:BookMarked},{id:"groups",label:"GCs",icon:Users},{id:"profile",label:"Perfil",icon:UserRound}] as const;
 const plan=createGamePlan();
 const validPlan=verifyGamePlan(plan);
+const v2Enabled=import.meta.env.VITE_LAB_V2_READY==="true";
 const describeError=(e:unknown)=>e instanceof Error?e.message:"Não foi possível concluir a operação.";
 export default function App(){
  const authQuery=typeof window==="undefined"?null:new URLSearchParams(window.location.search).get("auth");
@@ -36,6 +39,9 @@ export default function App(){
  const [authLoading,setAuthLoading]=useState(Boolean(supabase));
  const [game,setGame]=useState<LabGameState|null>(null);
  const [scorecard,setScorecard]=useState<LabScorecard|null>(null);
+ const [v2Game,setV2Game]=useState<JourneyV2State|null>(null);
+ const [v2Epoch,setV2Epoch]=useState(0);
+ const handleV2State=useCallback((next:JourneyV2State|null)=>setV2Game(next),[]);
  const [loading,setLoading]=useState(false),[busy,setBusy]=useState(false);
  const [message,setMessage]=useState("");
  const [introStep,setIntroStep]=useState(()=>readOnboardingProgress().step),[preferredMode,setPreferredMode]=useState<"individual"|"grupo">(()=>readOnboardingProgress().mode);
@@ -58,7 +64,7 @@ export default function App(){
  const [showStages,setShowStages]=useState(28);
  useEffect(()=>{saveOnboardingProgress({step:introStep,mode:preferredMode,viewAuth})},[introStep,preferredMode,viewAuth]);
  const refreshScorecard=useCallback(async()=>{try{setScorecard(await loadGameScorecard())}catch(e){setMessage(describeError(e))}},[]);
- const refreshGame=useCallback(async()=>{setLoading(true);try{const state=await loadGameState();setGame(state);setProfileName(state.display_name||"Leitor LAB");setOptIn(Boolean(state.leaderboard_opt_in));setMessage("")}catch(e){setMessage(describeError(e))}finally{setLoading(false)}},[]);
+ const refreshGame=useCallback(async()=>{if(v2Enabled)return;setLoading(true);try{const state=await loadGameState();setGame(state);setProfileName(state.display_name||"Leitor LAB");setOptIn(Boolean(state.leaderboard_opt_in));setMessage("")}catch(e){setMessage(describeError(e))}finally{setLoading(false)}},[]);
  useEffect(()=>{
   const client=supabase;if(!client)return;
   let active=true;
@@ -80,7 +86,16 @@ export default function App(){
   });
   return()=>{active=false;subscription.unsubscribe()};
  },[]);
- useEffect(()=>{if(!user){setGame(null);setScorecard(null);setGroups([]);return}if(passwordRecoveryMode)return;void refreshGame();void refreshScorecard()},[user?.id,refreshGame,refreshScorecard,passwordRecoveryMode]);
+ useEffect(()=>{if(!user){setGame(null);setScorecard(null);setV2Game(null);setGroups([]);return}if(passwordRecoveryMode)return;
+  if(v2Enabled){
+   let active=true;
+   void supabase?.from("lab_game_stats").select("display_name,leaderboard_opt_in")
+    .eq("user_id",user.id).maybeSingle().then(({data})=>{
+     if(active){setProfileName(data?.display_name??"Leitor LAB");setOptIn(Boolean(data?.leaderboard_opt_in))}}).catch(()=>undefined);
+   return()=>{active=false};
+  }
+  void refreshGame();void refreshScorecard();
+ },[user?.id,refreshGame,refreshScorecard,passwordRecoveryMode]);
  useEffect(()=>{
   if(!user||(tab!=="groups"&&tab!=="profile"))return;
   let active=true;
@@ -95,9 +110,9 @@ export default function App(){
  const bookJustFinished=lastConfirmed!==null&&CANON.some(([book,total])=>book===lastConfirmed.book&&total===lastConfirmed.chapter);
  const stageDone=Boolean(game)&&!nextChapter;
  const stageProgress=stage.chapters.length?Math.round(completedIds.size/stage.chapters.length*100):0;
- const activeDays=game?.completed_days??0;
- const totalXP=scorecard?.total_xp??game?.total_xp??0;
- const bestDays=game?.best_days??0;
+ const activeDays=v2Enabled?(v2Game?.completed_stages??0):(game?.completed_days??0);
+ const totalXP=v2Enabled?(v2Game?.run_xp??0):(scorecard?.total_xp??game?.total_xp??0);
+ const bestDays=v2Enabled?(v2Game?.best_completed_stages??0):(game?.best_days??0);
  const talentMilestones=earnedTalentMilestones(bestDays);
  const rankLevel=bestDays>=365?"Guardião da Palavra":bestDays>=100?"Peregrino":bestDays>=30?"Constante":bestDays>=7?"Semeador":"Iniciante";
  const flameLevel=activeDays>=30?"intense":activeDays>=7?"steady":activeDays>0?"growing":"quiet";
@@ -114,14 +129,14 @@ export default function App(){
  const joinGroup=async()=>{setGroupBusy(true);setGroupMessage("");try{await joinReadingGroup(inviteCode);setInviteCode("");await refreshGroups();setGroupMessage("Você entrou no GC.")}catch(e){setGroupMessage(describeError(e))}finally{setGroupBusy(false)}};
  const viewInvite=async(groupId:string)=>{setGroupBusy(true);try{const token=await getGroupInvite(groupId);setInvites(prev=>({...prev,[groupId]:token}))}catch(e){setGroupMessage(describeError(e))}finally{setGroupBusy(false)}};
 
- const saveProfile=async()=>{setBusy(true);setMessage("");try{await saveGameProfile(profileName,optIn);await refreshGame();setMessage("Preferências atualizadas.")}catch(e){setMessage(describeError(e))}finally{setBusy(false)}};
+ const saveProfile=async()=>{setBusy(true);setMessage("");try{await saveGameProfile(profileName,optIn);if(!v2Enabled)await refreshGame();setMessage("Preferências atualizadas.")}catch(e){setMessage(describeError(e))}finally{setBusy(false)}};
  const logout=async()=>{
   if(busy)return;
   setBusy(true);setMessage("");
   try{
    await signOut();
    // Remove all account-specific UI state, including any previously revealed GC invite.
-   setUser(null);setGame(null);setScorecard(null);setGroups([]);setInvites({});
+   setUser(null);setGame(null);setV2Game(null);setScorecard(null);setGroups([]);setInvites({});
    setRankingGroup("");setActiveVideo(null);setLessonOpen(false);setLastConfirmed(null);
    setProfileName("");setOptIn(false);setGroupMessage("");setPasswordRecoveryMode(false);
    setTab("profile");
@@ -132,15 +147,15 @@ export default function App(){
  };
 
  const selectedBlock=useMemo(()=>STUDY_BLOCKS.find(b=>b.id===selectedStudy)??STUDY_BLOCKS[0],[selectedStudy]);
- const goTab=(next:Tab)=>{setMessage("");setLessonOpen(false);setLastConfirmed(null);setTab(next);if(next==="journey"&&user)void refreshGame()};
+ const goTab=(next:Tab)=>{setMessage("");setLessonOpen(false);setLastConfirmed(null);setTab(next);if(next==="journey"&&user&&!v2Enabled)void refreshGame()};
  if(authRoute!=="none")return <AuthFlow route={authRoute}/>;
  return <div className="game-app">
   <header className="game-header"><div className="brandmark"><span className="brand-symbol"><Flame size={23}/></span><div><strong>LAB<span>GAME</span></strong><small>LEITURA ANUAL DA BÍBLIA</small></div></div><div className="header-status"><span className={"flame-indicator "+flameLevel} title="Sequência atual de leitura"><Flame size={20}/>{activeDays}</span><span className="xp-counter" title="Pontos validados no servidor"><Award size={18}/>{totalXP} XP</span><span className="talents-counter" title="Marcos semanais da melhor sequência de leitura"><Trophy size={17}/>{talentMilestones} Talentos</span></div></header>
   <NetworkStatus/>
-  <DailyInAppPopup userId={user?.id??null} day={game?.day??null}
+  {!v2Enabled&&<DailyInAppPopup userId={user?.id??null} day={game?.day??null}
    today={game?.today??null} readingComplete={Boolean(game?.finished||stageDone)}
    visibleOnJourney={tab==="journey"&&!lessonOpen}
-   onRead={()=>{setTab("today");setLessonOpen(true);setLastConfirmed(null)}}/>
+   onRead={()=>{setTab("today");setLessonOpen(true);setLastConfirmed(null)}}/>}
   <main className="game-content">
    {tab==="today"&&user&&game&&lessonOpen?<section className="lesson-screen game-panel"><div className="lesson-head"><button type="button" className="lesson-back" aria-label="Sair da leitura" onClick={()=>{setLessonOpen(false);setLastConfirmed(null);setTab("journey")}}><ArrowLeft size={23}/></button><div className="lesson-screen-progress"><div style={{width:String(stageProgress)+"%"}}/></div><span className="flame-indicator"><Flame size={19}/>{activeDays}</span></div>{lastConfirmed?<div className="lesson-feedback"><div className="victory-icon"><CheckCircle2 size={47}/></div><span className="eyebrow">LEITURA REGISTRADA</span><h1>Excelente!</h1><p>Você confirmou {lastConfirmed.book} {lastConfirmed.chapter} e recebeu <strong>+10 XP</strong>.</p>{game?.finished&&scorecard?.cycle_awards?.filter(award=>award.run_id===game.run_id).map(award=><div className="lab-cycle-victory" role="status" key={award.run_id}><Crown size={30}/><div><strong>Coroa {award.cycle_number} conquistada!</strong><p>Bíblia completa · bônus confirmado de +{award.bonus_xp.toLocaleString("pt-BR")} XP</p></div></div>)}{bookJustFinished&&<div className="finished-book-panel"><h2>Livro concluído!</h2><p>Quer conhecer o panorama completo de {lastConfirmed.book}? Este recurso é opcional e não altera seu XP.</p><div className="finished-book-links">{getBibleProjectVideos(lastConfirmed.book).map(resource=><button type="button" key={resource.url} onClick={()=>openVideo(resource,lastConfirmed.book)}><Video size={17}/><span>{resource.title}</span><Video size={14}/></button>)}</div></div>}<button type="button" className="primary-cta" onClick={()=>{setLastConfirmed(null);if(!nextChapter){setLessonOpen(false);setTab("journey")}}}>{nextChapter?"PRÓXIMO CAPÍTULO":"CONCLUIR ETAPA"} <ArrowRight size={18}/></button></div>:nextChapter?<div className="lesson-reading"><span className="eyebrow">ETAPA {stage.day} · CAPÍTULO {completedIds.size+1} DE {stage.chapters.length}</span><div className="lab-emblem small"><BookOpen size={34}/></div><h1>{nextChapter.book} <em>{nextChapter.chapter}</em></h1><div className="lesson-category">{categoryOfBook(nextChapter.book)}</div><p>Leia abaixo o texto integral do capítulo. Reflita sobre a mensagem central antes de confirmar sua leitura.</p><div className="reading-reflection"><Sparkles size={23}/><div><strong>Pausa para reflexão</strong><span>O que este capítulo ensina sobre Deus, as pessoas ou a história da redenção?</span></div></div>{nextVideo&&<button type="button" className="lesson-video-resource" onClick={()=>openVideo(nextVideo,nextChapter.book)}><Video size={20}/><span><strong>Panorama do BibleProject</strong><small>{nextVideo.title} · Recurso opcional de contextualização</small></span><Video size={17}/></button>}<BibleReader key={nextChapter.id} chapterId={nextChapter.id} onConfirm={()=>void confirm()} busy={busy}/></div>:<div className="lesson-feedback"><Trophy size={50}/><h1>Dia conquistado!</h1><p>Seu próximo desafio será liberado amanhã.</p><button className="primary-cta" onClick={()=>{setLessonOpen(false);setTab("journey")}}>VOLTAR À JORNADA</button></div>}{message&&<p role="status" className="feedback-message">{message}</p>}</section>:(tab==="journey"||tab==="today")&&<div className="today-layout">
     {authLoading?<section className="game-panel"><p className="muted" role="status">Restaurando sua sessão...</p></section>:!user?<section className={"onboarding game-panel"+(introStep===3&&!viewAuth?" onboarding-journey":"")}>
@@ -155,7 +170,7 @@ export default function App(){
        <button type="button" className="subtle-button" onClick={()=>setViewAuth(false)}><ArrowLeft size={17}/> Voltar à apresentação</button>
       </>}
        {message&&<p role="status" className="feedback-message">{message}</p>}
-     </section>:<>{game?<ChallengeJourney plan={plan} game={game} totalXP={totalXP} onStart={()=>{setLastConfirmed(null);setTab("today");setLessonOpen(true)}} onRestart={()=>void restartChallenge()} onExploreBible={()=>goTab("bible")}/>:<section className="game-panel"><p className="muted" role="status">{loading?"Carregando seu desafio...":message||"Aguardando a sincronização da leitura."}</p></section>}{message&&game&&<p role="status" className="feedback-message">{message}</p>}
+     </section>:<>{v2Enabled?<JourneyV2Panel key={user.id+"-"+v2Epoch} userId={user.id} onState={handleV2State}/>:game?<ChallengeJourney plan={plan} game={game} totalXP={totalXP} onStart={()=>{setLastConfirmed(null);setTab("today");setLessonOpen(true)}} onRestart={()=>void restartChallenge()} onExploreBible={()=>goTab("bible")}/>:<section className="game-panel"><p className="muted" role="status">{loading?"Carregando seu desafio...":message||"Aguardando a sincronização da leitura."}</p></section>}{message&&game&&<p role="status" className="feedback-message">{message}</p>}
       <section className="connections-panel"><span className="eyebrow">CONEXÕES DA PALAVRA</span><h3>Estude além do capítulo</h3><p>Explore temas, contextos e conexões entre livros sem alterar a regra da leitura diária.</p><button className="secondary-cta" onClick={()=>goTab("studies")}>EXPLORAR ESTUDOS <ArrowRight size={17}/></button></section></>}
    </div>}
    {tab==="bible"&&<BibleLibrary signedIn={Boolean(user)} onVideo={openVideo}/>}
@@ -183,7 +198,7 @@ export default function App(){
  </article></section>}
    {tab==="groups"&&<section className="game-panel"><span className="eyebrow">COMUNIDADE E CONSTÂNCIA</span><h1>Seus <em>GCs.</em></h1><p className="muted">Participe do seu grupo de crescimento e compare a constância entre leitores que escolherem aparecer no ranking.</p>{authLoading?<p className="muted" role="status">Restaurando sua sessão...</p>:!user?<AccountAccess initialMode="login" title="Entre para criar ou participar do GC"/>:<><div className="group-forms"><form onSubmit={e=>{e.preventDefault();void createGroup()}}><h3>Criar um GC</h3><label htmlFor="gc-name">Nome do grupo</label><input id="gc-name" minLength={2} maxLength={100} required value={groupName} onChange={e=>setGroupName(e.target.value)} placeholder="Ex.: GC O Caminho"/><button type="submit" disabled={groupBusy}>CRIAR GC</button></form><form onSubmit={e=>{e.preventDefault();void joinGroup()}}><h3>Entrar por convite</h3><label htmlFor="gc-code">Código recebido</label><input id="gc-code" required value={inviteCode} onChange={e=>setInviteCode(e.target.value)} placeholder="Código do líder"/><button type="submit" disabled={groupBusy}>ENTRAR NO GC</button></form></div>{groupMessage&&<p role="status" className="feedback-message">{groupMessage}</p>}<h2>Grupos em que participo</h2>{groups.length===0?<p className="muted">Você ainda não está em nenhum grupo.</p>:groups.map(g=><div className="group-entry" key={g.id}><div><strong>{g.name}</strong><small>{g.owner_id===user.id?"Líder do grupo":"Participante"}</small></div><button type="button" className={rankingGroup===g.id?"gc-select-active":""} onClick={()=>setRankingGroup(g.id)}>PERFIL DO GC</button>{g.owner_id===user.id&&<button type="button" disabled={groupBusy} onClick={()=>void viewInvite(g.id)}>CONVITE</button>}{invites[g.id]&&<div className="invite-token"><span>{invites[g.id]}</span><button type="button" onClick={()=>void navigator.clipboard?.writeText(invites[g.id])}>COPIAR</button></div>}</div>)}{groups.length>0&&<GCProfile key={rankingGroup||groups[0].id} group={groups.find(g=>g.id===rankingGroup)??groups[0]} userId={user.id} personalXp={scorecard?.total_xp??game?.total_xp??null} onPersonalProfile={()=>setTab("profile")}/>}
 <GCLeague userId={user.id} groups={groups} onGroupsChange={refreshGroups}/></>}</section>}
-   {tab==="profile"&&<section className="game-panel"><span className="eyebrow">PERFIL E CONQUISTAS</span><h1>Minha <em>jornada.</em></h1>{authLoading?<p className="muted" role="status">Restaurando sua sessão...</p>:!user?<AccountAccess initialMode={authQuery==="reset"?"reset":"login"} title="Acesse seu perfil pessoal"/>:<><p className="muted">{user.email}</p><div className="profile-rank"><Trophy size={34}/><div><span>SEU NÍVEL</span><strong>{rankLevel}</strong><small>Seu crescimento é medido em dias de leitura confirmados, não em valor espiritual.</small></div></div><div className="journey-stats"><div><Flame/><strong>{activeDays}</strong><span>Constância</span></div><div><Trophy/><strong>{bestDays}</strong><span>Recorde</span></div><div><Award/><strong>{totalXP}</strong><span>XP total</span></div></div><section className="personal-scorecard" aria-label="Pontuação individual detalhada">
+   {tab==="profile"&&<section className="game-panel"><span className="eyebrow">PERFIL E CONQUISTAS</span><h1>Minha <em>jornada.</em></h1>{authLoading?<p className="muted" role="status">Restaurando sua sessão...</p>:!user?<AccountAccess initialMode={authQuery==="reset"?"reset":"login"} title="Acesse seu perfil pessoal"/>:<><p className="muted">{user.email}</p><div className="profile-rank"><Trophy size={34}/><div><span>SEU NÍVEL</span><strong>{rankLevel}</strong><small>Seu crescimento é medido em dias de leitura confirmados, não em valor espiritual.</small></div></div><div className="journey-stats"><div><Flame/><strong>{activeDays}</strong><span>Constância</span></div><div><Trophy/><strong>{bestDays}</strong><span>Recorde</span></div><div><Award/><strong>{totalXP}</strong><span>XP total</span></div></div>{!v2Enabled&&<section className="personal-scorecard" aria-label="Pontuação individual detalhada">
  <span className="eyebrow">MEUS PONTOS</span>
  <h2>Como ganho XP?</h2>
  <div className="scorecard-breakdown">
@@ -203,9 +218,15 @@ export default function App(){
     <b>+{award.bonus_xp.toLocaleString("pt-BR")} XP</b>
    </div>)}</div>
   </div>}
- </section>
+ </section>}
+ {v2Enabled&&<section className="personal-scorecard" aria-label="Pontuação da tentativa V2">
+  <span className="eyebrow">PONTUAÇÃO ATUAL · V2</span>
+  <h2>{v2Game?.run_xp??0} XP nesta sequência</h2>
+  <p className="muted">Históricos antigos são recordes a superar; não entram na pontuação da tentativa atual.</p>
+  <p className="muted">{v2Game?.completed_bibles_historical??0} Bíblia(s) completa(s) registrada(s).</p>
+ </section>}
  <h2>Meus marcos</h2><div className="milestone-list">{[1,7,30,100,180,365].map(goal=><div className={"milestone "+(bestDays>=goal?"earned":"")} key={goal}><Award size={19}/><span>{goal===365?"Bíblia completa":goal+" dias seguidos"}</span><strong>{bestDays>=goal?"CONQUISTADO":"BLOQUEADO"}</strong></div>)}</div><form className="profile-form" onSubmit={e=>{e.preventDefault();void saveProfile()}}><h2>Identidade no GC</h2><label htmlFor="display-name">Nome exibido</label><input id="display-name" value={profileName} minLength={2} maxLength={60} required onChange={e=>setProfileName(e.target.value)}/><label className="toggle-rank"><input type="checkbox" checked={optIn} onChange={e=>setOptIn(e.target.checked)}/> Quero aparecer nos rankings privados dos meus GCs.</label><button className="secondary-cta" disabled={busy} type="submit">SALVAR PERFIL</button></form><section className="account-security"><h2><LockKeyhole size={21}/> Segurança da conta</h2><p className="muted">Encerre sua sessão neste dispositivo. Seus dados e pontos serão preservados.</p><button className="logout-cta" type="button" disabled={busy} onClick={()=>void logout()}><LogOut size={18}/> {busy?"SAINDO...":"SAIR DA CONTA"}</button></section>
-<ProfileSettings accountEmail={user.email} onReset={async()=>{await refreshGame();await refreshScorecard();setLessonOpen(false);setLastConfirmed(null);setTab("journey")}} onDeleted={()=>{setUser(null);setGame(null);setScorecard(null);setGroups([]);setInvites({});setLessonOpen(false);setTab("profile");setMessage("Conta excluída. Você pode criar uma nova conta quando quiser.")}}/>{message&&<p role="status" className="feedback-message">{message}</p>}</>}<InstallApp/></section>}
+<ProfileSettings accountEmail={user.email} onReset={async()=>{if(v2Enabled){setV2Game(null);setV2Epoch(n=>n+1)}else{await refreshGame();await refreshScorecard()}setLessonOpen(false);setLastConfirmed(null);setTab("journey")}} onDeleted={()=>{setUser(null);setGame(null);setV2Game(null);setScorecard(null);setGroups([]);setInvites({});setLessonOpen(false);setTab("profile");setMessage("Conta excluída. Você pode criar uma nova conta quando quiser.")}}/>{message&&<p role="status" className="feedback-message">{message}</p>}</>}<InstallApp/></section>}
   </main>
   <nav className="game-bottom-nav" aria-label="Menu LABGAME">{tabs.map(t=><button key={t.id} type="button" className={tab===t.id?"active":""} onClick={()=>goTab(t.id)} aria-current={tab===t.id?"page":undefined}><t.icon size={21}/><span>{t.label}</span></button>)}</nav>
   {activeVideo&&<BibleProjectPlayer key={activeVideo.resource.url} resource={activeVideo.resource} book={activeVideo.book} signedIn={Boolean(user)} onClose={()=>setActiveVideo(null)} onBonus={total=>{setGame(prev=>prev?{...prev,total_xp:total}:prev);void refreshScorecard()}}/>}
