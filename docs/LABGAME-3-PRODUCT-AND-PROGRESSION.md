@@ -48,6 +48,19 @@ A integridade do ciclo permanece: **66 livros / 1.189 capítulos / 365 etapas**.
 - Um `cycle_completion` terá chave de idempotência (`user_id`, `run_id`, `award_code`) e validação server-side de conclusão. O servidor deve aplicar bônus uma única vez em transação e reconciliar placar, evitando que reenvio, reload, múltiplas abas, dispositivo duplicado, erro ou reinício concedam bônus em dobro.
 - Não tentar lançar bônus pelo cliente. Histórico imutável, auditoria e migração versionada com ensaio em staging antes de tocar produção. Resolver fórmula e controle de abuso antes da implementação.
 
+## Regra irrevogável de progresso: ausência ≠ reset voluntário
+
+**Confirmado pelo responsável em outubro de 2026.** Existem **três situações distintas**, e nenhuma opção de zerar apenas o dia:
+
+1. **Falta de leitura (automática):** o participante perdeu o dia exigido do plano. Ao voltar, a tentativa corrente é interrompida e o próximo desafio passa à etapa 1, sem recuperar o dia perdido. O **melhor recorde anterior**, XP histórico, vídeos, estudos, Talentos, coroas e número de Bíblias já concluídas **permanecem intactos**.
+2. **Superar o próprio recorde:** exemplo: sequência máxima antiga 265 dias. Na nova tentativa, após completar 266 dias, o único número mostrado como **melhor recorde** passa de 265 para 266. Histórico auditável das tentativas permanece, mas 265 deixa de ser o melhor recorde vigente. Se não houver leitura por três dias após concluir apenas um, a contagem de dias lidos nunca se torna três; a nova tentativa abre no dia 1 e o recorde máximo continua sendo um.
+3. **Zerar absolutamente tudo (decisão expressa):** qualquer participante autenticado pode solicitar operação excepcional, irreversível e **protegida no servidor** para apagar TODOS os seus registros de progresso e pontuação (inclusive tentativas anteriores, XP de leitura/vídeos/estudos, recordes, Talentos, medalhas, Bíblias completas, coroas, bônus anuais de 10 mil XP e incrementos posteriores). O app reinicia com **dia 1, 0 XP, recorde 0, Bíblias concluídas 0 e estudos concluídos 0**. Nome, login, consentimentos, notificações, dados cadastrais e filiação a GC permanecem. Itens pessoais de leitura livre que não representam progresso (ex.: favoritos) podem ser mantidos, com aviso prévio transparente.
+4. **Excluir conta** é um fluxo diferente do reset: após processamento real, uma nova conta não herda progresso, conquistas ou pontos da antiga. Tratar administradores de GC e retenção legal antes da exclusão.
+
+Para evitar perda acidental, só o **reset total** exige modal de consequências + aceite + digitar `ZERAR` + confirmação recente de identidade; **exclusão de conta** tem confirmação separada com `EXCLUIR`. Nenhuma dessas operações ocorre pela simples abertura de um menu. Sempre recalcular rankings coletivos sem apagar méritos de outros integrantes.
+
+**Status técnico:** regra documentada, porém **reset total e autodeleção ainda NÃO implementados como RPC/endpoint no backend e NÃO ativados em produção**. Só implementar após revisão transacional em staging, gestão dos vínculos GC, ledger anual, vídeo/estudo e P0.
+
 ## Formação espiritual — conteúdo, não julgamento de fé
 - **Fundamentos para novos convertidos:** quem é Jesus; salvação pela graça; Bíblia; oração; arrependimento e fé; batismo; comunidade e igreja; vida de discípulo; missão, generosidade e serviço.
 - **Teologia sistemática, módulo por módulo:** bibliologia; teologia própria; cristologia; pneumatologia; antropologia; hamartiologia; soteriologia; eclesiologia; escatologia. Distinguir interpretações doutrinárias quando houver diferenças cristãs significativas, com revisão pastoral e citações bíblicas.
