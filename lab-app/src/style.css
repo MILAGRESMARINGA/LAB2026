@@ -671,3 +671,11 @@ body.video-modal-open{overflow:hidden}
  .v2-start{padding:16px}
 }
 @media(prefers-reduced-motion:reduce){.v2-progress>div{transition:none}}
+
+
+/* Privacy-first notification preferences: per-topic channels. */
+.ps-notice-matrix{display:grid;gap:8px;margin:14px 0}
+.ps-notice-row{display:grid;grid-template-columns:minmax(150px,1fr) minmax(96px,auto) minmax(96px,auto);gap:8px;align-items:center;padding:12px;border:1px solid #3b5358;border-radius:11px;background:#1a2b31}
+.ps-notice-row strong{font-size:13px;line-height:1.5;color:#e9f4ed}
+.ps-notice-row .ps-check{margin:0;min-width:0;font-size:12px}
+@media(max-width:530px){.ps-notice-row{grid-template-columns:1fr 1fr;gap:10px}.ps-notice-row strong{grid-column:1/-1}.ps-notice-row .ps-check{justify-content:flex-start}}
