@@ -57,6 +57,18 @@ export async function loadMemberSettings():Promise<{profile:MemberProfile;notifi
   )}
  };
 }
+/** Read only notice preferences; used on the Journey without loading sensitive profile fields. */
+export async function loadNoticePreferencesOnly():Promise<NoticePreferences>{
+ const u=await getAuthenticatedUser();
+ const {data,error}=await supabase!.from("lab_notification_preferences")
+  .select("enabled,in_app_popup,email,reading_reminders,gc_activity,milestones")
+  .eq("user_id",u.id).maybeSingle();
+ failOnError(error);
+ return {...DEFAULT_NOTICES,...Object.fromEntries(
+  (Object.keys(DEFAULT_NOTICES) as (keyof NoticePreferences)[])
+    .map(k=>[k,Boolean(data?.[k])])
+ )};
+}
 export async function saveMemberProfile(input:MemberProfile,agreedReligiousData:boolean):Promise<void>{
  const u=await getAuthenticatedUser();
  const religion=RELIGIOUS_FIELDS.some(k=>Boolean(input[k].trim()));
