@@ -1,0 +1,25 @@
+{
+  "id": "/",
+  "name": "LABGAME — Leitura Anual da Bíblia",
+  "short_name": "LABGAME",
+  "description": "Leia a Bíblia em 365 etapas, participe de GCs e acompanhe sua constância.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#142629",
+  "theme_color": "#142629",
+  "lang": "pt-BR",
+  "orientation": "any",
+  "categories": [
+    "education",
+    "books"
+  ],
+  "icons": [
+    {
+      "src": "/icons/labgame.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ]
+}

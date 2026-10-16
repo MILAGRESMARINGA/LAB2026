@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+coverage/
+
+# Database dumps and credentials — must stay out of git.
+*.dump
+*.backup
+*.pgpass
+LABGAME-backups/
+LABGAME-full-*.manifest.json
