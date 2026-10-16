@@ -21,7 +21,10 @@ test("personal and religious data tables are private and self-owned",()=>{
 test("full reset requires a recently reauthenticated user and explicit typed phrase",()=>{
  assert.match(sql,/FUNCTION public\.lab_game_full_reset\(p_confirmation text\)/);
  assert.match(sql,/p_confirmation IS DISTINCT FROM 'ZERAR JORNADA'/);
- assert.match(sql,/v_last_sign_in < now\(\)-interval '5 minutes'/);
+ assert.match(sql,/v_session_id text:=auth\.jwt\(\)->>'session_id'/);
+ assert.match(sql,/FROM auth\.sessions s/);
+ assert.match(sql,/s\.user_id=v_user/);
+ assert.doesNotMatch(sql,/last_sign_in_at INTO v_last_sign_in/);
  assert.match(sql,/WHERE user_id=v_user FOR UPDATE/);
  assert.match(sql,/DELETE FROM public\.lab_game_runs WHERE user_id=v_user/);
  assert.match(sql,/DELETE FROM public\.lab_game_video_rewards WHERE user_id=v_user/);

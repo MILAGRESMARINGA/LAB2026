@@ -6,6 +6,16 @@ CREATE ROLE authenticated NOLOGIN;
 CREATE SCHEMA auth;
 GRANT USAGE ON SCHEMA auth TO authenticated;
 CREATE TABLE auth.users(id uuid PRIMARY KEY,last_sign_in_at timestamptz DEFAULT now());
+-- Disposable Auth stub: a fresh session is tied to the JWT identity.
+CREATE TABLE auth.sessions(id uuid PRIMARY KEY,user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,created_at timestamptz NOT NULL DEFAULT now());
+CREATE OR REPLACE FUNCTION auth.fake_session() RETURNS trigger LANGUAGE plpgsql AS $
+BEGIN
+ INSERT INTO auth.sessions(id,user_id,created_at) VALUES(NEW.id,NEW.id,statement_timestamp());
+ RETURN NEW;
+END $;
+CREATE TRIGGER fake_auth_session AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION auth.fake_session();
+CREATE OR REPLACE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS
+$ SELECT jsonb_build_object('session_id',NULLIF(current_setting('app.test_user',true),'')::text) $;
 CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS
 $$ SELECT NULLIF(current_setting('app.test_user',true),'')::uuid $$;
 CREATE TABLE public.lab_game_runs(
@@ -298,6 +308,26 @@ BEGIN
  IF (SELECT COUNT(*) FROM public.lab_v2_cycle_awards WHERE run_id=(SELECT id FROM public.lab_v2_runs WHERE user_id=auth.uid() AND status='completed' LIMIT 1))<>1
  THEN RAISE EXCEPTION 'FAIL: annual crown duplicated'; END IF;
 END $test$;
+-- Regression: another session's recent login must NOT authorize a stale JWT.
+RESET ROLE;
+UPDATE auth.sessions SET created_at=statement_timestamp()-interval '10 minutes'
+ WHERE user_id='11111111-1111-4111-8111-111111111111'::uuid;
+SET ROLE authenticated;
+DO $test$
+BEGIN
+ BEGIN
+  PERFORM public.lab_game_full_reset('ZERAR JORNADA');
+  RAISE EXCEPTION 'FAIL: stale session reset another device journey';
+ EXCEPTION WHEN OTHERS THEN
+  IF SQLERRM NOT LIKE 'Entre novamente na sua conta%' THEN RAISE; END IF;
+ END;
+ IF NOT EXISTS(SELECT 1 FROM public.lab_v2_cycle_awards WHERE user_id=auth.uid())
+ THEN RAISE EXCEPTION 'FAIL: old session removed a completed Bible award'; END IF;
+END $test$;
+RESET ROLE;
+UPDATE auth.sessions SET created_at=statement_timestamp()
+ WHERE user_id='11111111-1111-4111-8111-111111111111'::uuid;
+SET ROLE authenticated;
 -- Explicit verified reset removes V1+V2 historical XP, awards and all lives.
 DO $test$
 DECLARE s jsonb;
