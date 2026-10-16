@@ -31,7 +31,7 @@ function mock(options={}){
 }
 test("default-disabled worker never asks Auth or GitHub",async()=>{
  const net=mock();
- const r=await handle(request(),{},net.fetcher,700000);
+ const r=await handle(request("POST",undefined,{origin:""}),{},net.fetcher,700000);
  assert.equal(r.status,503);assert.equal(net.calls.length,0);
 });
 test("non-admin is blocked even with valid login",async()=>{
