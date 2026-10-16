@@ -321,3 +321,14 @@ Documento completo: `docs/PROFILE-SETTINGS-NOTIFICATIONS-PRIVACY-PROPOSAL.md`.
 - [ ] Refatorar `lab_game_stats.total_xp`, scorecard, ranking e algoritmo antifraude para distinguir `run_xp`, `best_run_xp`, histórico por tentativa e bônus de ciclo completo; não confundir com o saldo vitalício da implementação legada.
 - [ ] Reavaliar e revalidar a migração pendente de bônus anual (+10k...) à luz desta regra antes de qualquer produção.
 - [ ] Testar duas contas, falha e recomeço, reinício por conclusão, faixas de carência e vidas em staging. Nenhuma migração SQL foi aplicada por esta especificação.
+
+
+## Regra aprovada — renovação de vidas por mês sem recuperação retroativa (16/10/2026)
+- [x] Renovar o saldo mensal de vidas apenas para eventos aplicáveis ao novo mês. Não acumular vidas anteriores.
+- [x] A virada do mês não muda os timestamps de ativação, prazo de 24h, carência de 6h, janelas de resgate, desconto de XP ou estado de tentativa encerrada.
+- [x] Um incidente de atraso permanece vinculado ao mês do primeiro vencimento e ao orçamento de vidas daquele incidente; vidas novas não podem financiar atraso iniciado no mês anterior.
+- [x] Caso uma etapa ainda esteja no prazo quando virar o mês, ela **não** sofre falha antecipada; a eventual infração futura é classificada por seu timestamp efetivo.
+- [x] Após falta de vidas, a tentativa é encerrada na hora real do vencimento, mesmo que o usuário só abra o aplicativo no mês seguinte. Novo desafio: 0 XP e etapa 1; conquistas anteriores somente históricas.
+- [ ] Testar controle de concorrência e ledger de vidas com viagens de fuso, períodos offline, duas sessões e datas de virada em staging. O backend atual de data civil ainda **não** implementa estas regras.
+- [ ] Finalizar quantidade de vidas e eventual associação à Santa Ceia, mecanismo da janela de recuperação e modelo final de XP antes de programar. Não interpretar a aprovação da renovação mensal como aprovação destes itens.
+Detalhes: `docs/JOURNEY-ROLLING-24H-GAME-RULES-DESIGN.md`.
