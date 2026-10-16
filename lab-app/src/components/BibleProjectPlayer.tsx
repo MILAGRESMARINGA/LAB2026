@@ -45,8 +45,9 @@ export function embeddedPlayer(resource:BibleProjectResource,_book:string):{src:
  // as if it were a verified video for the requested book.
  return {src:null,exact:false};
 }
-type VideoState={eligible_at:string;already_awarded:boolean};
-export function BibleProjectPlayer({resource,book,signedIn,onClose,onBonus}:{resource:BibleProjectResource;book:string;signedIn:boolean;onClose:()=>void;onBonus:(total:number)=>void}){
+type VideoState={eligible_at:string;already_awarded:boolean;active_seconds?:number};
+const v2Enabled=import.meta.env.VITE_LAB_V2_READY==="true";
+export function BibleProjectPlayer({resource,book,signedIn,onClose,onBonus,runId=null}:{resource:BibleProjectResource;book:string;signedIn:boolean;onClose:()=>void;onBonus:(total:number)=>void;runId?:string|null}){
  const containerRef=useRef<HTMLDivElement>(null);
  const [timer,setTimer]=useState(0);
  const [session,setSession]=useState<VideoState|null>(null);
@@ -62,24 +63,37 @@ export function BibleProjectPlayer({resource,book,signedIn,onClose,onBonus}:{res
  },[]);
  useEffect(()=>{
   if(!signedIn||!supabase)return;
+  if(v2Enabled&&!runId){setMessage("Ative sua Jornada V2 para registrar XP de vídeo nesta sequência.");return}
   let active=true;
-  void supabase.rpc("lab_game_video_begin",{p_video_key:key}).then(({data,error})=>{
+  void supabase.rpc(v2Enabled?"lab_v2_video_begin":"lab_game_video_begin",
+   v2Enabled?{p_run:runId,p_video_key:key}:{p_video_key:key}).then(({data,error})=>{
    if(!active)return;
    if(error)setMessage(error.message);
    else{setSession(data as VideoState);setClaimed(Boolean(data?.already_awarded))}
   });
   return()=>{active=false};
- },[key,signedIn]);
+ },[key,signedIn,runId]);
+ useEffect(()=>{
+  if(!v2Enabled||!runId||!supabase||!signedIn||!session||claimed||session.already_awarded)return;
+  const timer=window.setInterval(()=>{
+   if(document.visibilityState!=="visible")return;
+   void supabase!.rpc("lab_v2_video_ping",{p_run:runId,p_video_key:key}).then(({data,error})=>{
+    if(error){setMessage(error.message);return}
+    setSession(prev=>prev?{...prev,active_seconds:Number(data?.active_seconds??prev.active_seconds??0),already_awarded:Boolean(data?.already_awarded)}:prev);
+   });
+  },15000);
+  return()=>window.clearInterval(timer);
+ },[key,runId,signedIn,session?.already_awarded,claimed,Boolean(session)]);
  useEffect(()=>{
   const onKey=(e:KeyboardEvent)=>{if(e.key==="Escape")onClose()};
   document.addEventListener("keydown",onKey);document.body.classList.add("video-modal-open");
   return()=>{document.removeEventListener("keydown",onKey);document.body.classList.remove("video-modal-open")};
  },[onClose]);
- const seconds=session?Math.max(0,Math.ceil((new Date(session.eligible_at).getTime()-Date.now())/1000)):90;
+ const seconds=session?(v2Enabled?Math.max(0,90-(session.active_seconds??0)):Math.max(0,Math.ceil((new Date(session.eligible_at).getTime()-Date.now())/1000))):90;
  const claim=async()=>{
   if(!supabase||busy||!session||seconds>0||claimed||(!source.exact&&!officialSourceOpened))return;
   setBusy(true);setMessage("");
-  try{const {data,error}=await supabase.rpc("lab_game_video_confirm",{p_video_key:key});
+  try{const {data,error}=await supabase.rpc(v2Enabled?"lab_v2_video_confirm":"lab_game_video_confirm",v2Enabled?{p_run:runId,p_video_key:key}:{p_video_key:key});
    if(error)throw error;
    setClaimed(true);onBonus(Number(data?.total_xp??0));setMessage(data?.awarded?"Panorama confirmado: +5 XP extra!":"Este panorama já recebeu XP.");
   }catch(e){setMessage(e instanceof Error?e.message:"Não foi possível confirmar o vídeo")}
@@ -91,7 +105,7 @@ export function BibleProjectPlayer({resource,book,signedIn,onClose,onBonus}:{res
    {source.exact?<div className="video-frame"><iframe title={"BibleProject: "+resource.title} src={source.src} allow="autoplay; fullscreen; picture-in-picture; encrypted-media; accelerometer; gyroscope" allowFullScreen loading="eager" referrerPolicy="strict-origin-when-cross-origin"/></div>:<div className="video-player-external" role="note"><Video size={25}/><h3>Panorama disponível na fonte oficial</h3><p>O player individual deste livro ainda não foi verificado. Para evitar apresentar o panorama de outro livro, abra o recurso correspondente no BibleProject.</p><a href={resource.url} target="_blank" rel="noopener noreferrer" onClick={()=>setOfficialSourceOpened(true)}><ExternalLink size={17}/> ASSISTIR {resource.title.toLocaleUpperCase("pt-BR")}</a></div>}
    <div className="video-controls">{source.exact&&<button type="button" className="secondary-cta" onClick={()=>{void containerRef.current?.requestFullscreen?.().catch(()=>setMessage("Utilize a opção de tela cheia do player."))}}><Expand size={17}/> TELA CHEIA</button>}<a href={resource.url} target="_blank" rel="noopener noreferrer" onClick={()=>setOfficialSourceOpened(true)}><ExternalLink size={16}/> Fonte original</a></div>
    <p className="video-credit"><strong>BibleProject</strong> é o autor e proprietário deste conteúdo. Mais recursos em <a href="https://bibleproject.com" target="_blank" rel="noopener noreferrer">bibleproject.com</a>. O vídeo não substitui os capítulos da leitura anual.</p>
-   {!signedIn?<p className="video-status">Entre na sua conta para conquistar XP extra pelos vídeos.</p>:claimed?<p className="video-success"><CheckCircle2 size={20}/> +5 XP já registrado para este panorama.</p>:<div className="video-reward"><p>Assista ao panorama e confirme depois. A confirmação ficará disponível após {seconds>0?seconds+" segundos":"o período mínimo de exibição"}. O registro é uma declaração pessoal de que você assistiu ao vídeo. {source.exact?"":"Abra primeiro o panorama correto na fonte oficial para habilitar esta confirmação."}</p><button type="button" className="primary-cta" disabled={!session||seconds>0||busy||(!source.exact&&!officialSourceOpened)} onClick={()=>void claim()}>{busy?"REGISTRANDO...":"ASSISTI AO PANORAMA · +5 XP"}</button></div>}
+   {!signedIn?<p className="video-status">Entre na sua conta para conquistar XP extra pelos vídeos.</p>:claimed?<p className="video-success"><CheckCircle2 size={20}/> +5 XP já registrado para este panorama.</p>:<div className="video-reward"><p>Assista ao panorama e confirme depois. A confirmação ficará disponível após {seconds>0?seconds+" segundos":"o período mínimo de exibição"}. O registro é uma declaração pessoal. O LABGAME acompanha o tempo de atividade no aplicativo, mas não consegue comprovar a reprodução do player externo. {source.exact?"":"Abra primeiro o panorama correto na fonte oficial para habilitar esta confirmação."}</p><button type="button" className="primary-cta" disabled={!session||seconds>0||busy||(!source.exact&&!officialSourceOpened)} onClick={()=>void claim()}>{busy?"REGISTRANDO...":"ASSISTI AO PANORAMA · +5 XP"}</button></div>}
    {message&&<p role="status" className="feedback-message">{message}</p>}
   </section>
  </div>;
