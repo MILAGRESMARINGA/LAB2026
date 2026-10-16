@@ -1,5 +1,5 @@
 # LABGAME — Especificação de jogo: ativação móvel, carência, vidas e proteção de XP
-**Status:** REGRA DE RELÓGIO DE 24 HORAS APÓS ATIVAÇÃO escolhida pelo responsável (16/10/2026); decisões indicadas como **PROPOSTA** ainda requerem confirmação; **NÃO PROGRAMADO NEM MIGRADO**.
+**Status:** REGULAMENTO-BASE APROVADO (16/10/2026): relógio 24h, tolerância única de 6h, -3/-6 XP na carência, 3 vidas iguais para todos por mês, extensão de 24h por vida, XP da tentativa separado de recordes, coroação integral distinta de constância perfeita. **Modelos de domínio e testes iniciados na branch; não há RPC nem migração aplicada ao banco real.** Questões secundárias ainda anotadas como pendentes.
 **Escopo:** somente `lab-app/`, branch `lab-rebuild-2026`. P0/SQL de produção inalterados.
 
 ## 1. Objetivo
@@ -26,7 +26,7 @@ Para etapa N, com `activated_at = A`:
 ### Exemplo
 Segunda 06:00 ativa etapa 1; segunda 08:00 conclui a leitura; terça 06:00 etapa 2 está READY; terça 08:00 ativa etapa 2; quarta 08:00 prazo normal da etapa 2 termina; quarta 14:00 encerra carência. A mudança voluntária do horário real de ativação altera os próximos prazos, dentro das regras anti-pausa abaixo.
 
-## 3. Evitar congelamento do relógio entre etapas (**necessário, ainda a homologar**)
+## 3. Evitar congelamento do relógio entre etapas (**tolerância única de 6h APROVADA**)
 
 **Falha inevitável do modelo ingênuo:** se o aplicativo só contar horas depois do clique e não limitar a espera entre desbloqueio e clique, um jogador pode ficar semanas sem ativar N+1 mantendo a tentativa e o recorde. Isso contraria o princípio de disciplina.
 
@@ -37,9 +37,9 @@ Segunda 06:00 ativa etapa 1; segunda 08:00 conclui a leitura; terça 06:00 etapa
 - O clique inicia o prazo de leitura `+24h` daquela etapa, MAS atraso para clicar não restaura vidas/recordes nem elimina o evento `START_OVERDUE`.
 - A sequência premiada como "perfeita" deve distinguir **sem atraso/sem vidas** versus "continuidade de tentativa salva". Caso contrário atrasos repetidos de até 6 horas deslocariam uma jornada de 365 etapas para um ciclo com mais de 365×24 h.
 - Se o participante já excedeu o limite e está ausente, o servidor reconstrói expiracões ocorridas em ordem cronológica em cada sincronização. Não utiliza temporizadores ou localStorage do cliente como autoridade.
-- **Requer aceite explícito:** tolerância de 6h para ativar após READY; poderia ser 12h ou 24h, mas o efeito na disciplina/ritmo seria diferente.
+- **APROVADO:** o intervalo máximo de seis horas é o MESMO intervalo após `A+24h` para finalizar a etapa pendente **ou** ativar a etapa seguinte concluída; não são duas janelas gratuitas de 6h. Se um usuário terminar em `A+28h`, só restam 2h até `A+30h` para ativar sem utilizar uma vida.
 
-## 4. XP e carência (**PROPOSTA de faixas, ainda não aprovada**)
+## 4. XP e carência (**faixas da tolerância aprovadas; pontuação pós-resgate em ajuste**)
 
 - Capítulo confirmado pela primeira vez no **ciclo elegível**: +10 XP (fonte de verdade servidor). Não conceder XP por exibir, fechar aba ou duplicar confirmação.
 - Até `A+24h`: sem penalidade.
@@ -50,11 +50,11 @@ Segunda 06:00 ativa etapa 1; segunda 08:00 conclui a leitura; terça 06:00 etapa
 - Se o capítulo gera +10 antes de fechar a etapa, penalidade de fechamento deve entrar no ledger como evento **único de ajuste**; `scorecard` reconcilia tudo de forma determinística, inclusive futuros bônus por Bíblia completa.
 - Não permitir saldo negativo por etapa. Saldos globais são resultados de fontes verificadas; não editar XP diretamente no cliente.
 
-## 5. Regra de vidas (**renovação mensal aprovada; cota e gatilho espiritual ainda em avaliação**)
+## 5. Regra de vidas (**3 vidas mensais iguais para todos e 24h por vida APROVADOS**)
 - Padrão solicitado: três vidas mensais; ao consumir a terceira, o **próximo** vencimento sem vida encerra tentativa, retornando ao Gênesis/etapa 1; recordes e XP histórico preservados. Cada vencimento distinto consome no máximo uma vida em transação.
-- **PROPOSTA:** a vida permite UMA extensão de 24h para concluir a etapa atual ou iniciá-la se ainda READY. Se não cumprir, outra janela cobra outra vida. Não existe resgate automático de capítulo não lido.
+- **APROVADO:** cada vida concede UMA extensão de 24h ao incidente de leitura/ativação. Se o prazo de resgate acabar sem solucionar a pendência, outra vida do mesmo incidente e do mesmo mês de origem é exigida; ao precisar de uma quarta vida inexistente, a tentativa encerra. A vida não substitui capítulos não lidos.
 - Para impedir abuso na virada do mês, eventos de vencimento são processados em ordem cronológica, sem recomputar vidas retroativamente por alterar data/fuso, reabrir app ou redefinir sessão.
-- **Cuidado com a Santa Ceia:** a mecânica de +3 vidas por declaração de participação e +1 vida por não participação ainda **NÃO ESTÁ APROVADA**. É autodeclaração não verificável, pode incentivar falsidade e inferir dado religioso sensível. Recomenda-se **3 vidas a todos** por mês e estudo devocional sobre Santa Ceia completamente opcional e separado de XP/vidas; confirmar com responsável antes de implementar.
+- **APROVADO:** são três vidas mensais de modo igualitário, sem condicionamento à declaração de Santa Ceia ou coleta de informações sacramentais. Eventuais estudos devocionais sobre Santa Ceia são opcionais e independentes de vidas ou XP.
 - **REGRA APROVADA:** a virada do mês apenas **renova o saldo mensal de vidas disponíveis** (até a cota aprovada, sem acumulá-las). Ela **não reinicia o relógio de 24h**, **não zera a carência de 6h**, **não cancela penalidades**, **não perdoa eventos de vencimento anteriores** e **não reabre tentativas encerradas**. Saldo e mês calculados pelo servidor com fuso fixo da Jornada.
 - Para cada **incidente de atraso**, registrar `occurred_at`, `period_key` (YYYY-MM no fuso fixo), `stage_id`, `incident_id`, consumo(s) de vida e vencimento(s) da(s) extensão(ões) em um ledger próprio. **Vidas do mês seguinte não podem financiar nem prolongar um incidente iniciado no mês anterior.** Um incidente em andamento mantém seu prazo e o orçamento de resgate do mês de origem, mesmo após a virada, enquanto estiver recuperável.
 - **Precisão na virada:** se a etapa foi ativada em 31/10 às 22h, seu prazo normal termina em 01/11 às 22h e a carência em 02/11 às 04h. Não há falha automática às 00h de 01/11; caso venha a ocorrer um atraso pela primeira vez em novembro, ele pertence a novembro, não outubro.
@@ -104,12 +104,20 @@ Segunda 06:00 ativa etapa 1; segunda 08:00 conclui a leitura; terça 06:00 etapa
 7. **Desconto de XP:** um vencimento de prazo e carência existente não perde nem recupera penalidade no primeiro dia do mês.
 
 ## 8. Questões que exigem decisão ANTES de implementar
-1. **Antecipação versus congelamento:** aprovar janela de ativação de até **6 horas depois de READY**, seguida de consumo de vidas? A carência de leitura e a carência de ativação são conceitos diferentes.
-2. **Vidas:** três mensais para todos, sem Santa Ceia como requisito? Qual XP para leitura concluída na janela de vida?
-3. **Recordes:** ter dois contadores (sequência perfeita e progresso salvo com vidas), mantendo XP e quantidade histórica de Bíblias?
+1. **Antecipação versus congelamento: APROVADO.** Tolerância gratuita única de seis horas desde o vencimento normal anterior para leitura/ativação, sem recompor o prazo ao finalizar leitura tarde.
+2. **Vidas: APROVADO.** Três mensais iguais para todos, não acumulativas; uma vida = 24 horas. **Pendente detalhe**: XP final da etapa salva com vida (recomendação: máximo -6 XP no conjunto da etapa e registro separado de vida usada).
+3. **Recordes: APROVADO.** Distinguir coroação pela Bíblia integral e conquista adicional de pontualidade perfeita. Preservar histórico como barreira sem trazer XP antigo à tentativa nova.
 4. **Antifraude / ranking:** a regra agora é XP por tentativa sem soma entre tentativas; detalhar scorecard, XP de estudos/vídeos e tratamento de recompensas de Bíblias concluídas em histórico antes de migrar.
 5. **Ano bissexto:** qual regra de adesão para 366 etapas em jornada iniciada em datas móveis?
 
 ## 9. Gate técnico
 - Estado atual do backend: `lab_game_sync()` calcula dia por **DATA CIVIL** (`started_on` e `now() at time zone 'America/Sao_Paulo'`) e reinicia quando há quebra. Não implementa 24h a partir da ativação, carência de 6h nem vidas. Essas regras são **proposta de alteração incompatível com a lógica atual** e exigem migração versionada, estratégia de dados existentes e testes transacionais.
 - **Nenhuma alteração em SQL, RPC, XP ou cronômetro de produção está autorizada por este documento.** Revisar backups, staging, testes de 2 contas e gates P0 antes de qualquer migração.
+
+
+## 10. Implementação isolada iniciada após aprovação
+
+- `lab-app/src/domain/game-plan-next.ts`: gerador **V2 paralelo** para 365/366 etapas, ambas 1.189 capítulos, somente 3–4 por etapa, sem alterar o plano V1 em produção. `lab-app/tests/game-plan-next.test.ts` audita a distribuição e a ordem das três trilhas AT/Salmos/NT.
+- `lab-app/src/domain/journey-clock-next.ts`: modelo **puro e não conectado ao banco** das horas rolantes, única carência, desconto, orçamento mensal de vidas, citação do incidente de origem e XP por tentativa; `lab-app/tests/journey-clock-next.test.ts` avalia os limites, travas e passagem de mês.
+- Estes modelos são ensaios de domínio. Uma função TypeScript no navegador **não é** autorização para gasto de vidas nem concessão de XP; somente RPCs transacionais versionadas do servidor poderão alterar resultados, após homologação em staging.
+- **Pendências técnicas:** versão por run do plano; scorecard por tentativa; livro-caixa transacional de vida/XP; carência sobre vídeos; cronologia; conciliação de GC; revisão do bônus anual; 365/366 vinculado a modalidade de entrada; política exata de XP pós-resgate; P0 duas contas e backup.
