@@ -415,3 +415,69 @@ BEGIN
 END $notice$;
 RESET ROLE;
 SELECT 'LAB OPTIONAL EMAIL DELIVERY SECURITY PASSED' AS result;
+
+-- INVARIANTE: falha iniciada em outubro belongs to October, EVEN across
+-- Nov 1. Controlled timestamps are fed to the private helper exclusively
+-- on this disposable CI database, never through an authenticated public RPC.
+INSERT INTO auth.users(id) VALUES
+ ('55555555-5555-4555-8555-555555555555'),
+ ('66666666-6666-4666-8666-666666666666');
+INSERT INTO public.lab_v2_runs(user_id,plan_length,status,started_at)
+ VALUES('55555555-5555-4555-8555-555555555555',365,'active',
+        TIMESTAMPTZ '2026-10-30 17:00:00+00')
+ RETURNING id AS month_run \gset
+INSERT INTO public.lab_v2_stages(run_id,day_number,activated_at)
+ VALUES(:'month_run'::uuid,1,TIMESTAMPTZ '2026-10-30 17:00:00+00');
+SELECT set_config('app.test_user','55555555-5555-4555-8555-555555555555',false);
+SELECT public.lab_v2_resolve(:'month_run'::uuid,TIMESTAMPTZ '2026-11-01 00:00:00+00');
+DO $period$
+DECLARE lives integer;the_month date;
+BEGIN
+ SELECT used_lives,month_start INTO lives,the_month
+ FROM public.lab_v2_monthly_lives WHERE user_id=auth.uid();
+ IF lives<>1 OR the_month<>DATE '2026-10-01'
+ THEN RAISE EXCEPTION 'FAIL: October incident was charged to another month (% %)',lives,the_month; END IF;
+END $period$;
+SELECT public.lab_v2_resolve(:'month_run'::uuid,TIMESTAMPTZ '2026-11-02 00:00:00+00');
+DO $period$
+DECLARE october integer;november integer;
+BEGIN
+ SELECT used_lives INTO october FROM public.lab_v2_monthly_lives
+ WHERE user_id=auth.uid() AND month_start=DATE '2026-10-01';
+ SELECT used_lives INTO november FROM public.lab_v2_monthly_lives
+ WHERE user_id=auth.uid() AND month_start=DATE '2026-11-01';
+ IF october<>2 OR november IS NOT NULL
+ THEN RAISE EXCEPTION 'FAIL: old incident used November lives (% %)',october,november; END IF;
+END $period$;
+SELECT public.lab_v2_resolve(:'month_run'::uuid,TIMESTAMPTZ '2026-11-04 00:00:00+00');
+DO $period$
+DECLARE october integer;november integer;state_ text;ended timestamptz;
+BEGIN
+ SELECT used_lives INTO october FROM public.lab_v2_monthly_lives
+ WHERE user_id=auth.uid() AND month_start=DATE '2026-10-01';
+ SELECT used_lives INTO november FROM public.lab_v2_monthly_lives
+ WHERE user_id=auth.uid() AND month_start=DATE '2026-11-01';
+ SELECT status,finished_at INTO state_,ended FROM public.lab_v2_runs
+ WHERE id=:'month_run'::uuid;
+ IF october<>3 OR november IS NOT NULL OR state_<>'failed' OR
+    ended<>TIMESTAMPTZ '2026-11-03 23:00:00+00'
+ THEN RAISE EXCEPTION 'FAIL: month rollover resurrected a failed stage (% % % %)',
+  october,november,state_,ended; END IF;
+END $period$;
+
+-- A still-valid October 31 stage must NOT lose a life merely when November starts.
+INSERT INTO public.lab_v2_runs(user_id,plan_length,status,started_at)
+ VALUES('66666666-6666-4666-8666-666666666666',365,'active',
+        TIMESTAMPTZ '2026-11-01 01:00:00+00')
+ RETURNING id AS crossing_run \gset
+INSERT INTO public.lab_v2_stages(run_id,day_number,activated_at)
+ VALUES(:'crossing_run'::uuid,1,TIMESTAMPTZ '2026-11-01 01:00:00+00');
+SELECT set_config('app.test_user','66666666-6666-4666-8666-666666666666',false);
+SELECT public.lab_v2_resolve(:'crossing_run'::uuid,TIMESTAMPTZ '2026-11-01 03:00:00+00');
+DO $period$
+BEGIN
+ IF EXISTS (SELECT 1 FROM public.lab_v2_monthly_lives WHERE user_id=auth.uid()) OR
+    EXISTS (SELECT 1 FROM public.lab_v2_incidents WHERE run_id=:'crossing_run'::uuid)
+ THEN RAISE EXCEPTION 'FAIL: crossing midnight consumed a life before 24+6 hours'; END IF;
+END $period$;
+SELECT 'LAB V2 CROSS-MONTH SAFETY PASSED' AS result;
