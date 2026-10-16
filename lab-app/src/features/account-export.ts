@@ -50,7 +50,10 @@ export async function buildAccountExport():Promise<{
   ["lab_game_chapter_checks","lab_game_runs"],
   ["lab_v2_stages","lab_v2_runs"],
   ["lab_v2_chapter_checks","lab_v2_runs"],
-  ["lab_v2_incidents","lab_v2_runs"]
+  ["lab_v2_incidents","lab_v2_runs"],
+  ["lab_v2_video_sessions","lab_v2_runs"],
+  ["lab_v2_video_rewards","lab_v2_runs"],
+  ["lab_v2_study_rewards","lab_v2_runs"]
  ]){
   const ids=tables[source].map(row=>row.id).filter((id):id is string=>typeof id==="string");
   tables[table]=await pageTable({table,filter:"run_id",ids},user.id);
@@ -58,7 +61,7 @@ export async function buildAccountExport():Promise<{
  // Favorites have user_id and remain user-private. They may be absent on old backends.
  tables.lab_bible_favorites=await pageTable({table:"lab_bible_favorites",filter:"user_id"},user.id);
  return {
-  exported_at:new Date().toISOString(),format:"labgame-user-export-v1",
+  exported_at:new Date().toISOString(),format:"labgame-user-export-v2",
   account:{id:user.id,email:user.email},tables
  };
 }
