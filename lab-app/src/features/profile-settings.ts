@@ -152,7 +152,7 @@ export async function deleteMyAccount(password:string,confirmation:string,emailT
  if(emailTyped.trim().toLowerCase()!==u.email.toLowerCase())
   throw Error("Confirme o e-mail exato da sua conta.");
  const {data,error}=await supabase!.functions.invoke("account-delete",{
-  method:"POST",body:{confirmation,email_confirmation:emailTyped.trim().toLowerCase()}
+  method:"POST",body:{confirmation,email_confirmation:emailTyped.trim().toLowerCase(),password}
  });
  if(error)throw Error("Exclusão não concluída. Verifique a disponibilidade e as políticas de exclusão do servidor.");
  if(!data||data.deleted!==true)throw Error(data?.message||"Exclusão não concluída.");
