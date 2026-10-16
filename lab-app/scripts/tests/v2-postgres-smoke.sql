@@ -40,6 +40,9 @@ CREATE TABLE public.reading_group_members(
  role text NOT NULL DEFAULT 'member',
  PRIMARY KEY(group_id,user_id)
 );
+-- Profile migrations run first in the same chronological order as production.
+\i supabase/migrations/202610160001_profile_notification_preferences.sql
+\i supabase/migrations/202610160106_notification_channel_matrix.sql
 \i supabase/migrations/202610160100_lab_v2_shadow_game.sql
 \i supabase/migrations/202610160101_lab_v2_plans_seed.sql
 \i supabase/migrations/202610160102_lab_v2_awards_and_unified_reset.sql
@@ -351,8 +354,6 @@ SELECT 'LAB V2 POSTGRES SMOKE PASSED' AS result;
 -- Profile & notice matrix must also compile on the target PostgreSQL engine.
 -- This portion is evaluated after the V2 game tests to avoid replacing the
 -- smoke-specific unified-reset function before it has been exercised.
-\i supabase/migrations/202610160001_profile_notification_preferences.sql
-\i supabase/migrations/202610160106_notification_channel_matrix.sql
 
 SELECT set_config('app.test_user','11111111-1111-4111-8111-111111111111',false);
 SET ROLE authenticated;
