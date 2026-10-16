@@ -72,8 +72,8 @@ export async function loadNoticePreferencesOnly():Promise<NoticePreferences>{
 export async function saveMemberProfile(input:MemberProfile,agreedReligiousData:boolean):Promise<void>{
  const u=await getAuthenticatedUser();
  const religion=RELIGIOUS_FIELDS.some(k=>Boolean(input[k].trim()));
- if(religion&&!agreedReligiousData)
-  throw Error("Autorize o armazenamento dos dados de igreja e ministério ou deixe esses campos vazios.");
+ // Withdrawing consent ALWAYS clears stored religious fields, even when
+ // stale text is still visible in the form at save time.
  const body:Record<string,string|null>={
   user_id:u.id,full_name:clean(input.full_name,120)||null,
   phone:clean(input.phone,30)||null,date_of_birth:input.date_of_birth||null,
