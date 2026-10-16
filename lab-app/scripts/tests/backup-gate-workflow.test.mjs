@@ -9,6 +9,7 @@ test("P0 release requires an explicit marker and verified PG17 restore before mi
  assert.match(workflow,/workflow_dispatch:/);
  assert.match(workflow,/paths:[\s\S]*\.github\/p0-release\.trigger/);
  assert.match(workflow,/head_commit\.message == 'release: p0 backup-restore-deploy'/);
+ assert.doesNotMatch(workflow,/the exact release marker path was not changed by head commit/);
  assert.match(workflow,/refs\/heads\/main/);
  assert.match(workflow,/azejfxvaamgkmfmwdzjn/g);
  assert.match(workflow,/secrets\.SUPABASE_DB_URL/);

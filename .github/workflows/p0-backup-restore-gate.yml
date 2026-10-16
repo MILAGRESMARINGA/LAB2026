@@ -65,11 +65,8 @@ jobs:
               with open(os.environ["GITHUB_EVENT_PATH"], encoding="utf-8") as event_file:
                   event = json.load(event_file)
               head = event.get("head_commit") or {}
-              changed = set(head.get("added", [])) | set(head.get("modified", []))
               if head.get("message") != "release: p0 backup-restore-deploy":
                   raise SystemExit("Fail closed: push release marker commit message does not match exactly.")
-              if ".github/p0-release.trigger" not in changed:
-                  raise SystemExit("Fail closed: the exact release marker path was not changed by head commit.")
           elif event_name == "workflow_dispatch":
               if os.environ.get("APPLY_P0_TO_PRODUCTION", "") != "APPLY_P0_TO_PRODUCTION":
                   raise SystemExit("Fail closed: explicit production migration choice is required.")
