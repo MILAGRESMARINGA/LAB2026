@@ -4,6 +4,7 @@ import {CHAPTERS} from "../domain/canon";
 import {brazilianLeapDayStartAvailable} from "../domain/journey-plan-eligibility";
 import {BibleReader} from "./BibleReader";
 import {DailyInAppPopup} from "./DailyInAppPopup";
+import {ConsistencyFlame} from "./ConsistencyFlame";
 import {
  activateJourneyV2,confirmJourneyV2Chapter,getJourneyV2Chapters,
  getJourneyV2Checks,loadLatestJourneyV2,startJourneyV2,
@@ -100,6 +101,7 @@ export function JourneyV2Panel({userId,onState}:Props){
   <span className="eyebrow">LEITURA ANUAL · NOVO REGULAMENTO</span>
   <h1>Sua Jornada. <em>Um capítulo de cada vez.</em></h1>
   <p className="muted">3 ou 4 capítulos por etapa · 24 horas a partir da ativação · 6 horas de tolerância · 3 vidas mensais.</p>
+  <ConsistencyFlame completedDays={game?.completed_stages??0} status={game?.status==="failed"?"failed":game?.status==="completed"?"completed":game?"active":"inactive"}/>
   {error&&<p role="alert" className="feedback-message">{error}</p>}
   {canChooseLeapPlan&&(!game||game.status!=="active")&&
    <fieldset className="v2-consent" aria-label="Escolher a duração do plano">
