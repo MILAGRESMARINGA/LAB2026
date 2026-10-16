@@ -23,6 +23,10 @@ export type JourneyV2State={
  run_xp:number;
  reading_xp?:number;
  cycle_bonus_xp?:number;
+ video_xp?:number;
+ study_xp?:number;
+ studies_this_run?:number;
+ studies_completed_historical?:number;
  checked?:string[];
  completed_stages?:number;
  completed_bibles_historical?:number;
@@ -132,4 +136,26 @@ export async function getV2GroupRanking(groupId:string):Promise<LabRankingEntry[
  const {data,error}=await supabase!.rpc("lab_v2_group_ranking",{p_group_id:validRunId(groupId)});
  if(error)throw error;
  return (data??[]) as LabRankingEntry[];
+}
+
+/** Self-confirmed, canonical study completion; no effect on chapter unlocks. */
+export async function getV2StudyRewards(runId:string):Promise<string[]>{
+ assertV2ClientEnabled();
+ const {data,error}=await supabase!.from("lab_v2_study_rewards")
+  .select("study_key").eq("run_id",validRunId(runId));
+ if(error)throw error;
+ return (data??[]).map(row=>String(row.study_key));
+}
+export async function confirmV2Study(runId:string,studyKey:string,acknowledged:boolean):Promise<{
+ awarded:boolean;total_xp:number;study_xp:number;studies_this_run:number
+}>{
+ assertV2ClientEnabled();
+ if(!/^[a-z0-9-]{2,100}$/.test(studyKey))throw Error("Estudo inválido.");
+ if(!acknowledged)throw Error("Confirme que examinou as referências bíblicas.");
+ const {data,error}=await supabase!.rpc("lab_v2_confirm_study",{
+  p_run:validRunId(runId),p_study_key:studyKey,p_acknowledged:true
+ });
+ if(error)throw error;
+ if(!data||typeof data.awarded!=="boolean")throw Error("O servidor não confirmou o estudo.");
+ return data as {awarded:boolean;total_xp:number;study_xp:number;studies_this_run:number};
 }
