@@ -32,6 +32,19 @@ DECLARE
 BEGIN
   IF v_user IS NULL THEN RAISE EXCEPTION 'Entre na sua conta'; END IF;
   IF p_plan_length NOT IN(365,366) THEN RAISE EXCEPTION 'Plano inválido'; END IF;
+  -- Rolling journeys begun on any date use 365 steps. A 366-step plan is
+  -- explicitly reserved for a cycle activated on January 1 of a leap year.
+  IF p_plan_length=366 AND NOT (
+    EXTRACT(MONTH FROM v_at AT TIME ZONE 'America/Sao_Paulo')=1
+    AND EXTRACT(DAY FROM v_at AT TIME ZONE 'America/Sao_Paulo')=1
+    AND MOD(EXTRACT(YEAR FROM v_at AT TIME ZONE 'America/Sao_Paulo')::integer,4)=0
+    AND (
+      MOD(EXTRACT(YEAR FROM v_at AT TIME ZONE 'America/Sao_Paulo')::integer,100)<>0
+      OR MOD(EXTRACT(YEAR FROM v_at AT TIME ZONE 'America/Sao_Paulo')::integer,400)=0
+    )
+  ) THEN
+   RAISE EXCEPTION 'Plano de 366 etapas disponível somente em 1º de janeiro de ano bissexto';
+  END IF;
   PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(v_user::text,2116));
   IF NOT EXISTS(SELECT 1 FROM public.lab_v2_release_controls
                 WHERE singleton=true AND enabled=true)
