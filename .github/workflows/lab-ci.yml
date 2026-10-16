@@ -61,3 +61,36 @@ jobs:
         run: npm test
       - name: Check TypeScript and build Vite
         run: npm run build
+
+  v2-postgres:
+    name: V2 isolated PostgreSQL 16 integration and RLS
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: lab-app
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: labgame_v2_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: labv2_ci_local_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d labgame_v2_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install PostgreSQL client
+        run: sudo apt-get update -qq && sudo apt-get install -y postgresql-client
+      - name: Execute V2 shadow schema and tests against temporary PostgreSQL only
+        env:
+          PGPASSWORD: labv2_ci_local_only
+        run: psql -h 127.0.0.1 -p 5432 -U postgres -d labgame_v2_ci -v ON_ERROR_STOP=1 -f scripts/tests/v2-postgres-smoke.sql
