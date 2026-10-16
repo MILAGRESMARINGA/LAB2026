@@ -72,18 +72,22 @@ RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=''
 AS $fn$
 DECLARE
  v_user uuid:=auth.uid();
- v_last_sign_in timestamptz;
- v_today date:=(now() AT TIME ZONE 'America/Sao_Paulo')::date;
+ v_session_id text:=auth.jwt()->>'session_id';
+ v_at timestamptz:=statement_timestamp();
+ v_today date:=(v_at AT TIME ZONE 'America/Sao_Paulo')::date;
 BEGIN
  IF v_user IS NULL THEN RAISE EXCEPTION 'Autenticação necessária'; END IF;
  IF p_confirmation IS DISTINCT FROM 'ZERAR JORNADA' THEN
   RAISE EXCEPTION 'A confirmação da exclusão do progresso é obrigatória';
  END IF;
- -- User must have signed in with their credentials again recently.
- SELECT last_sign_in_at INTO v_last_sign_in FROM auth.users WHERE id=v_user;
- IF v_last_sign_in IS NULL OR v_last_sign_in < now()-interval '5 minutes' THEN
-  RAISE EXCEPTION 'Entre novamente na sua conta para confirmar esta operação';
- END IF;
+ -- A different device can refresh auth.users.last_sign_in_at. Bind the
+ -- destructive operation to THIS JWT's current, recently created session.
+ IF v_session_id IS NULL OR NOT EXISTS(
+  SELECT 1 FROM auth.sessions s
+  WHERE s.id=v_session_id::uuid AND s.user_id=v_user
+    AND s.created_at>=v_at-interval '5 minutes'
+    AND s.created_at<=v_at+interval '30 seconds'
+ ) THEN RAISE EXCEPTION 'Entre novamente na sua conta para confirmar esta operação'; END IF;
  PERFORM public.lab_game_sync();
  PERFORM 1 FROM public.lab_game_stats WHERE user_id=v_user FOR UPDATE;
  DELETE FROM public.lab_game_runs WHERE user_id=v_user;
