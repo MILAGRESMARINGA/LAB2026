@@ -8,7 +8,7 @@ vi.mock("../src/lib/supabase",()=>({supabase:{auth:{getUser},from,rpc}}));
 vi.mock("../src/features/auth",()=>({signIn:vi.fn(),signOut:vi.fn()}));
 import {
  saveNoticePreferences,saveMemberProfile,resetAllJourneyData,
- EMPTY_MEMBER_PROFILE,DEFAULT_NOTICES
+ EMPTY_MEMBER_PROFILE,DEFAULT_NOTICES,clearReligiousDetails
 } from "../src/features/profile-settings";
 import {ProfileSettings} from "../src/components/ProfileSettings";
 
@@ -78,6 +78,21 @@ describe("Configurações privadas LABGAME",()=>{
   expect(upsert.mock.calls[0][0].church_name).toBeNull();
   expect(upsert.mock.calls[0][0].pastor_name).toBeNull();
   expect(upsert.mock.calls[0][0].ministry_role).toBeNull();
+ });
+ it("retirar consentimento também apaga dados sensíveis da interface sem afetar nome e endereço",()=>{
+  const cleared=clearReligiousDetails({
+   ...EMPTY_MEMBER_PROFILE,full_name:"Pessoa Teste",city:"Maringá",
+   church_name:"Igreja Teste",pastor_name:"Nome do pastor",
+   ministry_role:"Líder de GC",gc_name:"GC Teste",
+   religious_data_consent_at:"2026-10-16T12:00:00.000Z"
+  });
+  expect(cleared.full_name).toBe("Pessoa Teste");
+  expect(cleared.city).toBe("Maringá");
+  expect(cleared.church_name).toBe("");
+  expect(cleared.pastor_name).toBe("");
+  expect(cleared.ministry_role).toBe("");
+  expect(cleared.gc_name).toBe("");
+  expect(cleared.religious_data_consent_at).toBeNull();
  });
  it("recusa apagar jornada se a frase for incorreta, sem acessar o banco",async()=>{
   await expect(resetAllJourneyData("senha-ficticia","ZERAR"))
