@@ -19,7 +19,7 @@
 
 | Gate | Situação |
 |---|---|
-| Arquitetura de oito agentes | Preparada; aguardando CI do commit |
+| Arquitetura de oito agentes | APROVADA — CI [#473](https://github.com/MILAGRESMARINGA/LAB2026/actions/runs/38963615936) verde (6/6 jobs), commit `cfca831` |
 | Testes anteriores documentados (#428/#433) | Histórico aprovado; não substitui CI atual |
 | Integridade canônica em produção | Contagens confirmadas somente por leitura |
 | Backup atual e restore isolado | BLOQUEADO — sem evidência nesta sessão |
