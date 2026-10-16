@@ -18,13 +18,13 @@ const anon=()=>createClient(url,env.ANON_KEY||env.PUBLISHABLE_KEY,opts);
 const endpoint="http://127.0.0.1:8000/";
 const accounts=[];
 const secretPwd="LabLOCAL-Edge-Delete-2026-98!";
-async function request(token,confirmation,email,origin){
+async function request(token,confirmation,email,origin,password=secretPwd){
  return fetch(endpoint,{
   method:"POST",headers:{
    "content-type":"application/json",
    ...(token?{authorization:"Bearer "+token}:{}),
    ...(origin?{origin}:{})
-  },body:JSON.stringify({confirmation,email_confirmation:email})
+  },body:JSON.stringify({confirmation,email_confirmation:email,password})
  });
 }
 try{
@@ -42,7 +42,7 @@ try{
  const [a,b]=actors;
  assert.equal((await request(null,"EXCLUIR CONTA",a.email)).status,401);
  assert.equal((await request(a.token,"INVALIDO",a.email)).status,400);
- assert.equal((await request(a.token,"EXCLUIR CONTA",b.email)).status,400);
+ assert.equal((await request(a.token,"EXCLUIR CONTA",b.email)).status,400);\n assert.equal((await request(a.token,"EXCLUIR CONTA",a.email,undefined,"")).status,400);\n assert.equal((await request(a.token,"EXCLUIR CONTA",a.email,undefined,"incorrect-pass")).status,403);
  assert.equal((await request(a.token,"EXCLUIR CONTA",a.email,"https://evil.example")).status,403);
 
  const {data:group,error:groupError}=await admin.from("reading_groups")
@@ -71,7 +71,7 @@ try{
  const {data:survivor,error:survivorError}=await admin.auth.admin.getUserById(b.id);
  assert.ifError(survivorError);assert.equal(survivor.user.id,b.id);
  accounts.splice(accounts.indexOf(a.id),1);
- console.log("PASS: Edge Function JWT, origin, phrase, email, GC-owner protection, Auth deletion and FK cascade");
+ console.log("PASS: Edge Function JWT, origin, phrase, email, fresh password proof, GC-owner protection, Auth deletion and FK cascade");
 }finally{
  for(const id of accounts)await admin.auth.admin.deleteUser(id).catch(()=>undefined);
 }
