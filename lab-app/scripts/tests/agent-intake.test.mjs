@@ -5,13 +5,13 @@ import {isTrustedIssue,fileContent,execute} from "../agent-intake.mjs";
 const repo="MILAGRESMARINGA/LAB2026";
 const issue={number:12,title:"LAB AGENTE · Melhorar responsividade do painel",
  body:"## Solicitação para fila LABGame\n\n> Ajuste layout de perfil responsivo para celulares.\n\n## Política\n- Nenhuma alteração de produção autorizada.",
- state:"open",user:{login:"authorized-dev"},labels:[{name:"lab-agent"}]};
+ state:"open",user:{login:"MILAGRESMARINGA",id:173290142},author_association:"OWNER",labels:[{name:"lab-agent"}]};
 function network(override={},permission="admin"){
  const calls=[];const issueValue={...issue,...override};
  const fetcher=async(url,options)=>{
   calls.push({url,method:options.method,body:options.body});
   if(url.endsWith("/issues/12"))return Response.json(issueValue);
-  if(url.endsWith("/collaborators/authorized-dev/permission"))return Response.json({permission});
+  
   if(url.endsWith("/git/ref/heads/agent/intake-12"))return new Response("",{status:404});
   if(url.endsWith("/git/ref/heads/main"))return Response.json({object:{sha:"abcdef123456"}});
   if(url.endsWith("/git/refs"))return Response.json({ref:"refs/heads/agent/intake-12"},{status:201});
@@ -25,10 +25,10 @@ function network(override={},permission="admin"){
 }
 const env={GITHUB_REPOSITORY:repo,GITHUB_TOKEN:"fake-gh-token-for-ci",ISSUE_NUMBER:"12"};
 test("only admin may create agent PR, not writer or unknown account",()=>{
- assert.ok(isTrustedIssue(issue,"admin"));
- assert.ok(!isTrustedIssue(issue,"write"));
- assert.ok(!isTrustedIssue({...issue,pull_request:{}}, "admin"));
- assert.ok(!isTrustedIssue({...issue,state:"closed"},"admin"));
+ assert.ok(isTrustedIssue(issue));
+ assert.ok(!isTrustedIssue({...issue,user:{...issue.user,id:999999}}));
+ assert.ok(!isTrustedIssue({...issue,pull_request:{}}));
+ assert.ok(!isTrustedIssue({...issue,state:"closed"}));
 });
 test("untrusted issue text becomes quoted documentation, not shell commands",()=>{
  const md=fileContent({...issue,body:"hi\nrm -rf /\n@github-admin"});
@@ -37,7 +37,7 @@ test("untrusted issue text becomes quoted documentation, not shell commands",()=
  assert.ok(md.includes("não implementa"));
 });
 test("untrusted author cannot request Github write actions",async()=>{
- const networkCase=network({},"write");
+ const networkCase=network({user:{login:"attacker",id:999999},author_association:"NONE"});
  const result=await execute(env,networkCase.fetcher);
  assert.equal(result.status,"untrusted");
  assert.ok(!networkCase.calls.some(x=>x.method==="POST"||x.method==="PUT"));
