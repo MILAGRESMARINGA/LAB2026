@@ -1,4 +1,5 @@
 import {useEffect,useId,useRef,useState} from "react";
+import {downloadMyAccountData} from "../features/account-export";
 import {AlertTriangle,Bell,BookOpen,CheckCircle2,ChevronDown,KeyRound,
  LockKeyhole,Mail,MapPin,ShieldAlert,Trash2,UserCircle,Users,X} from "lucide-react";
 import {
@@ -165,7 +166,18 @@ export function ProfileSettings({accountEmail,onReset,onDeleted}:Props){
   </details>
   <div className="ps-security">
    <div className="ps-section-title"><ShieldAlert size={20}/><div><h2>Segurança e controle dos dados</h2><p className="muted">Duas operações diferentes. Confira atentamente as consequências antes de continuar.</p></div></div>
-   <div className="ps-danger-card">
+   <div className="ps-document-note">
+   <ShieldAlert size={22}/>
+   <div><strong>Exportar meus dados</strong>
+    <p>Baixe um arquivo JSON com seus dados pessoais, preferências, jornadas, recordes e leituras. Guarde o arquivo com segurança antes de solicitar exclusão.</p>
+    <button className="secondary-cta" type="button" disabled={saving||!ready}
+     onClick={()=>{setSaving(true);setMessage("");void downloadMyAccountData()
+      .then(()=>setMessage("Exportação iniciada no seu dispositivo."))
+      .catch(e=>setMessage(e instanceof Error?e.message:"Não foi possível exportar."))
+      .finally(()=>setSaving(false))}}>EXPORTAR MEUS DADOS (JSON)</button>
+   </div>
+  </div>
+  <div className="ps-danger-card">
     <div><BookOpen size={22}/><strong>Zerar toda a minha jornada</strong><p>Remove XP, sequências, leituras registradas, vídeos pontuados e medalhas de ciclos. Preserva seu login, dados do perfil e vínculos com os GCs.</p></div>
     <button type="button" disabled={saving} onClick={()=>requestAction("reset")}>ZERAR JORNADA</button>
    </div>
