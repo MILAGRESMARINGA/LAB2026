@@ -48,3 +48,15 @@ Cada categoria conta no máximo um dia-membro por dia. Entram apenas atividades 
 ## Estudos cacheados
 
 A migration `202610160110` usa chave cache única `journey:dia:refs:camada:versão`, gravada explicitamente pelo writer confiável; a unicidade também é aplicada pela tupla jornada/dia/referências/camada/versão, sem coluna gerada baseada em funções não imutáveis. Uma nova versão cria uma nova linha de cache, mas a recompensa tem chave de unidade sem a versão e não pode emitir XP outra vez para as mesmas referências, jornada, dia e camada. O cache é append-only para o runtime. A Layer 1 contém estudos curados dos três primeiros dias, com conexões exegéticas somente entre Gênesis 1/João 1, Gênesis 2–3 e Gênesis 4–5; Salmos 1 e 2 e João 2 ficam separados. Layers 2 e 3 têm catálogo e desbloqueio progressivo aos 30 e 90 dias, sem conteúdo fictício pré-semeado. A migration e o scorecard são exercitados pelo job `v2-postgres` em PostgreSQL 16 e 17.
+
+## Atualização do resultado em produção — 17/10/2026
+
+O deploy local reportado pelo responsável foi conferido em leitura direta ao projeto Supabase `azejfxvaamgkmfmwdzjn`:
+
+- Projeto `ACTIVE_HEALTHY`, PostgreSQL 17.11.
+- 28 versões constam no histórico remoto, incluindo `202610140001` e `202610160001`–`202610160112`.
+- `study-generate` está `ACTIVE`, versão 1, com JWT verification ligada.
+- O backup pré-migration foi restaurado em ambiente local isolado usando `--no-owner`; a validação reportou 1 auth user, 1.189 capítulos, 31.101 versículos e o plano completo de 365 dias. O dump permaneceu local e não foi enviado ao repositório.
+- Isso confirma o estado atual do banco e da função, mas não significa que o workflow GitHub de backup/deploy tenha passado; o workflow é independente do procedimento manual.
+
+A auditoria de segurança posterior às migrations encontrou RLS ligado nas 37 tabelas públicas. Sete tabelas internas sem policies não concedem privilégios de tabela a `anon` nem `authenticated`. As 37 funções `SECURITY DEFINER` têm `search_path` definido e nenhuma é executável por `anon`; 29 RPCs usadas pelo app são executáveis por `authenticated`. O Advisor mantém avisos sobre essas RPCs e sobre proteção contra senhas vazadas desativada. A revisão completa de autorização e essa configuração de Auth continuam pendentes; não declarar o gate de segurança fechado.
