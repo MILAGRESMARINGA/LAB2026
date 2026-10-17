@@ -5,8 +5,9 @@
   "working_branch": "lab-rebuild-2026",
   "production_project_ref": "azejfxvaamgkmfmwdzjn",
   "cost_policy": {
-    "api_usage": "owner-authorized-bounded-and-potentially-billable",
-    "incremental_cost_limit_brl": null,
+    "api_usage": "president-approved-per-run-budget-required",
+    "incremental_cost_limit_brl": 0,
+    "president_approved_spend_required_for_paid_inference": true,
     "no_paid_plan_upgrade": true,
     "cache_first": true,
     "study_generation": {
@@ -19,24 +20,38 @@
       "fail_closed_without_openai_api_key": true
     },
     "ai_orchestrator": {
+      "provider_model": "gpt-6-luna",
+      "max_approved_spend_brl_per_run": 100,
       "max_runs_per_rolling_24h": 1,
       "max_calls_per_run": 12,
       "max_calls_per_agent": 1,
-      "max_output_tokens_per_call": 128,
-      "max_output_tokens_per_run": 1536,
+      "max_output_tokens_per_call": 6000,
+      "max_output_tokens_per_run": 6000,
       "max_request_bytes_per_run": 98304,
-      "retries": 0
+      "retries": 0,
+      "max_files_per_patch": 8,
+      "max_patch_bytes": 400000,
+      "maximum_test_commands": ["npm run verify:engineering", "npm test", "npm run build"]
     }
   },
   "orchestration": {
     "lead": "ai-engineer",
-    "runtime": "optional-github-actions-workflow-dispatch",
-    "llm_inference_enabled_by_default": false,
+    "runtime": "github-actions-controlled-write-with-draft-pr",
+    "llm_inference_enabled_by_default": true,
     "llm_secret_status": "not-inspected-or-changed-in-this-task",
     "production_mutations_from_ci": false,
-    "production_mutations_from_ai_workflow": false,
-    "llm_can_execute_commands": false,
-    "llm_can_write_repository": false,
+    "production_mutations_from_ai_workflow": "president_approval_required",
+    "llm_can_execute_commands": true,
+    "llm_command_execution_scope": "runner-allowlist-only; never model-provided shell",
+    "llm_can_write_repository": true,
+    "repository_write_scope": ["agent/*", "auto/*"],
+    "protected_branches": ["main", "lab-rebuild-2026"],
+    "repository_write_requires_draft_pr": true,
+    "agent_file_write_allowlist": [
+      "lab-app/src/**/*.ts", "lab-app/src/**/*.tsx", "lab-app/src/**/*.css",
+      "lab-app/tests/**/*.{ts,tsx}", "lab-app/scripts/tests/**/*.mjs",
+      "lab-app/supabase/functions/**/*.{ts,js,mjs}", "lab-app/supabase/migrations/????????????_*.sql"
+    ],
     "live_backup_required_before_destructive_operations": true,
     "workflow_call_order": [
       "principal-architect",

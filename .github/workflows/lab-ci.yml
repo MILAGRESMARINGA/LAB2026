@@ -284,6 +284,7 @@ jobs:
       - name: Smoke check AI fail-closed path with no secret
         env:
           OPENAI_API_KEY: ''
+          LAB_AGENT_SMOKE_TEST: 'true'
         run: node .agents/scripts/run-ai-orchestrator.mjs
 
   p0-orchestrator:

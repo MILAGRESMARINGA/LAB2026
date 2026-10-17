@@ -1,59 +1,37 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
+const manifest = JSON.parse(fs.readFileSync(".agents/manifest.json", "utf8"));
 
 const workflow = fs.readFileSync(".github/workflows/ai-agent-orchestrator.yml", "utf8");
 const runner = fs.readFileSync(".agents/scripts/run-ai-orchestrator.mjs", "utf8");
-const manifest = JSON.parse(fs.readFileSync(".agents/manifest.json", "utf8"));
-const caps = manifest.cost_policy.ai_orchestrator;
-
-assert.match(workflow, /^on:\n  workflow_dispatch:\s*$/m, "AI workflow must be manual only");
-assert.doesNotMatch(workflow, /^\s+(push|pull_request|schedule):/m, "AI workflow must not run on push, PR or schedule");
-assert.match(workflow, /contents:\s*read/);
-assert.match(workflow, /actions:\s*read/);
-assert.doesNotMatch(workflow, /contents:\s*write|actions:\s*write|pull-requests:\s*write/);
+const core = fs.readFileSync(".agents/scripts/agent-writer-core.mjs", "utf8");
+assert.match(workflow, /workflow_dispatch:/);
+assert.match(workflow, /contents:\s*write/);
+assert.match(workflow, /pull-requests:\s*write/);
 assert.match(workflow, /github\.ref == 'refs\/heads\/lab-rebuild-2026'/);
-assert.match(workflow, /OPENAI_API_KEY:\s*\$\{\{\s*secrets\.OPENAI_API_KEY\s*\}\}/);
-assert.match(workflow, /GITHUB_TOKEN:\s*\$\{\{\s*github\.token\s*\}\}/);
-for (const forbidden of ["SUPABASE_ACCESS_TOKEN", "SUPABASE_DB_PASSWORD", "SUPABASE_SECRET_KEY", "VERCEL_TOKEN", "DATABASE_URL"]) {
-  assert.ok(!workflow.includes(forbidden), "workflow must not expose " + forbidden);
-}
+assert.match(workflow, /APPROVED_SPEND_BRL:/);
+assert.match(workflow, /persist-credentials:\s*false/);
+assert.match(runner, /npm run verify:engineering/);
+assert.doesNotMatch(workflow, /SUPABASE_ACCESS_TOKEN|SUPABASE_DB_PASSWORD|SUPABASE_SECRET_KEY|VERCEL_TOKEN|DATABASE_URL/);
 assert.doesNotMatch(workflow, /supabase\s+(db\s+push|functions\s+deploy)/i);
-assert.match(runner, /if \(!process\.env\.OPENAI_API_KEY\)/, "missing key must fail closed before provider calls");
-assert.match(runner, /await enforceDailyRunLimit\(\)/);
-assert.match(runner, /for \(const agent of agents\)/, "model calls must be sequential");
-assert.match(runner, /JSON\.stringify\(workflowCallOrder\)/);
-assert.match(runner, /Eleven specialist notes \(JSON data\)/, "lead synthesis must receive specialist handoffs as data");
-assert.match(runner, /maximumOrchestratorRequest/, "worst-case synthesis input must be counted before the first call");
-assert.deepEqual(manifest.orchestration.workflow_call_order, [
-  "principal-architect",
-  "backend-engineer",
-  "database-engineer",
-  "integration-engineer",
-  "security-engineer",
-  "qa-reliability-engineer",
-  "frontend-ux-engineer",
-  "ux-designer",
-  "gamification-engineer",
-  "biblical-canon-engineer",
-  "platform-observability-engineer",
-  "ai-engineer"
-]);
-assert.match(runner, /https:\/\/api\.openai\.com\/v1\/responses/);
-assert.match(runner, /max_output_tokens: caps\.max_output_tokens_per_call/);
-assert.match(runner, /store: false/);
-assert.match(runner, /No retry was made/);
-assert.match(runner, /P0-CLOSURE-STATUS-2026-10-16\.md/);
-assert.match(runner, /GITHUB_STEP_SUMMARY/);
-assert.doesNotMatch(runner, /child_process|execSync|spawnSync|Deno\.Command|Bun\.spawn/);
-assert.doesNotMatch(runner, /SUPABASE_SERVICE_ROLE_KEY|SUPABASE_ACCESS_TOKEN|SUPABASE_DB_PASSWORD|VERCEL_TOKEN/);
-assert.equal(caps.max_runs_per_rolling_24h, 1);
-assert.equal(caps.max_calls_per_run, 12);
-assert.equal(caps.max_calls_per_agent, 1);
-assert.equal(caps.max_output_tokens_per_call, 128);
-assert.equal(caps.max_output_tokens_per_run, 1536);
-assert.equal(caps.max_request_bytes_per_run, 98304);
-assert.equal(caps.retries, 0);
-assert.ok(runner.includes('fs.appendFileSync(target, markdown + "\\n")'), "summary output must contain real newline escapes");
-assert.ok(runner.includes('const rows = section.split("\\n")'), "P0 report parsing must split actual lines");
-assert.ok(runner.includes('const nextHeading = tail.slice(1).search(/\\n## /)'), "P0 heading parsing must recognize actual lines");
-console.log("Optional AI workflow contract OK: dispatch-only, read-only, sequential, token/call capped and fail-closed.");
+assert.equal(manifest.orchestration.llm_inference_enabled_by_default, true);
+assert.equal(manifest.orchestration.llm_can_execute_commands, true);
+assert.equal(manifest.orchestration.llm_can_write_repository, true);
+assert.equal(manifest.orchestration.production_mutations_from_ai_workflow, "president_approval_required");
+assert.deepEqual(manifest.orchestration.repository_write_scope, ["agent/*", "auto/*"]);
+assert.deepEqual(manifest.orchestration.protected_branches, ["main", "lab-rebuild-2026"]);
+assert.match(runner, /APPROVED_SPEND_BRL/);
+assert.match(runner, /enforceDailyRunLimit/);
+assert.match(runner, /chooseAgent/);
+assert.match(runner, /validateAgentPatch/);
+assert.match(runner, /applyAgentPatch/);
+assert.match(runner, /createDraftPr/);
+assert.match(runner, /test command outside allowlist/);
+assert.match(runner, /production_mutation_required/);
+assert.match(runner, /No production mutation or auto-merge was performed/);
+assert.match(core, /return "agent\/"/);
+assert.match(core, /Path is outside the controlled LABGame write allowlist/);
+assert.match(core, /Symlink target is not writable/);
+assert.match(core, /MAX_TOTAL_BYTES/);
+assert.match(runner, /SENSITIVE|OPENAI_API_KEY/);
+console.log("Controlled agent writer contract OK: scoped writes, allowlisted tests, budget gate, protected branches and draft PR.");

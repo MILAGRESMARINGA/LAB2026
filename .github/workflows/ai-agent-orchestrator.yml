@@ -1,35 +1,57 @@
-name: Optional AI agent orchestration
+name: Controlled LABGame coding agent
 
 on:
   workflow_dispatch:
+    inputs:
+      task:
+        description: "Direct task (president only); alternatively provide issue_number"
+        required: false
+        type: string
+      issue_number:
+        description: "Trusted LAB Agent issue created by the voice intake"
+        required: false
+        type: string
+      approved_spend_brl:
+        description: "President-approved maximum model spend for this one run; 0 disables paid inference"
+        required: true
+        default: "0"
+        type: string
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
   actions: read
 
 concurrency:
-  group: labgame-ai-orchestration
+  group: labgame-agent-${{ github.event.inputs.issue_number || github.run_id }}
   cancel-in-progress: false
 
 jobs:
-  review:
-    if: github.ref == 'refs/heads/lab-rebuild-2026'
+  code-agent:
+    if: github.ref == 'refs/heads/lab-rebuild-2026' && (github.actor == 'MILAGRESMARINGA' || (github.actor == 'github-actions[bot]' && github.event.inputs.issue_number != ''))
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 20
     steps:
-      - name: Checkout exact branch without persisted credentials
+      - name: Checkout protected working branch without persisted credentials
         uses: actions/checkout@v4
         with:
+          ref: lab-rebuild-2026
           persist-credentials: false
-      - name: Set up Node 20
+      - name: Set up Node 22
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-      - name: Run bounded read-only twelve-agent review
+          node-version: '22'
+      - name: Install trusted project dependencies
+        working-directory: lab-app
+        run: npm install --no-audit --no-fund
+      - name: Run budget-gated code agent and draft-PR publisher
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_REF: ${{ github.ref }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          AGENT_TASK: ${{ github.event.inputs.task }}
+          AGENT_ISSUE_NUMBER: ${{ github.event.inputs.issue_number }}
+          APPROVED_SPEND_BRL: ${{ github.event.inputs.approved_spend_brl }}
         run: node .agents/scripts/run-ai-orchestrator.mjs

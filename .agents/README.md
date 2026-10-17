@@ -20,7 +20,9 @@ Arquitetura P1: principal-architect define contratos; ai-engineer coordena onze 
 ## Execução e limites
 
 - LAB CI valida os contratos e executa testes determinísticos em ambientes efêmeros; não chama IA de produção nem altera produção.
-- `.github/workflows/ai-agent-orchestrator.yml` é um fluxo opcional e manual (`workflow_dispatch`): chama os onze especialistas em sequência e passa suas notas validadas ao `ai-engineer` para síntese final, dentro de uma execução por 24 horas e dos limites de entrada/saída do manifesto.
+- `.github/workflows/ai-agent-orchestrator.yml` é o executor controlado: recebe tarefa manual do responsável ou issue confiável do console de voz, valida o escopo de arquivos, roda apenas comandos allowlisted e cria Draft PR isolado `agent/*` para `lab-rebuild-2026`.
+- O intake de voz despacha com orçamento R$ 0,00. Nenhuma chamada de modelo ocorre nesse caminho sem despacho manual e orçamento positivo; produção e auto-merge permanecem bloqueados.
+- `.agents/AUTONOMY-CONTROL.md` documenta limites, custo e gates de segurança.
 - O segredo `OPENAI_API_KEY` é opcional. Sem ele, o fluxo registra `SKIPPED` sem enviar qualquer requisição. Esta configuração não leu, criou ou alterou segredos; nenhuma inferência ao vivo foi executada aqui.
 - O workflow fornece somente permissões GitHub `contents:read` e `actions:read`. O modelo não recebe ferramentas, credenciais Supabase/Vercel, conteúdo de usuário, PII ou dumps. Nenhuma saída do modelo é executada, gravada no repositório ou usada para aprovar produção.
 - Chamadas de API podem gerar cobrança. A autorização de uso não representa custo zero: os limites rígidos estão em `manifest.json`. Não faça upgrade de planos nem repita chamadas para contornar quotas.
