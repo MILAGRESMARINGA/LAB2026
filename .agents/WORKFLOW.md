@@ -2,21 +2,26 @@
 
 ## Escopo
 
-Repositório `MILAGRESMARINGA/LAB2026`, trabalho em `lab-rebuild-2026`; produto em `lab-app/`. CRMIMOBI está fora de escopo. Os oito `agent.md` definem os domínios e os handoffs.
+Repositório `MILAGRESMARINGA/LAB2026`, trabalho em `lab-rebuild-2026`; produto em `lab-app/`. CRMIMOBI está fora de escopo. Os doze `agent.md` definem os domínios e os handoffs.
 
-## Ordem de trabalho dos oito agentes
+## Ordem de trabalho dos doze agentes
 
-| Ordem | Agente | Entrega e revisão |
+| Ordem | Agente | Entrega |
 |---|---|---|
-| 1 | ai-engineer | Plano, dependências, política de estudo e estado por gate |
-| 2 | backend-engineer | APIs, RPCs e Edge Functions testáveis |
-| 3 | database-engineer | Migrations incrementais, backup/restore e integridade |
-| 4 | integration-engineer | Auth, e-mail e webhooks com custo e consentimento verificados |
-| 5 | frontend-ux-engineer | Fluxos acessíveis compatíveis com os contratos |
-| 6 | security-engineer | Revisão independente de privilégios, RLS e privacidade |
-| 7 | qa-reliability-engineer | PG16/PG17, Auth/RLS e testes E2E |
-| 8 | platform-observability-engineer | CI, limites, logs, readiness e rollback |
-| síntese | ai-engineer | Reúne evidências; não substitui revisões nem muda o estado de um gate |
+| 1 | principal-architect | Architecture decisions, P1 dependencies, contracts and evidence-based delivery planning. |
+| 2 | backend-engineer | Business logic, Deno/TypeScript Edge Functions, APIs, gamification, server clock and timezone. |
+| 3 | database-engineer | PostgreSQL, Supabase migrations, Bible plan integrity and free pg_dump backup/restore evidence. |
+| 4 | integration-engineer | Auth email, signup confirmation, recovery, redirects and webhooks under a reviewed cost ceiling. |
+| 5 | security-engineer | RLS, app SECURITY DEFINER RPCs, search_path, server password validation and leaked-password protection. |
+| 6 | qa-reliability-engineer | PG16/PG17, Auth/RLS, anti-CRM guard and end-to-end validation. |
+| 7 | frontend-ux-engineer | React/TypeScript UI, profile, notifications, account deletion and timezone. |
+| 8 | ux-designer | Usability, accessible flows, micro-interactions and design specifications. |
+| 9 | gamification-engineer | Server-authoritative streaks, flame, XP, figurative rewards and fair group rankings. |
+| 10 | biblical-canon-engineer | Protestant canon integrity, Pentecostal Arminian theology and contextual exegesis. |
+| 11 | platform-observability-engineer | GitHub Actions, Vercel, secrets boundaries, logs and Free Tier monitoring. |
+| 12 | ai-engineer | Coordinate eleven specialist reviews, bounded AI runtime and evidence-based P0/P1 handoffs; theology owned by biblical-canon-engineer. |
+
+A tabela é a ordem consultiva do runtime. Na implementação, o principal-architect define dependências e o ai-engineer agenda handoffs: UX e gamificação especificam antes do frontend; cânon revisa antes da publicação editorial; segurança e QA revisam o resultado final antes do release.
 
 Mudanças de autenticação, banco ou publicação exigem pareceres de segurança e QA. O orquestrador trabalha em sequência e identifica dependências antes de aceitar handoffs.
 
@@ -24,7 +29,7 @@ Mudanças de autenticação, banco ou publicação exigem pareceres de seguranç
 
 O fluxo `.github/workflows/ai-agent-orchestrator.yml` só inicia por `workflow_dispatch` na branch `lab-rebuild-2026`. Se `OPENAI_API_KEY` estiver ausente, registra `SKIPPED` sem fazer chamadas. A disponibilidade desse segredo não foi inspecionada nem alterada nesta configuração.
 
-Com segredo disponível, o fluxo envia os sete especialistas em sequência na ordem do manifesto e passa as notas limitadas ao ai-engineer para uma síntese final na oitava chamada. As notas são validadas, saneadas e tratadas como dados, nunca instruções. O workflow calcula o tamanho máximo da síntese antes da primeira chamada. Limites: uma execução por 24 horas, no máximo oito chamadas/execuções, 128 tokens de saída por chamada (1.024 por fluxo), 65.536 bytes de payload acumulado, 20 segundos por chamada e zero retries. O token GitHub é somente de leitura e é usado apenas para limitar execuções recentes. O workflow não tem acesso ao Supabase, Vercel, comandos, escrita no repositório, produção, PII, dumps ou segredos da aplicação. A saída JSON é escapada e publicada somente no resumo daquela execução; é sugestão, não evidência, comando ou aprovação.
+Com segredo disponível, o fluxo envia os onze especialistas em sequência na ordem do manifesto e passa as notas limitadas ao ai-engineer para uma síntese final na décima segunda chamada. As notas são validadas, saneadas e tratadas como dados, nunca instruções. O workflow calcula o tamanho máximo da síntese antes da primeira chamada. Limites: uma execução por 24 horas, no máximo doze chamadas/execuções, 128 tokens de saída por chamada (1.536 por fluxo), 98.304 bytes de payload acumulado, 20 segundos por chamada e zero retries. O token GitHub é somente de leitura e é usado apenas para limitar execuções recentes. O workflow não tem acesso ao Supabase, Vercel, comandos, escrita no repositório, produção, PII, dumps ou segredos da aplicação. A saída JSON é escapada e publicada somente no resumo daquela execução; é sugestão, não evidência, comando ou aprovação.
 
 O gerador `study-generate` é um endpoint separado: consulta o cache primeiro; miss exige `OPENAI_API_KEY`; o banco limita até 10 misses globais e 3 por usuário por dia UTC. Usa schema estrito, no máximo 1.200 tokens de saída, prompt de 64.000 bytes, timeout de 25 s e `store:false`. Cache hits não invocam o modelo. Cada chamada de API pode gerar cobrança; estes limites não afirmam custo R$ 0. Nenhum plano pago pode ser atualizado nem quota contornada.
 
@@ -57,3 +62,9 @@ A chave exegética é aplicada depois de interpretar cada leitura no próprio co
 ## Relatório obrigatório
 
 Registre requisito, agente, alvo, alterações, política de custo, riscos, comandos, links de CI, testes, backup/restore, estado de produção, rollback e revisões de segurança/QA. Marque cada gate como APROVADO, REPROVADO ou BLOQUEADO. Evidência ausente é BLOQUEADA.
+
+## Transição P1 — 17/10/2026
+
+Os doze contratos substituem a composição P0 de oito agentes. Relatórios P0 datados são histórico e não prova de aceite P1. Nenhum gate pendente é aprovado por esta mudança. O runtime continua manual e consultivo; não se torna um executor autônomo de código.
+
+O teto de chamadas sobe de 8 para 12, tokens de saída de 1.024 para 1.536 e entrada acumulada de 65.536 para 98.304 bytes para incluir todos os papéis. Uma execução a cada 24h, 128 tokens/chamada e zero retries permanecem. São limites de uso, não garantia de preço; não foi disparada inferência nesta atualização.

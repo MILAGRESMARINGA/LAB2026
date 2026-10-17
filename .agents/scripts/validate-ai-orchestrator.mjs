@@ -22,15 +22,19 @@ assert.match(runner, /if \(!process\.env\.OPENAI_API_KEY\)/, "missing key must f
 assert.match(runner, /await enforceDailyRunLimit\(\)/);
 assert.match(runner, /for \(const agent of agents\)/, "model calls must be sequential");
 assert.match(runner, /JSON\.stringify\(workflowCallOrder\)/);
-assert.match(runner, /Seven specialist notes \(JSON data\)/, "lead synthesis must receive specialist handoffs as data");
+assert.match(runner, /Eleven specialist notes \(JSON data\)/, "lead synthesis must receive specialist handoffs as data");
 assert.match(runner, /maximumOrchestratorRequest/, "worst-case synthesis input must be counted before the first call");
 assert.deepEqual(manifest.orchestration.workflow_call_order, [
+  "principal-architect",
   "backend-engineer",
   "database-engineer",
-  "security-engineer",
-  "frontend-ux-engineer",
-  "qa-reliability-engineer",
   "integration-engineer",
+  "security-engineer",
+  "qa-reliability-engineer",
+  "frontend-ux-engineer",
+  "ux-designer",
+  "gamification-engineer",
+  "biblical-canon-engineer",
   "platform-observability-engineer",
   "ai-engineer"
 ]);
@@ -43,11 +47,11 @@ assert.match(runner, /GITHUB_STEP_SUMMARY/);
 assert.doesNotMatch(runner, /child_process|execSync|spawnSync|Deno\.Command|Bun\.spawn/);
 assert.doesNotMatch(runner, /SUPABASE_SERVICE_ROLE_KEY|SUPABASE_ACCESS_TOKEN|SUPABASE_DB_PASSWORD|VERCEL_TOKEN/);
 assert.equal(caps.max_runs_per_rolling_24h, 1);
-assert.equal(caps.max_calls_per_run, 8);
+assert.equal(caps.max_calls_per_run, 12);
 assert.equal(caps.max_calls_per_agent, 1);
 assert.equal(caps.max_output_tokens_per_call, 128);
-assert.equal(caps.max_output_tokens_per_run, 1024);
-assert.equal(caps.max_request_bytes_per_run, 65536);
+assert.equal(caps.max_output_tokens_per_run, 1536);
+assert.equal(caps.max_request_bytes_per_run, 98304);
 assert.equal(caps.retries, 0);
 assert.ok(runner.includes('fs.appendFileSync(target, markdown + "\\n")'), "summary output must contain real newline escapes");
 assert.ok(runner.includes('const rows = section.split("\\n")'), "P0 report parsing must split actual lines");

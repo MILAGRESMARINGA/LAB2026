@@ -1,22 +1,26 @@
-# LABGAME 3.0 — arquitetura oficial de oito agentes
+# LABGAME 3.0 — arquitetura oficial de doze agentes
 
-O manifesto oficial contém exatamente oito especialistas em `manifest.json` e `agents/<id>/agent.md`:
+O manifesto oficial contém exatamente doze especialistas em `manifest.json` e `agents/<id>/agent.md`:
 
-1. `ai-engineer` — orquestração técnica, política de custo e motor editorial dos estudos.
-2. `backend-engineer` — lógica do servidor, RPCs, Edge Functions e relógio.
-3. `database-engineer` — PostgreSQL, migrations, integridade bíblica e backup/restore.
-4. `security-engineer` — RLS, privilégios, autenticação e auditoria.
-5. `frontend-ux-engineer` — interface React/TypeScript e fluxos de conta.
-6. `qa-reliability-engineer` — CI, PostgreSQL 16/17, Auth/RLS e E2E.
-7. `integration-engineer` — e-mail, autenticação, webhooks e integrações.
-8. `platform-observability-engineer` — GitHub Actions, Vercel, logs e limites do plano.
+1. `principal-architect` — Architecture decisions, P1 dependencies, contracts and evidence-based delivery planning.
+2. `ai-engineer` — Coordinate eleven specialist reviews, bounded AI runtime and evidence-based P0/P1 handoffs; theology owned by biblical-canon-engineer.
+3. `backend-engineer` — Business logic, Deno/TypeScript Edge Functions, APIs, gamification, server clock and timezone.
+4. `database-engineer` — PostgreSQL, Supabase migrations, Bible plan integrity and free pg_dump backup/restore evidence.
+5. `integration-engineer` — Auth email, signup confirmation, recovery, redirects and webhooks under a reviewed cost ceiling.
+6. `security-engineer` — RLS, app SECURITY DEFINER RPCs, search_path, server password validation and leaked-password protection.
+7. `qa-reliability-engineer` — PG16/PG17, Auth/RLS, anti-CRM guard and end-to-end validation.
+8. `frontend-ux-engineer` — React/TypeScript UI, profile, notifications, account deletion and timezone.
+9. `ux-designer` — Usability, accessible flows, micro-interactions and design specifications.
+10. `gamification-engineer` — Server-authoritative streaks, flame, XP, figurative rewards and fair group rankings.
+11. `biblical-canon-engineer` — Protestant canon integrity, Pentecostal Arminian theology and contextual exegesis.
+12. `platform-observability-engineer` — GitHub Actions, Vercel, secrets boundaries, logs and Free Tier monitoring.
 
-As especialidades anteriores de arquitetura principal, cânon, plano anual e gamificação foram incorporadas a esses oito papéis.
+Arquitetura P1: principal-architect define contratos; ai-engineer coordena onze especialistas e sintetiza revisões. Cada contrato contém responsabilidades, guardrails e handoff.
 
 ## Execução e limites
 
 - LAB CI valida os contratos e executa testes determinísticos em ambientes efêmeros; não chama IA de produção nem altera produção.
-- `.github/workflows/ai-agent-orchestrator.yml` é um fluxo opcional e manual (`workflow_dispatch`): chama os sete especialistas em sequência e passa suas notas validadas ao `ai-engineer` para síntese final, dentro de uma execução por 24 horas e dos limites de entrada/saída do manifesto.
+- `.github/workflows/ai-agent-orchestrator.yml` é um fluxo opcional e manual (`workflow_dispatch`): chama os onze especialistas em sequência e passa suas notas validadas ao `ai-engineer` para síntese final, dentro de uma execução por 24 horas e dos limites de entrada/saída do manifesto.
 - O segredo `OPENAI_API_KEY` é opcional. Sem ele, o fluxo registra `SKIPPED` sem enviar qualquer requisição. Esta configuração não leu, criou ou alterou segredos; nenhuma inferência ao vivo foi executada aqui.
 - O workflow fornece somente permissões GitHub `contents:read` e `actions:read`. O modelo não recebe ferramentas, credenciais Supabase/Vercel, conteúdo de usuário, PII ou dumps. Nenhuma saída do modelo é executada, gravada no repositório ou usada para aprovar produção.
 - Chamadas de API podem gerar cobrança. A autorização de uso não representa custo zero: os limites rígidos estão em `manifest.json`. Não faça upgrade de planos nem repita chamadas para contornar quotas.

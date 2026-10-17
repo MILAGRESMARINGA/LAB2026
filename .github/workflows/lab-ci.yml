@@ -263,7 +263,7 @@ jobs:
         run: npx --yes supabase@latest stop --no-backup || true
 
   agent-contract:
-    name: Validate the official eight-agent contract
+    name: Validate the official twelve-agent contract
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

@@ -20,11 +20,11 @@
     },
     "ai_orchestrator": {
       "max_runs_per_rolling_24h": 1,
-      "max_calls_per_run": 8,
+      "max_calls_per_run": 12,
       "max_calls_per_agent": 1,
       "max_output_tokens_per_call": 128,
-      "max_output_tokens_per_run": 1024,
-      "max_request_bytes_per_run": 65536,
+      "max_output_tokens_per_run": 1536,
+      "max_request_bytes_per_run": 98304,
       "retries": 0
     }
   },
@@ -39,21 +39,31 @@
     "llm_can_write_repository": false,
     "live_backup_required_before_destructive_operations": true,
     "workflow_call_order": [
+      "principal-architect",
       "backend-engineer",
       "database-engineer",
-      "security-engineer",
-      "frontend-ux-engineer",
-      "qa-reliability-engineer",
       "integration-engineer",
+      "security-engineer",
+      "qa-reliability-engineer",
+      "frontend-ux-engineer",
+      "ux-designer",
+      "gamification-engineer",
+      "biblical-canon-engineer",
       "platform-observability-engineer",
       "ai-engineer"
-    ]
+    ],
+    "architecture_owner": "principal-architect"
   },
   "agents": [
     {
+      "id": "principal-architect",
+      "path": "agents/principal-architect/agent.md",
+      "scope": "Architecture decisions, P1 dependencies, contracts and evidence-based delivery planning."
+    },
+    {
       "id": "ai-engineer",
       "path": "agents/ai-engineer/agent.md",
-      "scope": "Orchestrate seven specialists, study generation policy, theological source rules and evidence-based P0 closure."
+      "scope": "Coordinate eleven specialist reviews, bounded AI runtime and evidence-based P0/P1 handoffs; theology owned by biblical-canon-engineer."
     },
     {
       "id": "backend-engineer",
@@ -66,14 +76,14 @@
       "scope": "PostgreSQL, Supabase migrations, Bible plan integrity and free pg_dump backup/restore evidence."
     },
     {
+      "id": "integration-engineer",
+      "path": "agents/integration-engineer/agent.md",
+      "scope": "Auth email, signup confirmation, recovery, redirects and webhooks under a reviewed cost ceiling."
+    },
+    {
       "id": "security-engineer",
       "path": "agents/security-engineer/agent.md",
       "scope": "RLS, app SECURITY DEFINER RPCs, search_path, server password validation and leaked-password protection."
-    },
-    {
-      "id": "frontend-ux-engineer",
-      "path": "agents/frontend-ux-engineer/agent.md",
-      "scope": "React/TypeScript UI, profile, notifications, account deletion and timezone."
     },
     {
       "id": "qa-reliability-engineer",
@@ -81,14 +91,30 @@
       "scope": "PG16/PG17, Auth/RLS, anti-CRM guard and end-to-end validation."
     },
     {
-      "id": "integration-engineer",
-      "path": "agents/integration-engineer/agent.md",
-      "scope": "Auth email, signup confirmation, recovery, redirects and webhooks under a reviewed cost ceiling."
+      "id": "frontend-ux-engineer",
+      "path": "agents/frontend-ux-engineer/agent.md",
+      "scope": "React/TypeScript UI, profile, notifications, account deletion and timezone."
+    },
+    {
+      "id": "ux-designer",
+      "path": "agents/ux-designer/agent.md",
+      "scope": "Usability, accessible flows, micro-interactions and design specifications."
+    },
+    {
+      "id": "gamification-engineer",
+      "path": "agents/gamification-engineer/agent.md",
+      "scope": "Server-authoritative streaks, flame, XP, figurative rewards and fair group rankings."
+    },
+    {
+      "id": "biblical-canon-engineer",
+      "path": "agents/biblical-canon-engineer/agent.md",
+      "scope": "Protestant canon integrity, Pentecostal Arminian theology and contextual exegesis."
     },
     {
       "id": "platform-observability-engineer",
       "path": "agents/platform-observability-engineer/agent.md",
       "scope": "GitHub Actions, Vercel, secrets boundaries, logs and Free Tier monitoring."
     }
-  ]
+  ],
+  "phase": "P1"
 }
