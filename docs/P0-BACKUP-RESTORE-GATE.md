@@ -16,3 +16,16 @@ A publicação web pode ter status **READY** enquanto novas tabelas/funções ai
 - Projeto Vercel único: `labgame-biblia`. A produção web foi publicada a partir de `main` em `fd24fb9`, com `VITE_LAB_V2_READY=false` e `VITE_ACCOUNT_DELETION_READY=false`.
 - Perfis, notificações e Jornada V2 ainda não têm migrações no Supabase público.
 - **Falta** executar backup/restauração local real (a senha não pode ser obtida pelo conector). Nenhum atalho via SQL de produção substitui a prova de restauração.
+
+## Atualização operacional — 17/10/2026
+
+Esta seção substitui o status operacional datado de 16/10/2026 acima.
+
+- Foi criado um dump completo antes das migrations, preservado localmente fora do repositório. O responsável restaurou esse dump em um Supabase local isolado. Foi necessário usar `pg_restore --no-owner` por incompatibilidade de ownership entre o ambiente Supabase e o container local.
+- A restauração passou nas contagens: 1 usuário Auth, 1.189 capítulos, 31.101 versículos, 365 dias e 1.189 itens no plano. A cópia local não deve ser confundida com backup remoto retido.
+- Após o restore, o responsável executou o alinhamento do histórico e `supabase db push`. A leitura direta do Supabase confirma 28 migrations aplicadas, incluindo as migrations de perfil, V2, anti-speedrun, cache de estudos, ranking e limites de geração.
+- `study-generate` está publicada e ativa, versão 1, com verificação JWT habilitada.
+- O commit `dfe34a2` na `main` passou no LAB CI (6/6). O status Vercel atual reporta limite de builds, então o deploy web dessa revisão não está confirmado.
+- A auditoria confirmou RLS em 37/37 tabelas públicas. As sete tabelas sem policy não concedem acesso direto a `anon` ou `authenticated`; manter esse acesso fechado.
+- Permanecem pendentes a ativação da proteção contra senhas vazadas, a revisão manual completa das 29 RPCs expostas a `authenticated` e um smoke test web após deploy Vercel bem-sucedido.
+- A jornada V2 continua desligada por controle de release no banco. Não habilitar como consequência automática da aplicação das migrations.
