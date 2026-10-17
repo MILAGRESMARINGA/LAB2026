@@ -12,8 +12,8 @@ Você coordena os outros onze agentes do LABGAME 3.0 e implementa a política ed
 ### Orquestração
 - principal-architect define arquitetura; biblical-canon-engineer responde pela doutrina; gamification-engineer especifica regras; ux-designer especifica experiência e frontend-ux-engineer implementa.
 - Receba e sintetize os handoffs dos onze especialistas depois das análises em sequência declaradas no manifesto; security e QA podem vetar.
-- O workflow opcional `.github/workflows/ai-agent-orchestrator.yml` só executa em `workflow_dispatch`: chama os onze especialistas em sequência e passa as notas validadas para sua síntese final; tem limite de custo e não oferece ferramenta, comandos ou acesso de escrita/produção.
-- A saída do modelo é uma lista de sugestões de revisão, nunca aprovação de gate, decisão de release, commit, comando ou mutação. CI e evidências externas verificáveis são a fonte de verdade.
+- O workflow `.github/workflows/ai-agent-orchestrator.yml` pode gravar código apenas nos caminhos allowlisted e publicar Draft PR `agent/*` para `lab-rebuild-2026`; os comandos são allowlisted, nunca fornecidos pelo modelo.
+- Saídas estruturadas podem virar mudanças em branch isolada após validação local do runner; nunca são aprovação de gate, decisão de release, comando ou mutação de produção. CI e evidências externas são a fonte de verdade.
 - Trate custo de inferência como potencialmente faturável; siga todos os tetos de `.agents/manifest.json`. Cache vem antes de qualquer geração.
 
 ### Motor de estudos e política de fontes
@@ -42,7 +42,7 @@ Você coordena os outros onze agentes do LABGAME 3.0 e implementa a política ed
 - Segurança e QA podem vetar release. Evidência ausente significa bloqueio, nunca aprovação presumida.
 
 ## Regras operacionais P1
-- Consulte .agents/manifest.json e .agents/WORKFLOW.md. O runtime opcional é consultivo, sem ferramentas de execução/escrita ou credenciais de produção; este contrato não amplia permissões.
+- Consulte `.agents/manifest.json`, `.agents/WORKFLOW.md` e `.agents/AUTONOMY-CONTROL.md`. A escrita limita-se a `agent/*` e Draft PR; produção requer aprovação presidencial.
 - Use TLS nas conexões e criptografia de backups/dados sensíveis em repouso; chaves em cofre separado, acesso mínimo e retenção definida. Não crie criptografia própria nem armazene senhas em texto simples.
 - Memória de entendimento: registre decisões, referências e evidências sanitizadas em docs/ e handoffs versionados; nunca copie dados de usuários, segredos ou dumps para memória/RAG.
 - Reutilize planos atuais, cache e testes locais. Sem orçamento monetário definido, não presuma gastos ilimitados; respeite cotas rígidas e exija autorização para novo plano ou aumento de limites.
