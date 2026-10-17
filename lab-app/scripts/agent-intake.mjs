@@ -1,6 +1,6 @@
 /**
- * Event-driven LABGame intake: drafts task specification only.
- * It does NOT run an autonomous code model, execute issue text, or deploy.
+ * Event-driven LABGame intake. Trusted low-risk owner issues can dispatch the
+ * controlled code-agent workflow; inference remains disabled at the zero budget.
  */
 import {classifyTask} from "../railway/agent-orchestrator/server.mjs";
 import {pathToFileURL} from "node:url";
@@ -94,13 +94,24 @@ export async function execute(env=process.env,fetcher=fetch){
   if(!String(e.message).includes("GitHub API 403 on POST /actions/"))throw e;
  }
  const refUrl="https://github.com/"+repo+"/tree/"+branch;
+ let codingRunStarted=false;
+ try{
+  await call("/actions/workflows/ai-agent-orchestrator.yml/dispatches","POST",{
+   ref:"lab-rebuild-2026",
+   inputs:{issue_number:String(number),approved_spend_brl:"0",task:""}
+  });
+  codingRunStarted=true;
+ }catch(e){
+  if(!String(e.message).includes("GitHub API 403 on POST /actions/workflows/ai-agent-orchestrator.yml/dispatches"))throw e;
+ }
  await call("/issues/"+number+"/comments","POST",{
   body:"LABGame: triagem criada em "+(pr?.html_url??refUrl)+
    (pr?" (PR draft).":" (branch, criação de PR bloqueada por configuração GitHub).")+
    (ciStarted?" CI solicitada.":" CI não iniciada: permissões GitHub Actions insuficientes.")+
-   " Nenhum código do aplicativo ou dado real foi alterado."
+   (codingRunStarted?" O workflow controlado foi acionado com orçamento R$ 0,00; ele não fará inferência paga nem alteração de código sem aprovação orçamentária explícita.":" O workflow de código não pôde ser acionado por configuração de permissões.")+
+   " Nenhum código do aplicativo ou dado real foi alterado por esta triagem."
  });
- return {status:pr?"triaged":"triaged_without_pr",number:pr?.number??null,url:pr?.html_url??refUrl,branch,ciStarted};
+ return {status:pr?"triaged":"triaged_without_pr",number:pr?.number??null,url:pr?.html_url??refUrl,branch,ciStarted,codingRunStarted};
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
  execute().then(r=>console.log(JSON.stringify(r))).catch(e=>{
