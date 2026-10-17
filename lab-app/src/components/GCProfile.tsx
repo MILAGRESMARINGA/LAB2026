@@ -2,12 +2,13 @@ import {useCallback,useEffect,useState} from "react";
 import {Award,BookOpen,Flame,Medal,RefreshCw,ShieldCheck,Trophy,Users,UserRound} from "lucide-react";
 import {combinedMilestone,groupMilestones} from "../domain/progression-v3";
 import {getGameRanking,loadGroupSummary,type GCGroupSummary,type LabRankingEntry} from "../features/lab-game";
-import {getV2GroupRanking,getV2GroupSummary} from "../features/journey-v2";
+import {getV2FairGroupScorecard,getV2GroupRanking,getV2GroupSummary,type V2FairGroupScorecard} from "../features/journey-v2";
 import type {ReadingGroup} from "../features/groups";
 type Props={group:ReadingGroup;userId:string;personalXp?:number|null;onPersonalProfile:()=>void};
 const errorText=(e:unknown)=>e instanceof Error?e.message:"Não foi possível abrir o perfil do GC";
 export function GCProfile({group,userId,personalXp,onPersonalProfile}:Props){
  const [summary,setSummary]=useState<GCGroupSummary|null>(null);
+ const [fairScore,setFairScore]=useState<V2FairGroupScorecard|null>(null);
  const [ranking,setRanking]=useState<LabRankingEntry[]>([]);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState("");
@@ -19,8 +20,13 @@ export function GCProfile({group,userId,personalXp,onPersonalProfile}:Props){
     v2?getV2GroupSummary(group.id):loadGroupSummary(group.id),
     v2?getV2GroupRanking(group.id):getGameRanking(group.id)
    ]);
-   setSummary(info);setRanking(people);
-  }catch(e){setSummary(null);setRanking([]);setError(errorText(e))}
+   let nextFairScore:V2FairGroupScorecard|null=null;
+   if(v2){
+    try{nextFairScore=await getV2FairGroupScorecard(group.id)}
+    catch{/* Keep the established summary visible while an older V2 backend rolls forward. */}
+   }
+   setSummary(info);setRanking(people);setFairScore(nextFairScore);
+  }catch(e){setSummary(null);setRanking([]);setFairScore(null);setError(errorText(e))}
   finally{setLoading(false)}
  },[group.id]);
  useEffect(()=>{void refresh()},[refresh]);
@@ -60,8 +66,11 @@ export function GCProfile({group,userId,personalXp,onPersonalProfile}:Props){
    </div>}
    <div className="gc-profile-formula">
     <h3>Como a classificação do GC é calculada?</h3>
-    <p><strong>{summary.completed_member_days_7}</strong> dias completos ÷ (7 × <strong>{summary.consenting_members}</strong> participantes que consentiram) × 100 = <strong>{percent.toLocaleString("pt-BR",{maximumFractionDigits:1})}%</strong>.</p>
-    <small>Janela: {new Date(summary.window_start+"T12:00:00").toLocaleDateString("pt-BR")} a {new Date(summary.window_end+"T12:00:00").toLocaleDateString("pt-BR")}. Apenas dias com todos os capítulos confirmados entram na conta; vídeos não alteram esse percentual.</small>
+    {fairScore?.available&&fairScore.average_xp_per_member!=null&&fairScore.consistency_multiplier!=null&&fairScore.score!=null?
+     <><p><strong>{Number(fairScore.score).toLocaleString("pt-BR",{maximumFractionDigits:1})} pontos</strong> = média de <strong>{Number(fairScore.average_xp_per_member).toLocaleString("pt-BR",{maximumFractionDigits:1})} XP por membro</strong> × multiplicador de disciplina <strong>{Number(fairScore.consistency_multiplier).toLocaleString("pt-BR",{maximumFractionDigits:2})}</strong>.</p>
+      <small>Constância coletiva: {Number(fairScore.consistency_pct??0).toLocaleString("pt-BR",{maximumFractionDigits:1})}% · leituras {Number(fairScore.reading_coverage_pct??0).toLocaleString("pt-BR",{maximumFractionDigits:1})}% · estudos {Number(fairScore.study_coverage_pct??0).toLocaleString("pt-BR",{maximumFractionDigits:1})}% · vídeos {Number(fairScore.video_coverage_pct??0).toLocaleString("pt-BR",{maximumFractionDigits:1})}%. O tamanho do GC não soma pontos; membros sem consentimento ficam fora do denominador.</small></>:
+     <><p><strong>{summary.completed_member_days_7}</strong> dias completos ÷ (7 × <strong>{summary.consenting_members}</strong> participantes que consentiram) × 100 = <strong>{percent.toLocaleString("pt-BR",{maximumFractionDigits:1})}%</strong>.</p>
+      <small>Janela: {new Date(summary.window_start+"T12:00:00").toLocaleDateString("pt-BR")} a {new Date(summary.window_end+"T12:00:00").toLocaleDateString("pt-BR")}. Apenas dias com todos os capítulos confirmados entram na conta; vídeos não alteram esse percentual.</small></>}
    </div>
   </>}
   <div className="gc-profile-ranking">

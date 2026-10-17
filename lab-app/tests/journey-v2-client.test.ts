@@ -3,7 +3,7 @@ const {rpc,from}=vi.hoisted(()=>({rpc:vi.fn(),from:vi.fn()}));
 vi.mock("../src/lib/supabase",()=>({supabase:{rpc,from}}));
 import {
  startJourneyV2,syncJourneyV2,activateJourneyV2,beginJourneyV2Chapter,
- confirmJourneyV2Chapter,getJourneyV2Chapters
+ confirmJourneyV2Chapter,getJourneyV2Chapters,getV2FairGroupScorecard
 } from "../src/features/journey-v2";
 
 const id="11111111-1111-4111-8111-111111111111";
@@ -72,5 +72,14 @@ describe("Jornada V2 só funciona com duas travas explícitas",()=>{
   expect(chain.order).toHaveBeenCalledWith("slot",{ascending:true});
   chain.order.mockResolvedValue({data:chapters.slice(0,2),error:null});
   await expect(getJourneyV2Chapters(365,1)).rejects.toThrow("incompleto");
+ });
+ it("consulta o scorecard justo sem aceitar uma resposta sem disponibilidade",async()=>{
+  vi.stubEnv("VITE_LAB_V2_READY","true");
+  const scorecard={available:true,average_xp_per_member:42.5,consistency_multiplier:1.12,score:47.6};
+  rpc.mockResolvedValue({data:scorecard,error:null});
+  await expect(getV2FairGroupScorecard(id)).resolves.toEqual(scorecard);
+  expect(rpc).toHaveBeenCalledWith("lab_v2_gc_group_scorecard",{p_group_id:id});
+  rpc.mockResolvedValue({data:{reason:"no_consented_activity"},error:null});
+  await expect(getV2FairGroupScorecard(id)).rejects.toThrow("scorecard");
  });
 });

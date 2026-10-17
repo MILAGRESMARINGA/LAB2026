@@ -73,12 +73,12 @@ export function GCLeague({userId,groups,onGroupsChange}:Props){
    {rows.length===0?<p className="muted">Ainda não há GCs elegíveis nesta semana. São necessários ao menos três participantes com consentimento em cada GC.</p>:
     <div className="gc-league-table">{rows.map(row=><div className="gc-league-row" key={row.group_id}>
      <strong className="gc-league-position">{row.rank_position}º</strong>
-     <div className="gc-league-name"><strong>{row.group_name}</strong><span><Users size={13}/>{row.consenting_members} inscritos de {row.members} integrantes</span></div>
-     <div className="gc-league-score"><strong>{Number(row.compliance_pct).toLocaleString("pt-BR",{maximumFractionDigits:1})}%</strong><span><Flame size={13}/>{row.days_completed} dias completos</span></div>
+     <div className="gc-league-name"><strong>{row.group_name}</strong><span><Users size={13}/>{row.consenting_members} inscritos de {row.members} integrantes</span><span>Média: {Number(row.average_xp_per_member??0).toLocaleString("pt-BR",{maximumFractionDigits:1})} XP por membro</span></div>
+     <div className="gc-league-score"><strong>{Number(row.score??row.consistency_pct??row.compliance_pct??0).toLocaleString("pt-BR",{maximumFractionDigits:1})}</strong><span><Flame size={13}/>{Number(row.consistency_pct??row.compliance_pct??0).toLocaleString("pt-BR",{maximumFractionDigits:1})}% constância</span><small>{row.consistency_multiplier?"×"+Number(row.consistency_multiplier).toLocaleString("pt-BR",{maximumFractionDigits:2}):""}</small></div>
     </div>)}</div>}
    {rows.length>0&&<p className="gc-league-period"><CheckCircle2 size={16}/> Período: {new Date(rows[0].window_start+"T12:00:00").toLocaleDateString("pt-BR")} a {new Date(rows[0].window_end+"T12:00:00").toLocaleDateString("pt-BR")}</p>}
   </>}
-  <p className="gc-league-footnote">Critério: dias completos confirmados pelos participantes que consentiram ÷ (7 × número de participantes com consentimento). Quem não participa do ranking não reduz a nota do GC. Vídeos e XP extra não influenciam essa classificação.</p>
+  <p className="gc-league-footnote">Critério justo: média de XP por membro elegível × multiplicador de constância e disciplina coletiva. O tamanho do GC não gera vantagem por volume bruto; quem não consente fica fora do denominador. O servidor calcula leitura, estudo e vídeo com idempotência.</p>
   {message&&<p className="feedback-message" role="status">{message}</p>}
  </section>;
 }

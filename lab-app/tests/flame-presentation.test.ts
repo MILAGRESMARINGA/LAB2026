@@ -21,4 +21,23 @@ describe("visual da Chama Viva",()=>{
   expect(flamePresentation(-3).completedDays).toBe(0);
   expect(flamePresentation(31,"completed").title).toBe("Jornada concluída");
  });
+ it("mostra alerta de uma hora usando o relógio do servidor",()=>{
+  const view=flamePresentation(4,"active",{
+   serverNow:"2026-10-17T13:00:00Z",
+   deadlineAt:"2026-10-17T13:45:00Z",
+   graceDeadlineAt:"2026-10-17T19:45:00Z"
+  });
+  expect(view.urgency).toBe("watch");
+  expect(view.tone).toBe("ember");
+  expect(view.title).toContain("Proteja");
+ });
+ it("diferencia a carência sem depender do relógio do celular",()=>{
+  const view=flamePresentation(4,"active",{
+   serverNow:"2026-10-17T14:00:00Z",
+   deadlineAt:"2026-10-17T13:45:00Z",
+   graceDeadlineAt:"2026-10-17T19:45:00Z"
+  });
+  expect(view.urgency).toBe("grace");
+  expect(view.title).toContain("alerta");
+ });
 });

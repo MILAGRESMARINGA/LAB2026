@@ -1,8 +1,8 @@
 import {Flame} from "lucide-react";
-import {flamePresentation,type FlameStatus} from "../domain/flame-presentation";
+import {flamePresentation,type FlameStatus,type FlameTiming} from "../domain/flame-presentation";
 
-export function ConsistencyFlame({completedDays,status="active"}:{completedDays:number;status?:FlameStatus}){
- const view=flamePresentation(completedDays,status);
+export function ConsistencyFlame({completedDays,status="active",timing}:{completedDays:number;status?:FlameStatus;timing?:FlameTiming}){
+ const view=flamePresentation(completedDays,status,timing);
  const dayLabel=view.completedDays===1?"dia confirmado":"dias confirmados";
  return <section className={"consistency-flame tone-"+view.tone} aria-label={"Chama Viva: "+view.completedDays+" "+dayLabel}>
   <span className="consistency-flame-icon" aria-hidden="true"><Flame size={view.iconSize} strokeWidth={1.8}/></span>
