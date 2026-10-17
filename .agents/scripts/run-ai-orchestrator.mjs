@@ -135,6 +135,11 @@ function runAllowed(command) {
   });
 }
 async function main() {
+  if (process.env.LAB_AGENT_SMOKE_TEST === "true") {
+    if (process.env.OPENAI_API_KEY) return blocked("Smoke mode must never receive the provider key.");
+    summary("## LABGame agent run — EXPECTED SKIP\n\nNo provider key in smoke mode; no inference or repository write was attempted.");
+    return;
+  }
   if (process.env.GITHUB_REF !== "refs/heads/lab-rebuild-2026" || process.env.GITHUB_REPOSITORY !== "MILAGRESMARINGA/LAB2026") return blocked("Only the trusted LABGame working branch/repository may start this runner.");
   if (!process.env.GITHUB_TOKEN || !process.env.OPENAI_API_KEY) return blocked("GitHub write token or model key unavailable; no code was generated.");
   const approvedBudget = Number(process.env.APPROVED_SPEND_BRL ?? "0");
