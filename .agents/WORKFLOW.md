@@ -25,17 +25,21 @@ A tabela é a ordem consultiva do runtime. Na implementação, o principal-archi
 
 Mudanças de autenticação, banco ou publicação exigem pareceres de segurança e QA. O orquestrador trabalha em sequência e identifica dependências antes de aceitar handoffs.
 
-## Runtime de IA opcional e custo
+## Runtime de IA com autonomia controlada e custo
 
-O fluxo `.github/workflows/ai-agent-orchestrator.yml` só inicia por `workflow_dispatch` na branch `lab-rebuild-2026`. Se `OPENAI_API_KEY` estiver ausente, registra `SKIPPED` sem fazer chamadas. A disponibilidade desse segredo não foi inspecionada nem alterada nesta configuração.
+O fluxo `.github/workflows/ai-agent-orchestrator.yml` só inicia na branch `lab-rebuild-2026`, com dispatch do dono confiável ou uma issue autenticada originada pelo console de voz. O fluxo tem permissão de criar branches `agent/*` e Draft PRs para `lab-rebuild-2026`. O modelo devolve JSON estruturado com arquivos completos; `agent-writer-core.mjs` restringe caminho, tamanho, duplicatas, symlinks e padrões de segredo antes de gravar. Não é permitido ao modelo fornecer comandos shell.
 
-Com segredo disponível, o fluxo envia os onze especialistas em sequência na ordem do manifesto e passa as notas limitadas ao ai-engineer para uma síntese final na décima segunda chamada. As notas são validadas, saneadas e tratadas como dados, nunca instruções. O workflow calcula o tamanho máximo da síntese antes da primeira chamada. Limites: uma execução por 24 horas, no máximo doze chamadas/execuções, 128 tokens de saída por chamada (1.536 por fluxo), 98.304 bytes de payload acumulado, 20 segundos por chamada e zero retries. O token GitHub é somente de leitura e é usado apenas para limitar execuções recentes. O workflow não tem acesso ao Supabase, Vercel, comandos, escrita no repositório, produção, PII, dumps ou segredos da aplicação. A saída JSON é escapada e publicada somente no resumo daquela execução; é sugestão, não evidência, comando ou aprovação.
+Os comandos executados são uma allowlist fixa (`npm run verify:engineering`, `npm test`, `npm run build`) e rodam sem variáveis de token/chaves. Checkout não persiste credenciais. O token GitHub só fica no processo controlador para criar o commit/branch/PR pela API. Nenhum secret Supabase, Vercel, banco, e-mail, dump ou backup é passado ao runtime.
+
+Inferência habilitada não significa autorização para cobrar sem teto aprovado. O console de voz envia o despacho com orçamento R$ 0, que bloqueia chamada ao modelo. Uma execução potencialmente paga requer dispatch manual pelo responsável com valor positivo em `approved_spend_brl`; limites de token ajudam, mas não são hard spend cap do provedor. A disponibilidade da chave OPENAI não foi inspecionada nem alterada.
+
+`production_mutations_from_ai_workflow` exige aprovação presidencial. O executor não executa migrations/deploys, ações destrutivas, e-mails ou outras mutações de produção. Não há auto-merge: todo resultado é Draft PR, e integração depende de revisão humana e checks obrigatórios. O relatório de governança não se declara aprovado automaticamente nem afirma custo R$ 0 sem evidência.
 
 O gerador `study-generate` é um endpoint separado: consulta o cache primeiro; miss exige `OPENAI_API_KEY`; o banco limita até 10 misses globais e 3 por usuário por dia UTC. Usa schema estrito, no máximo 1.200 tokens de saída, prompt de 64.000 bytes, timeout de 25 s e `store:false`. Cache hits não invocam o modelo. Cada chamada de API pode gerar cobrança; estes limites não afirmam custo R$ 0. Nenhum plano pago pode ser atualizado nem quota contornada.
 
 ## Autonomia e evidência
 
-- Inspecionar, implementar, documentar e testar código LABGAME; criar commits na branch de trabalho; usar CI e bancos descartáveis.
+- Agentes podem propor código LABGAME no escopo allowlist, rodar os comandos de teste permitidos e publicar Draft PRs em branch isolada `agent/*`.
 - Consultas de produção devem ser somente leitura até o gate de release terminar.
 - Nunca colocar tokens, senhas, PII, dumps ou backups em prompts, commits, logs ou artefatos.
 - LLMs podem preparar checklists e revisões textuais. Não lhes dê ferramentas de execução, acesso a dados de usuários ou credenciais. Nunca execute uma saída do modelo.
