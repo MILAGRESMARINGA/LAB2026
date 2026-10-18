@@ -90,7 +90,7 @@ export function summarizeTask(issue,runs,pulls){
   .sort((a,b)=>Date.parse(b.created_at)-Date.parse(a.created_at));
  const pr=prs[0];
  let stage="queued";
- if(issue.labels?.some(l=>l.name==="lab-approval-required"))stage="approval_required";
+ if(issue.labels?.some(l=>l.name==="lab-approval-required")||issue.body?.includes("Classificação automática: approval_required."))stage="approval_required";
  else if(run&&run.status!=="completed")stage="running";
  else if(run&&run.conclusion!=="success")stage="failed";
  else if(pr?.merged_at)stage="merged";
@@ -142,8 +142,8 @@ export async function handle(request,env=process.env,fetcher=fetch,now=Date.now(
   }
   if(request.method==="GET"){
 
-   const issues=await gh("/issues?state=open&labels=lab-agent&per_page=10",{},config,fetcher);
-   return json(200,{tasks:issues.filter(x=>!x.pull_request).map(x=>({
+   const issues=await gh("/issues?state=open&sort=created&direction=desc&per_page=100",{},config,fetcher);
+   return json(200,{tasks:issues.filter(x=>!x.pull_request&&x.title?.startsWith("LAB AGENTE · ")).map(x=>({
     number:x.number,title:x.title,url:x.html_url,state:x.state
    }))},origin,config);
   }
