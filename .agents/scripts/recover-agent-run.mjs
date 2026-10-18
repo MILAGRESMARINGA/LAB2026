@@ -12,7 +12,8 @@ export async function recoverAgentRun(event,token,fetcher=fetch){
   return r.status===201||r.status===204?{}:r.json();
  };
  const {jobs}=await call(`/actions/runs/${run.id}/attempts/${run.run_attempt}/jobs?per_page=100`);
- const job=jobs?.find(j=>j.name==="generate"&&j.conclusion==="failure"&&j.steps?.some(s=>s.name==="Account retryable patch protocol failure"&&s.conclusion==="success"));
+ const job=jobs?.find(j=>j.name==="generate"&&j.conclusion==="failure"&&j.steps?.some(s=>s.name==="Account retryable patch protocol failure"&&s.conclusion==="success"))??
+  (jobs?.some(j=>j.name==="verify"&&j.conclusion==="failure"&&j.steps?.some(s=>s.name==="Account retryable patch QA failure"&&s.conclusion==="success"))?jobs.find(j=>j.name==="generate"&&j.conclusion==="success"):null);
  if(!job||!Number.isSafeInteger(job.id))return {status:"not_retryable"};
  await call(`/actions/jobs/${job.id}/rerun`,"POST");
  return {status:"retry_requested",run:run.id,attempt:run.run_attempt+1};
