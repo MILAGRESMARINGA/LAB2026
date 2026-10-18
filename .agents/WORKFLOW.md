@@ -4,7 +4,7 @@
 
 Repositório `MILAGRESMARINGA/LAB2026`, trabalho em `lab-rebuild-2026`; produto em `lab-app/`. CRMIMOBI está fora de escopo. Os doze `agent.md` definem os domínios e os handoffs.
 
-## Ordem de trabalho dos doze agentes
+## Roteamento e responsabilidades dos doze agentes
 
 | Ordem | Agente | Entrega |
 |---|---|---|
@@ -21,25 +21,33 @@ Repositório `MILAGRESMARINGA/LAB2026`, trabalho em `lab-rebuild-2026`; produto 
 | 11 | platform-observability-engineer | GitHub Actions, Vercel, secrets boundaries, logs and Free Tier monitoring. |
 | 12 | ai-engineer | Coordinate eleven specialist reviews, bounded AI runtime and evidence-based P0/P1 handoffs; theology owned by biblical-canon-engineer. |
 
-A tabela é a ordem consultiva do runtime. Na implementação, o principal-architect define dependências e o ai-engineer agenda handoffs: UX e gamificação especificam antes do frontend; cânon revisa antes da publicação editorial; segurança e QA revisam o resultado final antes do release.
+Esta tabela descreve responsabilidades, não uma execução em lote. O runtime encaminha cada tarefa para um agente principal e registra os agentes de apoio/revisão no BET. A presença de um revisor no BET não equivale a parecer aprovado; os checks de segurança, QA e revisão humana precisam de evidência.
 
-Mudanças de autenticação, banco ou publicação exigem pareceres de segurança e QA. O orquestrador trabalha em sequência e identifica dependências antes de aceitar handoffs.
+## Runtime de IA com autonomia controlada e custo
 
-## Runtime de IA opcional e custo
+O fluxo `.github/workflows/ai-agent-orchestrator.yml` só inicia na branch `lab-rebuild-2026`, com dispatch do dono confiável ou uma issue autenticada originada pelo console de voz. Antes da inferência, `task-briefing.mjs` compila o BET. O runtime tem três jobs: geração de JSON/artefato com permissões de leitura; aplicação e testes sem secrets; publicação com token GitHub de escrita apenas para branch `agent/*` e Draft PR. `agent-writer-core.mjs` valida allowlist global e `write_paths` do agente, tamanho, duplicatas, symlinks e padrões de segredo. Não é permitido ao modelo fornecer comandos shell.
 
-O fluxo `.github/workflows/ai-agent-orchestrator.yml` só inicia por `workflow_dispatch` na branch `lab-rebuild-2026`. Se `OPENAI_API_KEY` estiver ausente, registra `SKIPPED` sem fazer chamadas. A disponibilidade desse segredo não foi inspecionada nem alterada nesta configuração.
+Os comandos executados são uma allowlist fixa (`npm run verify:engineering`, `npm test`, `npm run build`) e rodam sem chave do provedor ou token de escrita. Checkout não persiste credenciais. Nenhum secret Supabase, Vercel, banco, e-mail, dump ou backup é passado ao runtime.
 
-Com segredo disponível, o fluxo envia os onze especialistas em sequência na ordem do manifesto e passa as notas limitadas ao ai-engineer para uma síntese final na décima segunda chamada. As notas são validadas, saneadas e tratadas como dados, nunca instruções. O workflow calcula o tamanho máximo da síntese antes da primeira chamada. Limites: uma execução por 24 horas, no máximo doze chamadas/execuções, 128 tokens de saída por chamada (1.536 por fluxo), 98.304 bytes de payload acumulado, 20 segundos por chamada e zero retries. O token GitHub é somente de leitura e é usado apenas para limitar execuções recentes. O workflow não tem acesso ao Supabase, Vercel, comandos, escrita no repositório, produção, PII, dumps ou segredos da aplicação. A saída JSON é escapada e publicada somente no resumo daquela execução; é sugestão, não evidência, comando ou aprovação.
+Inferência habilitada não significa autorização para cobrar sem teto aprovado. O console de voz envia o despacho com orçamento R$ 0, que bloqueia chamada ao modelo. Uma execução potencialmente paga requer dispatch manual pelo responsável com valor positivo em `approved_spend_brl`; limites de token ajudam, mas não são hard spend cap do provedor. A disponibilidade da chave OPENAI não foi inspecionada nem alterada.
+
+`production_mutations_from_ai_workflow` exige aprovação presidencial. O executor não executa migrations/deploys, ações destrutivas, e-mails ou outras mutações de produção. Não há auto-merge: todo resultado é Draft PR, e integração depende de revisão humana e checks obrigatórios. O relatório de governança não se declara aprovado automaticamente nem afirma custo R$ 0 sem evidência.
 
 O gerador `study-generate` é um endpoint separado: consulta o cache primeiro; miss exige `OPENAI_API_KEY`; o banco limita até 10 misses globais e 3 por usuário por dia UTC. Usa schema estrito, no máximo 1.200 tokens de saída, prompt de 64.000 bytes, timeout de 25 s e `store:false`. Cache hits não invocam o modelo. Cada chamada de API pode gerar cobrança; estes limites não afirmam custo R$ 0. Nenhum plano pago pode ser atualizado nem quota contornada.
 
 ## Autonomia e evidência
 
-- Inspecionar, implementar, documentar e testar código LABGAME; criar commits na branch de trabalho; usar CI e bancos descartáveis.
+- Agentes podem propor código LABGAME no escopo allowlist, rodar os comandos de teste permitidos e publicar Draft PRs em branch isolada `agent/*`.
 - Consultas de produção devem ser somente leitura até o gate de release terminar.
 - Nunca colocar tokens, senhas, PII, dumps ou backups em prompts, commits, logs ou artefatos.
 - LLMs podem preparar checklists e revisões textuais. Não lhes dê ferramentas de execução, acesso a dados de usuários ou credenciais. Nunca execute uma saída do modelo.
 - Registrar apenas comandos, revisões, chamadas e evidências realmente obtidas; diferenciar CI local/efêmera, preview e produção.
+
+## Briefing Executivo de Tarefa (BET)
+
+Todo intake cria um BET de triagem com ID estável, agente principal roteado, papéis de apoio/revisão e custo R$ 0 (sem inferência). Antes de qualquer chamada paga, o dispatch manual precisa registrar aprovação presidencial positiva. O BET final inclui objetivo derivado do pedido, `write_paths` do especialista, fora de escopo, aceite, segurança, contrato de banco, QA obrigatório e contrato teológico se houver conteúdo bíblico. O mesmo BET acompanha o prompt, o artefato validado e o Draft PR. A autorização informada no workflow não é hard cap do provedor; não usar modelo cuja cobrança máxima não esteja controlada externamente.
+
+O escopo por agente é vinculante: frontend/UX não altera migrations; database/security são os únicos papéis que podem propor migrations; QA escreve testes; agentes sem `write_paths` atuam somente como revisores e não publicam código. O runtime valida a atribuição novamente antes de gravar e antes de publicar.
 
 ## Gates de produção
 
@@ -65,6 +73,6 @@ Registre requisito, agente, alvo, alterações, política de custo, riscos, coma
 
 ## Transição P1 — 17/10/2026
 
-Os doze contratos substituem a composição P0 de oito agentes. Relatórios P0 datados são histórico e não prova de aceite P1. Nenhum gate pendente é aprovado por esta mudança. O runtime continua manual e consultivo; não se torna um executor autônomo de código.
+Os doze contratos substituem a composição P0 de oito agentes. Relatórios P0 datados são histórico e não prova de aceite P1. Nenhum gate pendente é aprovado por esta mudança. A execução de código é controlada por aprovação explícita de custo, allowlist de escrita, testes sem credenciais e Draft PR; produção e merge permanecem sob revisão humana.
 
 O teto de chamadas sobe de 8 para 12, tokens de saída de 1.024 para 1.536 e entrada acumulada de 65.536 para 98.304 bytes para incluir todos os papéis. Uma execução a cada 24h, 128 tokens/chamada e zero retries permanecem. São limites de uso, não garantia de preço; não foi disparada inferência nesta atualização.

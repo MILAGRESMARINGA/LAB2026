@@ -18,6 +18,7 @@ function network(override={},permission="admin"){
   if(url.includes("/contents/.agents/intake/"))return Response.json({content:{sha:"safe"}});
   if(url.endsWith("/pulls"))return Response.json({html_url:"https://github.com/"+repo+"/pull/17",number:17});
   if(url.endsWith("/actions/workflows/lab-ci.yml/dispatches"))return new Response(null,{status:204});
+  if(url.endsWith("/actions/workflows/ai-agent-orchestrator.yml/dispatches"))return new Response(null,{status:204});
   if(url.endsWith("/issues/12/comments"))return Response.json({id:1234});
   return new Response("",{status:404});
  };
@@ -35,6 +36,9 @@ test("untrusted issue text becomes quoted documentation, not shell commands",()=
  assert.ok(md.includes("> rm -rf /"));
  assert.ok(md.includes("＠github-admin"));
  assert.ok(md.includes("não implementa"));
+ assert.ok(md.includes("Briefing Executivo de Tarefa (BET)"));
+ assert.ok(md.includes("Agente principal: `ux-designer`"));
+ assert.ok(md.includes("Nenhuma execução paga autorizada"));
 });
 test("untrusted author cannot request Github write actions",async()=>{
  const networkCase=network({user:{login:"attacker",id:999999},author_association:"NONE"});
@@ -49,7 +53,7 @@ test("sensitive request cannot create a PR or dispatch the CI",async()=>{
  assert.equal(networkCase.calls.filter(x=>x.method==="POST").length,1);
  assert.ok(!networkCase.calls.some(x=>x.url.endsWith("/pulls")));
 });
-test("safe admin request opens draft PR and queues tests, without coding changes",async()=>{
+test("safe admin request opens intake PR and dispatches code flow with zero paid budget",async()=>{
  const n=network();
  const outcome=await execute(env,n.fetcher);
  assert.equal(outcome.status,"triaged");
@@ -63,6 +67,10 @@ test("safe admin request opens draft PR and queues tests, without coding changes
  const content=Buffer.from(JSON.parse(write.body).content,"base64").toString("utf8");
  assert.ok(content.includes("nenhuma alteração funcional foi realizada"));
  assert.ok(n.calls.some(x=>x.url.endsWith("/actions/workflows/lab-ci.yml/dispatches")));
+ const codingDispatch=n.calls.find(x=>x.url.endsWith("/actions/workflows/ai-agent-orchestrator.yml/dispatches"));
+ assert.ok(codingDispatch);
+ assert.equal(JSON.parse(codingDispatch.body).inputs.approved_spend_brl,"0");
+ assert.equal(outcome.codingRunStarted,true);
 });
 test("GitHub restriction 403 on PR creation preserves branch, report and CI",async()=>{
  const n=network();

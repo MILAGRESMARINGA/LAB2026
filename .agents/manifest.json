@@ -5,8 +5,9 @@
   "working_branch": "lab-rebuild-2026",
   "production_project_ref": "azejfxvaamgkmfmwdzjn",
   "cost_policy": {
-    "api_usage": "owner-authorized-bounded-and-potentially-billable",
-    "incremental_cost_limit_brl": null,
+    "api_usage": "president-approved-per-run-budget-required",
+    "incremental_cost_limit_brl": 0,
+    "president_approved_spend_required_for_paid_inference": true,
     "no_paid_plan_upgrade": true,
     "cache_first": true,
     "study_generation": {
@@ -19,101 +20,181 @@
       "fail_closed_without_openai_api_key": true
     },
     "ai_orchestrator": {
+      "provider_model": "gpt-6-luna",
+      "max_approved_spend_brl_per_run": 100,
       "max_runs_per_rolling_24h": 1,
       "max_calls_per_run": 12,
       "max_calls_per_agent": 1,
-      "max_output_tokens_per_call": 128,
-      "max_output_tokens_per_run": 1536,
+      "max_output_tokens_per_call": 6000,
+      "max_output_tokens_per_run": 6000,
       "max_request_bytes_per_run": 98304,
-      "retries": 0
+      "retries": 0,
+      "max_files_per_patch": 8,
+      "max_patch_bytes": 400000,
+      "maximum_test_commands": [
+        "npm run verify:engineering",
+        "npm test",
+        "npm run build"
+      ]
     }
   },
   "orchestration": {
     "lead": "ai-engineer",
-    "runtime": "optional-github-actions-workflow-dispatch",
-    "llm_inference_enabled_by_default": false,
+    "runtime": "github-actions-controlled-write-with-draft-pr",
+    "llm_inference_enabled_by_default": true,
     "llm_secret_status": "not-inspected-or-changed-in-this-task",
     "production_mutations_from_ci": false,
-    "production_mutations_from_ai_workflow": false,
-    "llm_can_execute_commands": false,
-    "llm_can_write_repository": false,
-    "live_backup_required_before_destructive_operations": true,
-    "workflow_call_order": [
-      "principal-architect",
-      "backend-engineer",
-      "database-engineer",
-      "integration-engineer",
-      "security-engineer",
-      "qa-reliability-engineer",
-      "frontend-ux-engineer",
-      "ux-designer",
-      "gamification-engineer",
-      "biblical-canon-engineer",
-      "platform-observability-engineer",
-      "ai-engineer"
+    "production_mutations_from_ai_workflow": "president_approval_required",
+    "llm_can_execute_commands": true,
+    "llm_command_execution_scope": "runner-allowlist-only; never model-provided shell",
+    "llm_can_write_repository": true,
+    "repository_write_scope": [
+      "agent/*",
+      "auto/*"
     ],
-    "architecture_owner": "principal-architect"
+    "protected_branches": [
+      "main",
+      "lab-rebuild-2026"
+    ],
+    "repository_write_requires_draft_pr": true,
+    "agent_file_write_allowlist": [
+      "lab-app/src/**/*.ts",
+      "lab-app/src/**/*.tsx",
+      "lab-app/src/**/*.css",
+      "lab-app/tests/**/*.{ts,tsx}",
+      "lab-app/scripts/tests/**/*.mjs",
+      "lab-app/supabase/functions/**/*.{ts,js,mjs}",
+      "lab-app/supabase/migrations/????????????_*.sql"
+    ],
+    "live_backup_required_before_destructive_operations": true,
+    "architecture_owner": "principal-architect",
+    "task_dispatch_mode": "single-primary-specialist-per-task; support-and-review agents are listed in each BET"
   },
   "agents": [
     {
       "id": "principal-architect",
       "path": "agents/principal-architect/agent.md",
-      "scope": "Architecture decisions, P1 dependencies, contracts and evidence-based delivery planning."
+      "scope": "Architecture decisions, P1 dependencies, contracts and evidence-based delivery planning.",
+      "write_paths": []
     },
     {
       "id": "ai-engineer",
       "path": "agents/ai-engineer/agent.md",
-      "scope": "Coordinate eleven specialist reviews, bounded AI runtime and evidence-based P0/P1 handoffs; theology owned by biblical-canon-engineer."
+      "scope": "Route each task to one primary specialist; compile BET with scope, support/review roles, cost authorization, acceptance, security, QA and theological constraints. Theology remains owned by biblical-canon-engineer.",
+      "write_paths": []
     },
     {
       "id": "backend-engineer",
       "path": "agents/backend-engineer/agent.md",
-      "scope": "Business logic, Deno/TypeScript Edge Functions, APIs, gamification, server clock and timezone."
+      "scope": "Business logic, Deno/TypeScript Edge Functions, APIs, gamification, server clock and timezone.",
+      "write_paths": [
+        "lab-app/src/features/**/*.ts",
+        "lab-app/src/domain/**/*.ts",
+        "lab-app/supabase/functions/**/*.ts",
+        "lab-app/supabase/functions/**/*.mjs",
+        "lab-app/tests/**/*.ts",
+        "lab-app/tests/**/*.tsx",
+        "lab-app/scripts/tests/**/*.mjs"
+      ]
     },
     {
       "id": "database-engineer",
       "path": "agents/database-engineer/agent.md",
-      "scope": "PostgreSQL, Supabase migrations, Bible plan integrity and free pg_dump backup/restore evidence."
+      "scope": "PostgreSQL, Supabase migrations, Bible plan integrity and free pg_dump backup/restore evidence.",
+      "write_paths": [
+        "lab-app/supabase/migrations/*.sql",
+        "lab-app/scripts/tests/*.mjs",
+        "lab-app/scripts/tests/*.sql"
+      ]
     },
     {
       "id": "integration-engineer",
       "path": "agents/integration-engineer/agent.md",
-      "scope": "Auth email, signup confirmation, recovery, redirects and webhooks under a reviewed cost ceiling."
+      "scope": "Auth email, signup confirmation, recovery, redirects and webhooks under a reviewed cost ceiling.",
+      "write_paths": [
+        "lab-app/src/features/auth.ts",
+        "lab-app/src/features/profile-settings.ts",
+        "lab-app/src/domain/notification-*.ts",
+        "lab-app/supabase/functions/notify-reading-email/**/*.ts",
+        "lab-app/tests/**/*.ts"
+      ]
     },
     {
       "id": "security-engineer",
       "path": "agents/security-engineer/agent.md",
-      "scope": "RLS, app SECURITY DEFINER RPCs, search_path, server password validation and leaked-password protection."
+      "scope": "RLS, app SECURITY DEFINER RPCs, search_path, server password validation and leaked-password protection.",
+      "write_paths": [
+        "lab-app/supabase/migrations/*.sql",
+        "lab-app/scripts/tests/*.mjs",
+        "lab-app/scripts/tests/*.sql",
+        "lab-app/tests/**/*.ts"
+      ]
     },
     {
       "id": "qa-reliability-engineer",
       "path": "agents/qa-reliability-engineer/agent.md",
-      "scope": "PG16/PG17, Auth/RLS, anti-CRM guard and end-to-end validation."
+      "scope": "PG16/PG17, Auth/RLS, anti-CRM guard and end-to-end validation.",
+      "write_paths": [
+        "lab-app/tests/**/*.ts",
+        "lab-app/tests/**/*.tsx",
+        "lab-app/scripts/tests/**/*.mjs",
+        "lab-app/scripts/tests/**/*.sql"
+      ]
     },
     {
       "id": "frontend-ux-engineer",
       "path": "agents/frontend-ux-engineer/agent.md",
-      "scope": "React/TypeScript UI, profile, notifications, account deletion and timezone."
+      "scope": "React/TypeScript UI, profile, notifications, account deletion and timezone.",
+      "write_paths": [
+        "lab-app/src/App.tsx",
+        "lab-app/src/components/**/*.tsx",
+        "lab-app/tests/**/*.ts",
+        "lab-app/tests/**/*.tsx"
+      ]
     },
     {
       "id": "ux-designer",
       "path": "agents/ux-designer/agent.md",
-      "scope": "Usability, accessible flows, micro-interactions and design specifications."
+      "scope": "Usability, accessible flows, micro-interactions and design specifications.",
+      "write_paths": [
+        "lab-app/src/components/**/*.tsx",
+        "lab-app/src/style.css",
+        "lab-app/src/domain/flame-presentation.ts",
+        "lab-app/tests/**/*.ts",
+        "lab-app/tests/**/*.tsx"
+      ]
     },
     {
       "id": "gamification-engineer",
       "path": "agents/gamification-engineer/agent.md",
-      "scope": "Server-authoritative streaks, flame, XP, figurative rewards and fair group rankings."
+      "scope": "Server-authoritative streaks, flame, XP, figurative rewards and fair group rankings.",
+      "write_paths": [
+        "lab-app/src/components/ConsistencyFlame.tsx",
+        "lab-app/src/components/GCLeague.tsx",
+        "lab-app/src/components/JourneyV2Panel.tsx",
+        "lab-app/src/domain/flame-presentation.ts",
+        "lab-app/src/features/lab-game.ts",
+        "lab-app/tests/**/*.ts"
+      ]
     },
     {
       "id": "biblical-canon-engineer",
       "path": "agents/biblical-canon-engineer/agent.md",
-      "scope": "Protestant canon integrity, Pentecostal Arminian theology and contextual exegesis."
+      "scope": "Protestant canon integrity, Pentecostal Arminian theology and contextual exegesis.",
+      "write_paths": [
+        "lab-app/supabase/functions/study-generate/**/*.ts",
+        "lab-app/supabase/functions/study-generate/**/*.mjs",
+        "lab-app/tests/study-*.test.ts"
+      ]
     },
     {
       "id": "platform-observability-engineer",
       "path": "agents/platform-observability-engineer/agent.md",
-      "scope": "GitHub Actions, Vercel, secrets boundaries, logs and Free Tier monitoring."
+      "scope": "GitHub Actions, Vercel, secrets boundaries, logs and Free Tier monitoring.",
+      "write_paths": [
+        "lab-app/scripts/tests/**/*.mjs",
+        "lab-app/scripts/tests/**/*.sql"
+      ]
     }
   ],
   "phase": "P1"
