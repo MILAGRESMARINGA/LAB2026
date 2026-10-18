@@ -22,7 +22,7 @@
     "ai_orchestrator": {
       "provider_model": "gpt-6-luna",
       "max_approved_spend_brl_per_run": 100,
-      "max_runs_per_rolling_24h": 5,
+      "max_runs_per_rolling_24h": 50,
       "max_calls_per_run": 1,
       "max_calls_per_agent": 1,
       "max_output_tokens_per_call": 6000,
@@ -36,7 +36,7 @@
         "npm test",
         "npm run build"
       ],
-      "max_model_responses_per_rolling_24h": 3,
+      "max_model_responses_per_rolling_24h": 30,
       "max_approved_spend_usd_per_task": 0.25
     }
   },
