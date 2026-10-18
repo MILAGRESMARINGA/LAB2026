@@ -110,7 +110,7 @@ export async function execute(env=process.env,fetcher=fetch){
  try{
   await call("/actions/workflows/ai-agent-orchestrator.yml/dispatches","POST",{
    ref:"lab-rebuild-2026",
-   inputs:{issue_number:String(number),approved_spend_brl:"0",task:""}
+   inputs:{issue_number:String(number),approved_spend_usd:"0",approved_spend_brl:"0",task:""}
   });
   codingRunStarted=true;
  }catch(e){

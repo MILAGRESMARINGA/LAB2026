@@ -77,12 +77,37 @@ async function gh(path,options,config,fetcher){
  if(!r.ok)throw Error("GitHub request failed (HTTP "+r.status+")");
  return r.json();
 }
+// Read-only projection of GitHub evidence. Never infer success from a green
+// intake job, and never return raw provider logs, prompts or credentials.
+export function summarizeTask(issue,runs,pulls){
+ const number=issue.number;
+ const safeUrl=(url,kind)=>typeof url==="string"&&url.startsWith("https://github.com/"+REPO+"/"+kind+"/")?url:null;
+ const attempts=(runs.workflow_runs??[]).filter(r=>r.display_title===`LAB coding · Issue ${number}`)
+  .sort((a,b)=>Date.parse(b.created_at)-Date.parse(a.created_at));
+ const run=attempts[0];
+ const prs=pulls.filter(p=>new RegExp(`^agent/task-${number}-run-[0-9]+$`).test(p.head?.ref??""))
+  .filter(p=>p.head?.repo?.full_name===REPO)
+  .sort((a,b)=>Date.parse(b.created_at)-Date.parse(a.created_at));
+ const pr=prs[0];
+ let stage="queued";
+ if(issue.labels?.some(l=>l.name==="lab-approval-required"))stage="approval_required";
+ else if(run&&run.status!=="completed")stage="running";
+ else if(run&&run.conclusion!=="success")stage="failed";
+ else if(pr?.merged_at)stage="merged";
+ else if(pr)stage=pr.state==="closed"?"closed":pr.draft?"draft_pr":"review";
+ else if(run)stage="completed_without_pr";
+ return {number,title:issue.title,stage,checked_at:new Date().toISOString(),
+  history_complete:(runs.total_count??0)<=100&&pulls.length<100,
+  run:run?{id:run.id,status:run.status,conclusion:run.conclusion,url:safeUrl(run.html_url,"actions/runs")}:null,
+  pr:pr?{number:pr.number,draft:pr.draft,state:pr.state,url:safeUrl(pr.html_url,"pull")}:null};
+}
 export async function handle(request,env=process.env,fetcher=fetch,now=Date.now()){
  let config;
  try{config=settings(env)}catch{return new Response("Configuration error",{status:503})}
  const origin=request.headers.get("origin");
  const path=new URL(request.url).pathname;
- if(path==="/health")return json(200,{status:config.enabled?"configured":"disabled"},origin,config);
+ const ready=config.enabled&&config.githubToken&&config.apiKey&&config.admins.size>0&&config.origins.size>0;
+ if(path==="/health")return json(200,{status:ready?"configured":"disabled"},origin,config);
  if(origin&&!config.origins.has(origin))return json(403,{message:"Origem não autorizada."},origin,config);
  if(request.method==="OPTIONS"){
   return new Response(null,{status:204,headers:{
@@ -92,7 +117,8 @@ export async function handle(request,env=process.env,fetcher=fetch,now=Date.now(
    "access-control-max-age":"600","vary":"Origin"
   }});
  }
- if(path!=="/v1/tasks"||!["GET","POST"].includes(request.method))
+ const detail=/^\/v1\/tasks\/([1-9][0-9]{0,8})$/.exec(path);
+ if((path!=="/v1/tasks"&&!detail)||!["GET","POST"].includes(request.method)||(detail&&request.method!=="GET"))
   return json(404,{message:"Rota não encontrada."},origin,config);
  if(!config.enabled||!config.githubToken||!config.apiKey||config.admins.size===0||config.origins.size===0)
   return json(503,{message:"Orquestrador ainda não foi habilitado."},origin,config);
@@ -104,7 +130,18 @@ export async function handle(request,env=process.env,fetcher=fetch,now=Date.now(
  if(!user)return json(403,{message:"Sua conta não tem permissão para criar tarefas."},origin,config);
  if(!limitUser(user.id,now))return json(429,{message:"Limite temporário: aguarde um minuto."},origin,config);
  try{
+  if(detail){
+   const number=Number(detail[1]);
+   const issue=await gh("/issues/"+number,{},config,fetcher);
+   if(issue.pull_request||!issue.title?.startsWith("LAB AGENTE · "))return json(404,{message:"Tarefa não encontrada."},origin,config);
+   const [runs,pulls]=await Promise.all([
+    gh("/actions/workflows/ai-agent-orchestrator.yml/runs?per_page=100",{},config,fetcher),
+    gh("/pulls?state=all&per_page=100",{},config,fetcher)
+   ]);
+   return json(200,summarizeTask(issue,runs,pulls),origin,config);
+  }
   if(request.method==="GET"){
+
    const issues=await gh("/issues?state=open&labels=lab-agent&per_page=10",{},config,fetcher);
    return json(200,{tasks:issues.filter(x=>!x.pull_request).map(x=>({
     number:x.number,title:x.title,url:x.html_url,state:x.state

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {settings,cleanRequest,classifyTask,handle,REPO} from "../../railway/agent-orchestrator/server.mjs";
+import {settings,cleanRequest,classifyTask,handle,REPO,summarizeTask} from "../../railway/agent-orchestrator/server.mjs";
 
 const admin="11111111-1111-4111-8111-111111111111";
 const origin="https://labgame-biblia.vercel.app";
@@ -71,4 +71,45 @@ test("strict input limits and no shortcuts using editable user metadata",async()
  assert.equal(classifyTask("Excluir dados reais"),"approval_required");
  assert.equal(classifyTask("Melhorar o desenho do menu"),"review");
  assert.throws(()=>settings({...config,LAB_AGENT_ADMIN_USER_IDS:"nonsensical"}),/Invalid administrator ID/);
+});
+
+test("tracking distinguishes real coding runs from intake and matches issue exactly",()=>{
+ const issue={number:21,title:"LAB AGENTE · Menu",labels:[]};
+ const runs={total_count:2,workflow_runs:[{id:1,display_title:"LAB coding · Issue 210",status:"completed",conclusion:"success"},{id:2,display_title:"LAB coding · Issue 21",status:"completed",conclusion:"failure",created_at:"2026-10-18",html_url:"https://evil.example"}]};
+ const result=summarizeTask(issue,runs,[]);
+ assert.equal(result.stage,"failed");assert.equal(result.run.id,2);assert.equal(result.run.url,null);
+ assert.equal(summarizeTask(issue,{workflow_runs:[]},[]).stage,"queued");
+});
+test("tracking identifies trusted draft PR, merged PR and incomplete history",()=>{
+ const issue={number:21,labels:[]};
+ const pr={number:29,head:{ref:"agent/task-21-run-123",repo:{full_name:REPO}},draft:true,state:"open",html_url:"https://github.com/"+REPO+"/pull/29"};
+ assert.equal(summarizeTask(issue,{},[pr]).stage,"draft_pr");
+ assert.equal(summarizeTask(issue,{},[{...pr,merged_at:"2026-10-18"}]).stage,"merged");
+ assert.equal(summarizeTask(issue,{},[{...pr,head:{...pr.head,repo:{full_name:"evil/repo"}}}]).stage,"queued");
+ assert.equal(summarizeTask(issue,{total_count:101},[]).history_complete,false);
+});
+test("tracking route requires the same dual administrator check",async()=>{
+ const net=mock({isAdmin:false});
+ const r=await handle(new Request("https://voice.local/v1/tasks/21",{headers:{origin,authorization:"Bearer "+token}}),config,net.fetcher,9000000);
+ assert.equal(r.status,403);assert.equal(net.calls.length,1);
+});
+
+test("authenticated tracking returns evidence only and never launches a run",async()=>{
+ const calls=[];
+ const fetcher=async(url,init)=>{
+  calls.push({url,init});
+  if(url.includes("/auth/"))return Response.json({id:admin,app_metadata:{labgame_orchestrator_admin:true}});
+  if(url.endsWith("/issues/21"))return Response.json({number:21,title:"LAB AGENTE · Menu",labels:[]});
+  if(url.includes("/actions/"))return Response.json({total_count:1,workflow_runs:[{id:1,display_title:"LAB coding · Issue 21",status:"in_progress",html_url:"https://github.com/"+REPO+"/actions/runs/1"}]});
+  if(url.includes("/pulls?"))return Response.json([]);
+  throw Error("Unexpected URL");
+ };
+ const result=await handle(new Request("https://voice.local/v1/tasks/21",{headers:{origin,authorization:"Bearer "+token}}),config,fetcher,10000000);
+ assert.equal(result.status,200);const data=await result.json();assert.equal(data.stage,"running");
+ assert.equal(calls.length,4);assert.ok(calls.every(c=>!c.init.method||c.init.method==="GET"));
+ assert.ok(!JSON.stringify(data).includes("test-github-only"));
+});
+test("health never claims configured with missing credentials",async()=>{
+ const r=await handle(new Request("https://voice.local/health"),{LAB_AGENT_ENABLED:"true"});
+ assert.equal((await r.json()).status,"disabled");
 });
