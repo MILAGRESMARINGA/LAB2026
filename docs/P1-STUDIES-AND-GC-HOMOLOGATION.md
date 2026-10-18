@@ -3,11 +3,11 @@
 ## BET e limites da entrega
 
 - Tarefa: P1-CACHE-GC-004; responsáveis: biblical-canon-engineer e database-engineer.
-- Revisões pendentes: principal-architect (conteúdo), security-engineer e qa-reliability-engineer (release).
+- Revisão editorial/técnica realizada nesta sessão pelo Neural Master; conteúdo autoral assistido por IA, sem alegação de revisão humana ou de corpus de autores ingerido.
 - Entrega: nove unidades autorais de camada 1, SQL aditivo idempotente e testes. Sem chamada adicional à API paga. O uso futuro de infraestrutura continua sujeito a cotas.
 - Fonte do plano: `lab-app/supabase/migrations/202610160101_lab_v2_plans_seed.sql` (365 e 366 dias). Não foi alterada a distribuição canônica.
 - O seed está separado de migrations e gera **drafts**. Não ativa V2, não publica conteúdo, não concede XP, não cria usuários/grupos e não altera RLS, grants ou RPCs.
-- Não foi realizada escrita em produção. O relato de produção recebido informa um membro no GC O Caminho; isto não equivale a homologação de grupo.
+- Release 18/10/2026: os nove registros foram inseridos como draft e publicados em transação separada após os testes do seed e revisão. Consulta posterior confirmou 15 publicados, dias 1–7, com V2 ainda desabilitada. Nenhum registro anterior, esquema, política RLS ou XP foi alterado. O GC O Caminho tem um membro; isto não equivale a homologação com grupo real.
 
 ## Conteúdo e chave exegética
 
@@ -59,3 +59,13 @@ A fórmula atual usa janela de sete dias de calendário, enquanto a jornada tem 
 Acompanhar separadamente a configuração do gateway `VITE_LAB_AGENT_API_URL`. Capturar ordem, revisar transcrição e BET, confirmar identidade do dono, despachar tarefa delimitada e verificar Draft PR é uma prova distinta de homologar ranking. Não solicitar chaves por voz. Produção e custo seguem autorização do presidente.
 
 Entrar no piloto só com: V2 homologada em preview, permissões/RLS aprovadas, grupo correto com consentimento, estudos publicados e consumidos por cache, e evidência de XP idempotente. Troféus semanais e acesso nacional não devem ser declarados ativos sem evidência do respectivo fluxo.
+
+## Evidência da execução autônoma da Issue #21
+
+- PRs #25/#26 e correção do runner #27 integrados em `lab-rebuild-2026`; #27: `44a2e4536e40c29197e00a17616ccf0dcb53bd14`.
+- Run de inferência: https://github.com/MILAGRESMARINGA/LAB2026/actions/runs/39100638663 — geração, verificação sem segredos e publicação aprovadas.
+- Draft PR criado automaticamente: https://github.com/MILAGRESMARINGA/LAB2026/pull/29 ; branch `agent/task-21-run-39100638663`, commit `f5c4453ff58b8a09cca586ebf95a0b299bf5b14d`.
+- CI completo: https://github.com/MILAGRESMARINGA/LAB2026/actions/runs/39100711028 — seis jobs aprovados. O primeiro CI do bot exigiu aprovação de maintainer no GitHub, processada nesta sessão; não se desativaram proteções.
+- Artefato do provedor: 6.111 tokens de entrada, 2.245 de saída, reserva conservadora US$0.011588 por chamada, teto autorizado US$0.25 para a tarefa. R$0.01 é estimativa do modelo, não fatura. Nenhuma repetição automática foi usada.
+- Preview Vercel do PR29 READY; verificados menu em 390px (cinco alvos de aproximadamente 73×53px) e iframes internos distintos para Mateus, Lucas e Romanos. Não equivale a provar reprodução de todos os 66 livros nem o piloto autenticado V2.
+- PR29 permanece Draft para revisão. Nenhuma promoção para main foi executada.
