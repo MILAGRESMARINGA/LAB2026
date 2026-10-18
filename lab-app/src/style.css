@@ -135,8 +135,6 @@ body.video-modal-open{overflow:hidden}
 .bible-favorite-items button svg:last-child{color:#aedc50}
 .bible-study-note{display:flex;gap:12px;align-items:flex-start;padding:15px;border:1px dashed #5c775f;border-radius:13px;color:#bcd1be;font-size:13px;line-height:1.55;margin:25px 0 15px}
 .bible-study-note svg{color:#a5d54b;flex-shrink:0}
-@media(max-width:650px){
- .game-bottom-nav button{font-size:9px;gap:4px;padding:9px 1px;letter-spacing:-.2px}
 .generated-study-toggle{width:100%;min-height:48px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 0;color:inherit;text-align:left;background:transparent;border:0;font:inherit;cursor:pointer}
 .generated-study-toggle:focus-visible{outline:3px solid #b6e44b;outline-offset:4px;border-radius:6px}
 .generated-study-toggle-action{display:inline-flex;align-items:center;justify-content:flex-end;gap:8px;flex-shrink:0;color:#b6e44b;font-size:.85rem;font-weight:700}
@@ -148,6 +146,8 @@ body.video-modal-open{overflow:hidden}
 .generated-study-references ul{margin:0;padding-left:22px;line-height:1.7}
 @media(max-width:650px){.generated-study-toggle{align-items:flex-start;flex-direction:column;gap:7px}.generated-study-toggle-action{flex-wrap:wrap;justify-content:flex-start}.generated-study-references{padding:12px}}
 @media(prefers-reduced-motion:reduce){.generated-study-toggle-chevron{transition:none}}
+@media(max-width:650px){
+ .game-bottom-nav button{font-size:9px;gap:4px;padding:9px 1px;letter-spacing:-.2px}
  .bible-library{padding:20px 13px}
  .bible-edition-tag{font-size:11px;margin-bottom:17px}
  .bible-selector{padding:13px}
