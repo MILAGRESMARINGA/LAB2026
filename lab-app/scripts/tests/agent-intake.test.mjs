@@ -94,6 +94,7 @@ test("workflow requires privileged author; cannot execute arbitrary pull request
  assert.ok(!yaml.includes("eval("));
 });
 
+
 import {extractTaskFromIssueBody} from "../../../.agents/scripts/run-ai-orchestrator.mjs";
 
 test("issue task parser accepts a request section at document start", () => {
@@ -103,8 +104,8 @@ test("issue task parser accepts a request section at document start", () => {
   "> Validar os alvos de toque.", "",
   "## Política",
   "- Não alterar produção."
- ].join("\\n");
- assert.equal(extractTaskFromIssueBody(body), "Ajustar contraste do menu móvel.\\nValidar os alvos de toque.");
+ ].join("\n");
+ assert.equal(extractTaskFromIssueBody(body), "Ajustar contraste do menu móvel.\nValidar os alvos de toque.");
 });
 
 test("issue task parser accepts a preceding BET and CRLF", () => {
@@ -114,10 +115,10 @@ test("issue task parser accepts a preceding BET and CRLF", () => {
   "> Corrigir o menu móvel com foco acessível.", "",
   "## Critérios", "- Testar viewport", "",
   "## Política", "- Sem mutação de produção."
- ].join("\\r\\n");
+ ].join("\r\n");
  assert.equal(extractTaskFromIssueBody(body), "Corrigir o menu móvel com foco acessível.");
 });
 
 test("issue task parser returns empty when request section is missing", () => {
- assert.equal(extractTaskFromIssueBody("## Política\\nNão é uma tarefa."), "");
+ assert.equal(extractTaskFromIssueBody("## Política\nNão é uma tarefa."), "");
 });
