@@ -24,7 +24,7 @@ test('provider error reporting never prints arbitrary error messages or codes', 
 });
 test('request reserve includes all bytes and output, rejects unpriced models', () => {
  const body={input:'x'.repeat(98304),max_output_tokens:6000};
- assert.ok(upperBoundUsd(body,'gpt-6-luna')*3<0.25);
+ assert.ok(upperBoundUsd(body,'gpt-6-luna')*6<0.25);
  assert.throws(()=>upperBoundUsd(body,'unknown'));
 });
 test('existing large sources keep all unmatched content; ambiguous edits fail closed', () => {
@@ -34,6 +34,7 @@ test('existing large sources keep all unmatched content; ambiguous edits fail cl
   fs.writeFileSync(path.join(root,'lab-app/src/style.css'),'before\n.menu{color:red}\nafter\n');
   const edit={path:'lab-app/src/style.css',find:'.menu{color:red}',content:'.menu{color:white}'};
   assert.equal(materializeEdits(root,[edit],'ux-designer')[0].content,'before\n.menu{color:white}\nafter\n');
+  assert.equal(materializeEdits(root,[edit,{...edit,find:'before',content:'updated'}],'ux-designer')[0].content,'updated\n.menu{color:white}\nafter\n');
   for(const find of ['', 'missing','e']) assert.throws(()=>materializeEdits(root,[{...edit,find}],'ux-designer'));
   assert.throws(()=>materializeEdits(root,[edit],'database-engineer'));
  } finally {fs.rmSync(root,{recursive:true,force:true});}
