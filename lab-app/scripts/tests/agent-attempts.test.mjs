@@ -42,3 +42,7 @@ test('Issue21 objective routes to UX even when constraints mention the database'
  const manifest={agents:[{id:'ux-designer'},{id:'database-engineer'}]};
  assert.equal(routeSpecialist('Ajustar contraste e espaçamento do menu. Não alterar banco, workflows ou produção.',manifest).id,'ux-designer');
 });
+test('clickable studies route to UX instead of database constraints',()=>{
+ const manifest={agents:[{id:'ux-designer'},{id:'database-engineer'},{id:'biblical-canon-engineer'}]};
+ assert.equal(routeSpecialist('Auditar os estudos bíblicos e tornar cada estudo clicável, com navegação clara. Não alterar banco.',manifest).id,'ux-designer');
+});
