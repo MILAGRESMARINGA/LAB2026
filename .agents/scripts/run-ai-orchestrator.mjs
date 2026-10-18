@@ -144,9 +144,9 @@ async function main() {
   let recentRuns;
   try { recentRuns = await enforceDailyRunLimit(); } catch { return stop("BLOCKED: rolling run quota could not be verified; no inference was sent."); }
   if (recentRuns.dispatches >= manifest.cost_policy.ai_orchestrator.max_runs_per_rolling_24h) return stop("BLOCKED: rolling 24-hour AI-run limit reached.");
-  if (recentRuns.taskResponses >= 3) return stop("BLOCKED: this task already consumed three model responses or uncertain deliveries.");
+  if (recentRuns.taskResponses >= 6) return stop("BLOCKED: this task already consumed six model responses or uncertain deliveries.");
   if (recentRuns.modelResponses >= manifest.cost_policy.ai_orchestrator.max_model_responses_per_rolling_24h) return stop("BLOCKED: daily model response limit reached.");
-  summary("Attempt accounting: " + recentRuns.taskResponses + "/3 task model attempts; " + recentRuns.modelResponses + "/" + manifest.cost_policy.ai_orchestrator.max_model_responses_per_rolling_24h + " daily model attempts. No automatic provider retries.");
+  summary("Attempt accounting: " + recentRuns.taskResponses + "/6 task model attempts; " + recentRuns.modelResponses + "/" + manifest.cost_policy.ai_orchestrator.max_model_responses_per_rolling_24h + " daily model attempts. No automatic provider retries.");
   let task;
   try { task = process.env.AGENT_ISSUE_NUMBER ? await taskFromIssue() : String(process.env.AGENT_TASK ?? "").normalize("NFC").trim(); }
   catch { return stop("BLOCKED: task issue could not be verified."); }
@@ -162,7 +162,7 @@ async function main() {
   const requestBody = promptFor(task, specialist.id, specialist.path, context, briefing);
   if (Buffer.byteLength(JSON.stringify(requestBody), "utf8") > manifest.cost_policy.ai_orchestrator.max_request_bytes_per_run) return stop("BLOCKED: request exceeds manifest byte budget.");
   const reservedUsd = upperBoundUsd(requestBody, requestBody.model);
-  if (reservedUsd * 3 > approvedUsd) return stop("BLOCKED: three reserved calls exceed approved task USD budget.");
+  if (reservedUsd * 6 > approvedUsd) return stop("BLOCKED: six reserved calls exceed approved task USD budget.");
   output("model_attempt_consumed", "true"); // Reserve before sending; timeouts remain uncertain, not free retries.
   let response;
   try {
