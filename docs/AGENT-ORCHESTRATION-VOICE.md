@@ -22,11 +22,13 @@
 - Dispara a suite atual de testes LABGame na branch (CI); nenhuma instrução de issue é executada como programa.
 - Repete sem criar um segundo PR na mesma branch. Se o token usado não possuir permissões de escrita em GitHub Actions, a execução falhará de forma visível, sem recorrer a produção.
 
-### Importante: o que ainda NÃO faz
+### Atualização em 18/10/2026
 
-O **agente autônomo que escreve código** não está configurado. Nenhum modelo LLM, assinatura Copilot, Codex API, Ollama, GPU ou agente Railway foi ativado. A criação de um issue/PR de triagem não é uma alteração funcional. A aplicação não faz deploy direto de produção.
+O executor controlado de escrita foi comprovado na Issue #21 / Draft PR #29 com CI aprovado. A ativação do canal de voz e do gerente conversacional persistente ainda exige homologação.
 
-No futuro, um executor de código poderá ler o pedido, implementar em branch isolada, rodar CI, iterar em falhas e abrir PR de implementação. Essa etapa exige credenciais próprias, medição de custos, sandbox sem dados reais, orçamento máximo e revisão de segurança. Não implementar silenciosamente com chaves da conta pessoal.
+O gateway oferece `GET /v1/tasks/:number`, protegido pela autenticação administrativa, com execução real e PR associados. O painel consulta a cada 30 segundos enquanto visível. Não retorna logs brutos nem trata PR aberto como CI aprovado.
+
+Consulte [o roadmap e os critérios de conclusão](AGENT-AUTOMATION-ROADMAP.md). O intake automático mantém orçamento zero; não há autorização recorrente de gastos.
 
 ## Como ativar posteriormente sem confundir sistemas
 
@@ -50,7 +52,7 @@ No futuro, um executor de código poderá ler o pedido, implementar em branch is
 | Voz → texto → resposta falada no navegador | Código criado; depende de habilitar console e navegador |
 | JWT e conta administradora → criação de tarefa | Código criado; requer credenciais Railway e homologação |
 | Issue autorizada → PR de triagem → CI | Workflow criado; requer permissões GitHub e teste real |
-| Agente IA produz commits/corrige falhas sem digitação | **Não implantado**; depende de executor e orçamento aprovados |
+| Agente IA produz commits/corrige falhas sem digitação | Executor comprovado; integração completa ao console pendente |
 | Preview Vercel | GitHub/Vercel existentes; publicar preview após PR e validação |
 | Merge e produção automáticos | **Bloqueados** para alterações sensíveis; exige backup e aprovação |
 | Operações de banco, exclusão, pagamentos | **Bloqueadas**, mesmo com pedido por voz |

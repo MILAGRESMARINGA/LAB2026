@@ -919,13 +919,13 @@ RESET ROLE;
 WITH ids AS (
   SELECT g,
     ('80000000-0000-4000-8000-' || lpad(to_hex(g),12,'0'))::uuid AS user_id
-  FROM generate_series(1,24) AS g
+  FROM generate_series(1,124) AS g
 )
 INSERT INTO auth.users(id) SELECT user_id FROM ids;
 WITH ids AS (
   SELECT g,
     ('80000000-0000-4000-8000-' || lpad(to_hex(g),12,'0'))::uuid AS user_id
-  FROM generate_series(1,24) AS g
+  FROM generate_series(1,124) AS g
 )
 INSERT INTO public.lab_game_stats(user_id,display_name,leaderboard_opt_in)
 SELECT user_id,'CI GC Fixture '||g, g<>4 FROM ids;
@@ -937,6 +937,9 @@ INSERT INTO public.reading_groups(name,owner_id,competition_opt_in)
 VALUES
  ('LAB Fairness Large','80000000-0000-4000-8000-000000000005',true)
 RETURNING id AS group_large \gset
+INSERT INTO public.reading_groups(name,owner_id,competition_opt_in)
+VALUES ('LAB Fairness Hundred','80000000-0000-4000-8000-000000000019',true)
+RETURNING id AS group_hundred \gset
 WITH ids AS (
  SELECT g,('80000000-0000-4000-8000-'||lpad(to_hex(g),12,'0'))::uuid AS user_id
  FROM generate_series(1,4) AS g
@@ -956,10 +959,19 @@ SELECT :'group_large'::uuid,user_id,
        statement_timestamp()-interval '7 days'
  FROM ids;
 WITH ids AS (
+ SELECT g,('80000000-0000-4000-8000-'||lpad(to_hex(g),12,'0'))::uuid AS user_id
+ FROM generate_series(25,124) AS g
+)
+INSERT INTO public.reading_group_members(group_id,user_id,role,joined_at)
+SELECT :'group_hundred'::uuid,user_id,
+       CASE WHEN g=25 THEN 'leader' ELSE 'member' END,
+       statement_timestamp()-interval '7 days'
+ FROM ids;
+WITH ids AS (
  SELECT g,
   ('80000000-0000-4000-8000-'||lpad(to_hex(g),12,'0'))::uuid AS user_id,
   ('90000000-0000-4000-8000-'||lpad(to_hex(g),12,'0'))::uuid AS run_id
- FROM generate_series(1,24) AS g
+ FROM generate_series(1,124) AS g
 )
 INSERT INTO public.lab_v2_runs(id,user_id,plan_length,status,started_at,finished_at)
 SELECT run_id,user_id,365,'completed',
@@ -969,7 +981,7 @@ SELECT run_id,user_id,365,'completed',
 WITH ids AS (
  SELECT g,
   ('90000000-0000-4000-8000-'||lpad(to_hex(g),12,'0'))::uuid AS run_id
- FROM generate_series(1,24) AS g
+ FROM generate_series(1,124) AS g
 )
 INSERT INTO public.lab_v2_stages(run_id,day_number,activated_at,completed_at)
 SELECT run_id,1,statement_timestamp()-interval '2 hours',statement_timestamp()-interval '1 hour'
@@ -977,7 +989,7 @@ SELECT run_id,1,statement_timestamp()-interval '2 hours',statement_timestamp()-i
 WITH ids AS (
  SELECT g,
   ('90000000-0000-4000-8000-'||lpad(to_hex(g),12,'0'))::uuid AS run_id
- FROM generate_series(1,24) AS g
+ FROM generate_series(1,124) AS g
 )
 INSERT INTO public.lab_v2_chapter_checks(run_id,day_number,chapter_id,confirmed_at)
 SELECT run_id,1,'19:1',statement_timestamp()
@@ -985,7 +997,7 @@ SELECT run_id,1,'19:1',statement_timestamp()
 WITH ids AS (
  SELECT g,
   ('90000000-0000-4000-8000-'||lpad(to_hex(g),12,'0'))::uuid AS run_id
- FROM generate_series(1,24) AS g
+ FROM generate_series(1,124) AS g
 )
 INSERT INTO public.lab_v2_study_rewards(run_id,study_key,study_unit_key,awarded_xp,confirmed_at)
 SELECT run_id,'d1-psalm1-layer1-2026-10-v1',
@@ -994,7 +1006,7 @@ SELECT run_id,'d1-psalm1-layer1-2026-10-v1',
 WITH ids AS (
  SELECT g,
   ('90000000-0000-4000-8000-'||lpad(to_hex(g),12,'0'))::uuid AS run_id
- FROM generate_series(1,24) AS g
+ FROM generate_series(1,124) AS g
 )
 INSERT INTO public.lab_v2_video_rewards(run_id,video_key,awarded_xp,confirmed_at)
 SELECT run_id,'videos:genesis-1-11',5,statement_timestamp()
@@ -1004,25 +1016,33 @@ SET ROLE authenticated;
 SELECT set_config('app.test_user','80000000-0000-4000-8000-000000000001',false);
 SELECT set_config('app.group_small', :'group_small', false);
 SELECT set_config('app.group_large', :'group_large', false);
+SELECT set_config('app.group_hundred', :'group_hundred', false);
 SELECT * FROM public.lab_v2_gc_league_fair();
 SELECT public.lab_v2_gc_group_scorecard(:'group_small'::uuid);
 DO $fair_score$
 DECLARE
   small jsonb;
   large jsonb;
+  hundred jsonb;
   listed integer;
 BEGIN
  SELECT public.lab_v2_gc_group_scorecard(current_setting('app.group_small')::uuid) INTO small;
  PERFORM pg_catalog.set_config('app.test_user','80000000-0000-4000-8000-000000000005',false);
  SELECT public.lab_v2_gc_group_scorecard(current_setting('app.group_large')::uuid) INTO large;
+ PERFORM pg_catalog.set_config('app.test_user','80000000-0000-4000-8000-000000000019',false);
+ SELECT public.lab_v2_gc_group_scorecard(current_setting('app.group_hundred')::uuid) INTO hundred;
  PERFORM pg_catalog.set_config('app.test_user','80000000-0000-4000-8000-000000000001',false);
  IF (small->>'average_xp_per_member')::numeric<>30
     OR (large->>'average_xp_per_member')::numeric<>30
+    OR (hundred->>'average_xp_per_member')::numeric<>30
+    OR (hundred->>'score')::numeric<>(small->>'score')::numeric
+    OR (hundred->>'consistency_multiplier')::numeric<>(small->>'consistency_multiplier')::numeric
     OR (small->>'score')::numeric<>(large->>'score')::numeric
     OR (small->>'consistency_multiplier')::numeric<>(large->>'consistency_multiplier')::numeric
  THEN RAISE EXCEPTION 'FAIL: group size changed mean XP/consistency/score (% / %)',small,large; END IF;
  IF (small->>'members')::integer<>4 OR (small->>'consenting_members')::integer<>3
     OR (large->>'members')::integer<>20 OR (large->>'consenting_members')::integer<>20
+    OR (hundred->>'members')::integer<>100 OR (hundred->>'consenting_members')::integer<>100
  THEN RAISE EXCEPTION 'FAIL: group leaderboard counts do not respect consent (% / %)',small,large; END IF;
  IF (small->>'reading_member_days')::integer<>3
     OR (small->>'study_member_days')::integer<>3
@@ -1031,12 +1051,31 @@ BEGIN
  THEN RAISE EXCEPTION 'FAIL: transparent activity coverage calculation is wrong: %',small; END IF;
  SELECT count(*) INTO listed FROM public.lab_v2_gc_league_fair()
  WHERE group_id IN (current_setting('app.group_small')::uuid,
-                    current_setting('app.group_large')::uuid);
- IF listed<>2 THEN RAISE EXCEPTION 'FAIL: expected both eligible national groups, got %',listed; END IF;
+                    current_setting('app.group_large')::uuid,
+                    current_setting('app.group_hundred')::uuid);
+ IF listed<>3 THEN RAISE EXCEPTION 'FAIL: expected all three eligible national groups, got %',listed; END IF;
 END $fair_score$;
 RESET ROLE;
 SELECT 'LAB FAIR GC AVERAGE XP AND THREE-CATEGORY CONSISTENCY PASSED' AS result;
 
+
+-- A consenting member with no events remains in the denominator (CI only).
+INSERT INTO auth.users(id) VALUES('80000000-0000-4000-8000-00000000007d');
+INSERT INTO public.lab_game_stats(user_id,display_name,leaderboard_opt_in)
+VALUES('80000000-0000-4000-8000-00000000007d','CI Zero XP',true);
+INSERT INTO public.reading_group_members(group_id,user_id,role,joined_at)
+VALUES(:'group_small'::uuid,'80000000-0000-4000-8000-00000000007d','member',statement_timestamp()-interval '7 days');
+SET ROLE authenticated;
+SELECT set_config('app.test_user','80000000-0000-4000-8000-000000000001',false);
+DO $zero_xp_denominator$
+DECLARE score jsonb;
+BEGIN
+ SELECT public.lab_v2_gc_group_scorecard(current_setting('app.group_small')::uuid) INTO score;
+ IF (score->>'consenting_members')::integer<>4 OR (score->>'average_xp_per_member')::numeric<>22.5
+ THEN RAISE EXCEPTION 'FAIL: zero XP member was removed from the denominator: %',score; END IF;
+END $zero_xp_denominator$;
+RESET ROLE;
+SELECT 'LAB GC 3/20/100 FAIRNESS AND ZERO XP DENOMINATOR PASSED' AS result;
 
 -- Authenticated study generation is server-only, cache-first, idempotent, and
 -- capped at three requests per user and ten requests globally per UTC day.
@@ -1299,3 +1338,6 @@ BEGIN
 END $study_generation_cache_and_limits$;
 RESET ROLE;
 SELECT 'LAB STUDY GENERATION AUTH, CACHE, IDEMPOTENCY, LAYERS AND RATE LIMITS PASSED' AS result;
+
+-- Content-only expansion is tested after the original six-study assertions.
+\i scripts/tests/p1-study-seed-smoke.sql

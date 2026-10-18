@@ -52,8 +52,12 @@ export async function startNewGameCycle():Promise<LabGameState>{
 
 export type GCLeagueEntry={
  rank_position:number;group_id:string;group_name:string;
- members:number;consenting_members:number;days_completed:number;
- compliance_pct:number;window_start:string;window_end:string;
+ members:number;consenting_members:number;days_completed?:number;
+ compliance_pct?:number;average_xp_per_member?:number;reading_member_days?:number;
+ study_member_days?:number;video_member_days?:number;available_member_days?:number;
+ reading_coverage_pct?:number;study_coverage_pct?:number;video_coverage_pct?:number;
+ consistency_pct?:number;consistency_multiplier?:number;score?:number;
+ window_start:string;window_end:string;
 };
 export async function getGCLeague():Promise<GCLeagueEntry[]>{
  if(!supabase)throw Error("Serviço de leitura indisponível");

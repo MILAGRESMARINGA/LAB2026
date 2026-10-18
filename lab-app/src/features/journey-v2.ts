@@ -126,12 +126,43 @@ export async function getJourneyV2Checks(runId:string,stage:number):Promise<stri
  return (data??[]).map(row=>row.chapter_id as string);
 }
 
-/** Rankings for 24h rolling stages; never substitute the V1 civil-day functions. */
+/** Fair V2 ranking: average XP per consenting member times server-side discipline multiplier. */
 export async function getV2GCLeague():Promise<GCLeagueEntry[]>{
  assertV2ClientEnabled();
- const {data,error}=await supabase!.rpc("lab_v2_gc_league");
+ const {data,error}=await supabase!.rpc("lab_v2_gc_league_fair");
  if(error)throw error;
  return (data??[]) as GCLeagueEntry[];
+}
+export type V2FairGroupScorecard={
+ available:boolean;
+ reason?:string;
+ group_id?:string;
+ group_name?:string;
+ competition_opt_in?:boolean;
+ members?:number;
+ consenting_members?:number;
+ average_xp_per_member?:number;
+ reading_member_days?:number;
+ study_member_days?:number;
+ video_member_days?:number;
+ available_member_days?:number;
+ reading_coverage_pct?:number;
+ study_coverage_pct?:number;
+ video_coverage_pct?:number;
+ consistency_pct?:number;
+ consistency_multiplier?:number;
+ score?:number;
+ window_start?:string;
+ window_end?:string;
+ eligible_for_league?:boolean;
+ formula?:string;
+};
+export async function getV2FairGroupScorecard(groupId:string):Promise<V2FairGroupScorecard>{
+ assertV2ClientEnabled();
+ const {data,error}=await supabase!.rpc("lab_v2_gc_group_scorecard",{p_group_id:validRunId(groupId)});
+ if(error)throw error;
+ if(!data||typeof data.available!=="boolean")throw Error("Resposta de scorecard do GC inválida.");
+ return data as V2FairGroupScorecard;
 }
 export async function getV2GroupSummary(groupId:string):Promise<GCGroupSummary>{
  assertV2ClientEnabled();

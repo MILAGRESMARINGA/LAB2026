@@ -4,7 +4,7 @@ const jobs = [
   ["engineering/build/unit", process.env.LAB_VERIFY],
   ["PostgreSQL 16/17", process.env.LAB_POSTGRES],
   ["Auth/RLS/E2E local", process.env.LAB_AUTH],
-  ["eight-agent contract", process.env.LAB_AGENTS]
+  ["twelve-agent contract", process.env.LAB_AGENTS]
 ];
 const lines = [
   "# LABGAME P0 — CI orchestrator report",

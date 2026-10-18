@@ -263,7 +263,7 @@ jobs:
         run: npx --yes supabase@latest stop --no-backup || true
 
   agent-contract:
-    name: Validate the official eight-agent contract
+    name: Validate the official twelve-agent contract
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -284,6 +284,7 @@ jobs:
       - name: Smoke check AI fail-closed path with no secret
         env:
           OPENAI_API_KEY: ''
+          LAB_AGENT_SMOKE_TEST: 'true'
         run: node .agents/scripts/run-ai-orchestrator.mjs
 
   p0-orchestrator:

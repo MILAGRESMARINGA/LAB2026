@@ -12,6 +12,8 @@ type NativeRecognizer={
 };
 type NativeRecognizerCtor=new()=>NativeRecognizer;
 type QueueItem={number:number;title:string;url:string;state:string};
+const stages:Record<string,string>={queued:"Na fila",running:"Executando",approval_required:"Aguardando aprovação",failed:"Execução falhou",draft_pr:"PR em rascunho",review:"Em revisão",merged:"Integrada",closed:"PR fechado",completed_without_pr:"Execução encerrada sem PR"};
+type TaskEvidence={number:number;stage:string;history_complete:boolean;run:{url:string|null}|null;pr:{url:string|null}|null};
 const api=import.meta.env.VITE_LAB_AGENT_API_URL?.replace(/\/$/,"")??"";
 const listenCtor=():NativeRecognizerCtor|undefined=>{
  if(typeof window==="undefined")return undefined;
@@ -50,6 +52,22 @@ export function AgentVoiceConsole(){
  const [spoken,setSpoken]=useState(true);
  const [status,setStatus]=useState("Diga sua solicitação. Vou registrar o pedido para os agentes.");
  const [tasks,setTasks]=useState<QueueItem[]>([]);
+ const [selected,setSelected]=useState<number|null>(null);
+ const [evidence,setEvidence]=useState<TaskEvidence|null>(null);
+ const [trackingError,setTrackingError]=useState("");
+ const [receipt,setReceipt]=useState<{number:number;url:string}|null>(null);
+ useEffect(()=>{
+  if(selected===null)return;
+  let active=true;
+  setEvidence(null);setTrackingError("");
+  const update=async()=>{
+   if(document.hidden)return;
+   try{const value=await send("/v1/tasks/"+selected);if(active){setEvidence(value);setTrackingError("")}}
+   catch{if(active)setTrackingError("Não foi possível atualizar. O último estado pode estar desatualizado.")}
+  };
+  void update();const timer=window.setInterval(()=>void update(),30000);
+  return()=>{active=false;window.clearInterval(timer)};
+ },[selected]);
  const recognizer=useRef<NativeRecognizer|null>(null);
  const recognitionSupported=Boolean(listenCtor());
  useEffect(()=>()=>{recognizer.current?.stop();if(typeof window!=="undefined")window.speechSynthesis?.cancel()},[]);
@@ -69,10 +87,13 @@ export function AgentVoiceConsole(){
   setBusy(true);
   try{
    const result=await send("/v1/tasks",{instruction});
+   setReceipt({number:result.number,url:result.url});
+   setSelected(result.number);
    edit("");
    announce("Pedido "+result.number+" registrado no GitHub. "+
      (result.classification==="approval_required"?"Esta tarefa precisa de autorização antes de qualquer alteração sensível.":"Os testes e a análise técnica serão organizados automaticamente."));
-   await load();
+   const queue=await send("/v1/tasks");
+   setTasks(queue.tasks??[]);
   }catch(e){announce(e instanceof Error?e.message:"O pedido não foi registrado.")}
   finally{setBusy(false)}
  };
@@ -134,12 +155,23 @@ export function AgentVoiceConsole(){
      <RefreshCw size={16}/> VER FILA</button>
    </div>
    <p role="status" aria-live="polite" className="feedback-message">{status}</p>
+   {receipt&&<p>Último pedido registrado: <a href={receipt.url} target="_blank" rel="noopener noreferrer">#{receipt.number} · Abrir tarefa no GitHub</a>. Registro não significa execução iniciada.</p>}
    {tasks.length>0&&<div aria-label="Fila de tarefas dos agentes">
     <h3>Tarefas registradas</h3>
     {tasks.map(task=><p key={task.number}>
      <a href={task.url} target="_blank" rel="noopener noreferrer">#{task.number} · {task.title} <ExternalLink size={13} aria-hidden="true"/></a>
+     <button type="button" className="subtle-button" onClick={()=>setSelected(task.number)}>ACOMPANHAR</button>
     </p>)}
    </div>}
+   {selected!==null&&<section aria-label="Acompanhamento da tarefa">
+    <h3>Tarefa #{selected}</h3>
+    <p role="status">{evidence?stages[evidence.stage]??"Estado desconhecido":"Consultando execução…"}</p>
+    {trackingError&&<p role="alert">{trackingError}</p>}
+    {evidence?.run?.url&&<p><a href={evidence.run.url} target="_blank" rel="noopener noreferrer">Ver execução no GitHub</a></p>}
+    {evidence?.pr?.url&&<p><a href={evidence.pr.url} target="_blank" rel="noopener noreferrer">Ver Pull Request</a></p>}
+    {evidence&&!evidence.history_complete&&<p>Histórico parcial. Confira o GitHub para execuções anteriores.</p>}
+    <p className="small-caption">Atualização a cada 30 segundos enquanto esta página estiver visível. PR aberto não significa CI aprovado.</p>
+   </section>}
    <p className="small-caption">Criar uma tarefa não autoriza despesas, exclusão de contas, migrações de produção ou publicação. Sem configurar o gateway Railway e as permissões de administrador, o painel permanece inativo.</p>
   </div>
  </details>;

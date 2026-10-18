@@ -20,7 +20,11 @@ import type {BibleProjectResource} from "./domain/bibleproject";
 import {readOnboardingProgress,saveOnboardingProgress} from "./domain/onboarding";
 import {ChallengeJourney} from "./components/ChallengeJourney";
 import {JourneyV2Panel} from "./components/JourneyV2Panel";
+import {StudyGeneratorPanel} from "./components/StudyGeneratorPanel";
+import {StudyLayerRoadmap} from "./components/StudyLayerRoadmap";
+import {activeStudyLayer} from "./domain/study-layers";
 import {syncJourneyV2,getV2StudyRewards,confirmV2Study,type JourneyV2State} from "./features/journey-v2";
+import {getJourneyV2Chapters} from "./features/journey-v2";
 import {FormationLibrary} from "./components/FormationLibrary";
 import {ProfileSettings} from "./components/ProfileSettings";
 import {DailyInAppPopup} from "./components/DailyInAppPopup";
@@ -190,6 +194,18 @@ export default function App(){
  };
 
  const selectedBlock=useMemo(()=>STUDY_BLOCKS.find(b=>b.id===selectedStudy)??STUDY_BLOCKS[0],[selectedStudy]);
+ const studyDay=v2Enabled?(v2Game?.stage??null):(game?.day??null);
+ const studyLayer=activeStudyLayer(activeDays);
+ const resolveStudyRefs=useCallback(async()=>{
+  if(v2Enabled){
+   if(!v2Game?.stage)throw Error("Ative a etapa atual antes de gerar o estudo.");
+   const chapters=await getJourneyV2Chapters(v2Game.plan_length,v2Game.stage);
+   return chapters.map(chapter=>chapter.chapter_id);
+  }
+  const stage=game?.day?plan[game.day-1]:null;
+  if(!stage)throw Error("A etapa atual ainda não está disponível.");
+  return stage.chapters.map(chapter=>chapter.id);
+ },[game?.day,plan,v2Enabled,v2Game?.plan_length,v2Game?.stage]);
  const goTab=(next:Tab)=>{setMessage("");setLessonOpen(false);setLastConfirmed(null);setTab(next);if(next==="journey"&&user&&!v2Enabled)void refreshGame()};
  if(authRoute!=="none")return <AuthFlow route={authRoute}/>;
  return <div className="game-app">
@@ -222,10 +238,10 @@ export default function App(){
       <section className="connections-panel"><span className="eyebrow">CONEXÕES DA PALAVRA</span><h3>Estude além do capítulo</h3><p>Explore temas, contextos e conexões entre livros sem alterar a regra da leitura diária.</p><button className="secondary-cta" onClick={()=>goTab("studies")}>EXPLORAR ESTUDOS <ArrowRight size={17}/></button></section></>}
    </div>}
    {tab==="bible"&&<BibleLibrary signedIn={Boolean(user)} onVideo={openVideo}/>}
-   {tab==="studies"&&<section className="game-panel"><span className="eyebrow">BIBLIOTECA LAB</span><h1>Estudos e <em>conexões.</em></h1><p className="muted">Panoramas literários, históricos e teológicos para acompanhar a leitura, sem pontuação de capítulos.</p><div className="study-grid">{STUDY_BLOCKS.map(b=><button key={b.id} className={"study-tile "+(selectedStudy===b.id?"selected":"")} onClick={()=>{setSelectedStudy(b.id);setStudyAcknowledged(false)}}><Library size={24}/><strong>{b.title}</strong><small>{b.type==="conexão"?"Conexão bíblica":"Tema de estudo"}</small></button>)}</div><article className="study-detail"><span className="eyebrow">APROFUNDAMENTO</span><h2>{selectedBlock.title}</h2><p>{selectedBlock.intro}</p><h3>Leia e compare</h3><div className="reference-list">{selectedBlock.references.map(ref=><span key={ref}><BookOpen size={15}/>{ref}</span>)}</div><p className="small-caption">Estas conexões são roteiros de estudo. A exegese capítulo a capítulo será publicada após revisão bíblica e teológica.</p>{v2Enabled&&<div className="v2-study-check" aria-label="Pontuação opcional do estudo">
+   {tab==="studies"&&<section className="game-panel"><span className="eyebrow">BIBLIOTECA LAB</span><h1>Estudos e <em>conexões.</em></h1><p className="muted">Aprofunde a leitura em três camadas, com conexão bíblica somente quando houver chave textual demonstrável.</p><StudyLayerRoadmap completedDays={activeDays} selectedLayer={studyLayer}/><StudyGeneratorPanel enabled={v2Enabled} journeyDay={studyDay} layer={studyLayer} resolveChapterRefs={resolveStudyRefs}/><div className="study-grid">{STUDY_BLOCKS.map(b=><button key={b.id} className={"study-tile "+(selectedStudy===b.id?"selected":"")} onClick={()=>{setSelectedStudy(b.id);setStudyAcknowledged(false)}}><Library size={24}/><strong>{b.title}</strong><small>{b.type==="conexão"?"Conexão bíblica":"Tema de estudo separado"}</small></button>)}</div><article className="study-detail"><span className="eyebrow">APROFUNDAMENTO · {selectedBlock.type==="conexão"?"CHAVE CONECTADA":"LEITURAS SEPARADAS"}</span><h2>{selectedBlock.title}</h2><p>{selectedBlock.intro}</p><h3>Leia e compare</h3><div className="reference-list">{selectedBlock.references.map(ref=><span key={ref}><BookOpen size={15}/>{ref}</span>)}</div><div className={"study-connection-rule "+selectedBlock.type}><strong>{selectedBlock.type==="conexão"?"Conexão textual/canônica":"Exegese independente"}</strong><p>{selectedBlock.type==="conexão"?"As referências são estudadas em seus próprios contextos e unificadas somente quando a relação bíblica é demonstrável.":"As referências permanecem separadas, sem forçar uma harmonização ou um tema único."}</p></div><p className="small-caption">Roteiro inicial; conteúdo gerado e publicado passa pelos limites do servidor, cache e revisão editorial.</p>{v2Enabled&&<div className="v2-study-check" aria-label="Pontuação opcional do estudo">
   <h3>Conclusão de estudo · +15 XP</h3>
   {!v2Game||v2Game.status!=="active"?<p className="muted">Ative uma Jornada V2 para registrar este estudo na tentativa atual.</p>:
-   studyRewarded.includes(selectedStudy)?<p role="status"><CheckCircle2 size={17}/> Este estudo já recebeu 15 XP nesta tentativa.</p>:<>
+   studyRewarded.includes(selectedStudy)?<div className="study-reward-feedback" role="status"><Sparkles size={22}/><div><strong>Selo de estudo confirmado · +15 XP</strong><span>Este estudo já foi registrado nesta tentativa. A recompensa é idempotente e não será duplicada.</span></div></div>:<>
     <label className="v2-consent"><input type="checkbox" checked={studyAcknowledged} onChange={e=>setStudyAcknowledged(e.target.checked)}/> Examinei as referências indicadas e concluí a reflexão sobre este estudo.</label>
     <button type="button" className="secondary-cta" disabled={busy||!studyAcknowledged} onClick={()=>void finishStudyV2()}>CONFIRMAR ESTUDO · +15 XP</button>
    </>}

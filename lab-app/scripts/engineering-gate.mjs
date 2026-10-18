@@ -27,6 +27,10 @@ const required=[
  "docs/adr/0003-server-game.md",
  "docs/adr/0004-quality-and-security-gates.md",
  ".agents/WORKFLOW.md",
+ ".agents/AUTONOMY-CONTROL.md",
+ ".agents/manifest.json",
+ ".agents/scripts/agent-writer-core.mjs",
+ ".agents/scripts/run-ai-orchestrator.mjs",
  ".github/workflows/lab-ci.yml",
  "lab-app/vercel.json",
  "lab-app/src/domain/canon.ts",
@@ -36,7 +40,8 @@ const required=[
 const specialistRoles=[
  "ai-engineer","backend-engineer","database-engineer","security-engineer",
  "frontend-ux-engineer","qa-reliability-engineer","integration-engineer",
- "platform-observability-engineer"
+ "platform-observability-engineer","principal-architect","ux-designer",
+ "gamification-engineer","biblical-canon-engineer"
 ];
 const errors=[];
 export function walk(root){
