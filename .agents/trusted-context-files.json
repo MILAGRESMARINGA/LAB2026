@@ -1,14 +1,54 @@
 {
-  "ux-designer": ["lab-app/src/App.tsx", "lab-app/src/style.css", "lab-app/src/components/ChallengeJourney.tsx", "lab-app/src/components/BibleReader.tsx", "lab-app/src/components/GCLeague.tsx"],
-  "frontend-ux-engineer": ["lab-app/src/App.tsx", "lab-app/src/style.css", "lab-app/src/components/ChallengeJourney.tsx", "lab-app/src/components/BibleReader.tsx"],
-  "gamification-engineer": ["lab-app/src/domain/flame-presentation.ts", "lab-app/src/components/ConsistencyFlame.tsx", "lab-app/src/features/lab-game.ts", "lab-app/src/components/GCLeague.tsx"],
-  "backend-engineer": ["lab-app/src/features/lab-game.ts", "lab-app/src/features/journey-v2.ts"],
-  "database-engineer": ["lab-app/supabase/migrations/202610160109_server_side_reading_speed_guard.sql", "lab-app/supabase/migrations/202610160111_lab_v2_gc_fair_xp_ranking.sql"],
-  "security-engineer": ["lab-app/supabase/migrations/202610160109_server_side_reading_speed_guard.sql", "lab-app/scripts/security-gate.mjs"],
-  "qa-reliability-engineer": ["lab-app/scripts/tests/reading-speed-guard.test.mjs", "lab-app/scripts/tests/v2-postgres-smoke.sql"],
-  "biblical-canon-engineer": ["docs/STUDY-GENERATION.md"],
-  "integration-engineer": ["lab-app/src/features/auth.ts", "lab-app/src/domain/notification-period.ts"],
-  "platform-observability-engineer": [".github/workflows/lab-ci.yml", "docs/P0-CI-BACKUP-RESTORE-GATE.md"],
-  "principal-architect": ["docs/ROADMAP.md", "docs/ENGINEERING-STANDARDS.md"],
-  "ai-engineer": [".agents/WORKFLOW.md", ".agents/manifest.json"]
+  "ux-designer": [
+    "lab-app/src/App.tsx",
+    "lab-app/src/style.css",
+    "lab-app/tests/profile-settings.test.ts"
+  ],
+  "frontend-ux-engineer": [
+    "lab-app/src/App.tsx",
+    "lab-app/src/style.css",
+    "lab-app/src/components/ChallengeJourney.tsx",
+    "lab-app/src/components/BibleReader.tsx"
+  ],
+  "gamification-engineer": [
+    "lab-app/src/domain/flame-presentation.ts",
+    "lab-app/src/components/ConsistencyFlame.tsx",
+    "lab-app/src/features/lab-game.ts",
+    "lab-app/src/components/GCLeague.tsx"
+  ],
+  "backend-engineer": [
+    "lab-app/src/features/lab-game.ts",
+    "lab-app/src/features/journey-v2.ts"
+  ],
+  "database-engineer": [
+    "lab-app/supabase/migrations/202610160109_server_side_reading_speed_guard.sql",
+    "lab-app/supabase/migrations/202610160111_lab_v2_gc_fair_xp_ranking.sql"
+  ],
+  "security-engineer": [
+    "lab-app/supabase/migrations/202610160109_server_side_reading_speed_guard.sql",
+    "lab-app/scripts/security-gate.mjs"
+  ],
+  "qa-reliability-engineer": [
+    "lab-app/scripts/tests/reading-speed-guard.test.mjs",
+    "lab-app/scripts/tests/v2-postgres-smoke.sql"
+  ],
+  "biblical-canon-engineer": [
+    "docs/STUDY-GENERATION.md"
+  ],
+  "integration-engineer": [
+    "lab-app/src/features/auth.ts",
+    "lab-app/src/domain/notification-period.ts"
+  ],
+  "platform-observability-engineer": [
+    ".github/workflows/lab-ci.yml",
+    "docs/P0-CI-BACKUP-RESTORE-GATE.md"
+  ],
+  "principal-architect": [
+    "docs/ROADMAP.md",
+    "docs/ENGINEERING-STANDARDS.md"
+  ],
+  "ai-engineer": [
+    ".agents/WORKFLOW.md",
+    ".agents/manifest.json"
+  ]
 }

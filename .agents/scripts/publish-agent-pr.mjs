@@ -61,8 +61,9 @@ async function main() {
     "\nEste PR permanece em rascunho e exige revisão humana e checks de CI antes de merge.",
   ].join("\n");
   const pr = await request("/pulls", "POST", { title: "[LAB AGENT] " + String(patch.summary).slice(0, 100), head: branch, base: baseBranch, body, draft: true });
+  await request("/actions/workflows/lab-ci.yml/dispatches", "POST", { ref: branch });
   const message = "## LABGame agent — Draft PR aberto\n\n" + pr.html_url + "\n\nBranch: `" + branch + "`. Nenhuma alteração em produção ou auto-merge foi realizada.\n";
   if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, message);
-  console.log(JSON.stringify({ status: "draft_pr_created", number: pr.number, url: pr.html_url, branch }));
+  console.log(JSON.stringify({ status: "draft_pr_created", number: pr.number, url: pr.html_url, branch, ci_dispatched: true }));
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main().catch(error => { console.error("LABGame PR publication failed: " + error.message); process.exitCode = 1; });
