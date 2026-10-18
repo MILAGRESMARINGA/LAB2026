@@ -69,6 +69,9 @@ jobs:
       - name: Account consumed model attempt
         if: always() && steps.generate.outputs.model_attempt_consumed == 'true'
         run: echo "Model response or uncertain delivery counted."
+      - name: Account retryable patch protocol failure
+        if: always() && steps.generate.outputs.retryable_patch_failure == 'true'
+        run: echo "Patch format or exact-match failure; eligible for bounded recovery."
       - name: Account rejected or unsent request
         if: always() && steps.generate.outputs.model_attempt_consumed == 'false'
         run: echo "Provider rejected or request was never sent; no model attempt consumed."
@@ -80,6 +83,7 @@ jobs:
           path: ${{ runner.temp }}/lab-agent-patch/patch.json
           if-no-files-found: error
           retention-days: 1
+          overwrite: true
 
   verify:
     needs: generate
@@ -107,10 +111,14 @@ jobs:
         working-directory: lab-app
         run: npm install --no-audit --no-fund
       - name: Apply validated patch and run allowlisted tests without secrets
+        id: verify
         env:
           AGENT_PATCH_FILE: ${{ runner.temp }}/lab-agent-patch/patch.json
           GITHUB_SHA: ${{ github.sha }}
         run: node .agents/scripts/verify-agent-patch.mjs
+      - name: Account retryable patch QA failure
+        if: always() && steps.verify.outcome == 'failure'
+        run: echo "Generated patch failed QA; regenerate with prior compiler feedback."
       - name: Upload verified patch metadata
         uses: actions/upload-artifact@v4
         with:
@@ -118,6 +126,7 @@ jobs:
           path: ${{ runner.temp }}/lab-agent-patch/verified-patch.json
           if-no-files-found: error
           retention-days: 1
+          overwrite: true
 
   publish:
     needs: [generate, verify]

@@ -1,0 +1,28 @@
+name: Recover transient agent patch failures
+on:
+  workflow_run:
+    workflows: [Controlled LABGame coding agent]
+    types: [completed]
+permissions:
+  contents: read
+  actions: write
+concurrency:
+  group: agent-recovery-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+jobs:
+  recover:
+    if: github.event.workflow_run.conclusion == 'failure'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Retry only a marked patch protocol failure, at most three attempts
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node .agents/scripts/recover-agent-run.mjs

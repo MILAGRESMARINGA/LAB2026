@@ -93,10 +93,10 @@ export function summarizeTask(issue,runs,pulls){
  const pr=prs[0];
  let stage="queued";
  if(issue.labels?.some(l=>l.name==="lab-approval-required")||issue.body?.includes("Classificação automática: approval_required."))stage="approval_required";
- else if(run&&run.status!=="completed")stage="running";
- else if(run&&run.conclusion!=="success")stage="failed";
  else if(pr?.merged_at)stage="merged";
+ else if(run&&run.status!=="completed")stage="running";
  else if(pr)stage=pr.state==="closed"?"closed":pr.draft?"draft_pr":"review";
+ else if(run&&run.conclusion!=="success")stage="failed";
  else if(run)stage="completed_without_pr";
  return {number,title:issue.title,stage,checked_at:new Date().toISOString(),
   history_complete:(runs.total_count??0)<=100&&pulls.length<100,

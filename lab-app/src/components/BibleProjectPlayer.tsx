@@ -4,6 +4,24 @@ import {getBibleProjectVideos,type BibleProjectResource} from "../domain/biblepr
 import {supabase} from "../lib/supabase";
 
 const OFFICIAL_MUX_PLAYBACK_IDS:Readonly<Record<string,string>>={
+ "guides:cantico-dos-canticos":"ZvNchtwxRkdAMxwsp01h4eRy6fizLZdvmiXMiHgCXZ4o",
+ "videos:isaias-40-66":"QfhSLvjSJLTSkNnrj3yenAZnPfoe4siN01FeOH8WRIPU",
+ "videos:lamentacoes":"iZCyGZtkfR02cclLSc6V2dXwu5CynVp3GwVEZ02AlhrsY",
+ "videos:ezequiel-1-33":"KOH1M0201CKgxQ28nUnJpHzzLJFswch202WNFyu02Cbh6wk",
+ "videos:ezequiel-34-48":"QUUGI29UVzj008MGe3uE3Fr33bHVeyqD5BEg01s1KsNw8",
+ "videos:daniel":"Oq2auxf5WGMhkVAF01L5cKsgQkBS1v00PK01ptrP3X02uw00",
+ "videos:oseias":"LMHIbw01XYDidh401AVLD2005Ylt5ocp6xcUJKFlv7W7UY",
+ "videos:joel":"TRxY1it9PYtn4029XOvmawOB3YtlH9cQl7e5AowkPUEo",
+ "videos:amos":"m4bchG7jxDHZL00W7TA8Tp2e8xmB02ZPJ3t6vwLt36FKE",
+ "videos:obadias":"vhlg6S39CNGRArQMIkAnSSwk02uVy6WbuIDrluqpUWc8",
+ "videos:jonas":"9EGLfN9wzz5mY4ISDJtAlD01hFp1mzSGf3hHj022wSF8k",
+ "videos:miqueias":"3ZpEpFW0201HumzM5pBLohbTSwTWJBYTyDQUCrGj7fk8g",
+ "videos:naum":"AIK83mmhV5g5MmpqfF1Q01iIiE9kYVYK6015uHK00scYX8",
+ "videos:habacuque":"500wsTwg6p002HnLQOpRW01whp2rfEmJapnYibDsgeNwFY",
+ "guides:sofonias":"BbWQ2GIv5bJe6z2oiQHCtUptrjMjD00P402EaDDfq028m8",
+ "videos:ageu":"T17kctYKTrOG3RUFLgTuuV7b00hoLeSASMGqqpFvGN01U",
+ "videos:zacarias":"a201ZAEmq5goV5NsA4IH5X6gvpYuTj6Ryq8WtgYzZ6N4",
+ "videos:malaquias":"PWmo45IwxvOgTtFjsuPphFrbh1S77OvyFei9QaTUGbA",
  "videos:genesis-1-11":"dL4xWvlgZunv3bVvblYdj1002DbGMTM14eCvGpxL5NXA",
  "videos:genesis-12-50":"3nR8ZhegiUvhpCQiRPg4jOuSu6QmzmEyCC1tOmoIjgw",
  "videos:exodo-1-18":"2msblVtBK6Q1xphHFhowuvjF01WG1UxugU302xPfHjmOc",
@@ -84,7 +102,6 @@ export function BibleProjectPlayer({resource,book,signedIn,onClose,onBonus,runId
  const [message,setMessage]=useState("");
  const [busy,setBusy]=useState(false);
  const [claimed,setClaimed]=useState(false);
- const [officialSourceOpened,setOfficialSourceOpened]=useState(false);
  const key=videoKeyFromUrl(resource.url);
  const source=embeddedPlayer(resource,book);
  useEffect(()=>{
@@ -121,7 +138,7 @@ export function BibleProjectPlayer({resource,book,signedIn,onClose,onBonus,runId
  },[onClose]);
  const seconds=session?(v2Enabled?Math.max(0,90-(session.active_seconds??0)):Math.max(0,Math.ceil((new Date(session.eligible_at).getTime()-Date.now())/1000))):90;
  const claim=async()=>{
-  if(!supabase||busy||!session||seconds>0||claimed||(!source.exact&&!officialSourceOpened))return;
+  if(!supabase||busy||!session||seconds>0||claimed||!source.exact)return;
   setBusy(true);setMessage("");
   try{const {data,error}=await supabase.rpc(v2Enabled?"lab_v2_video_confirm":"lab_game_video_confirm",v2Enabled?{p_run:runId,p_video_key:key}:{p_video_key:key});
    if(error)throw error;
@@ -132,10 +149,10 @@ export function BibleProjectPlayer({resource,book,signedIn,onClose,onBonus,runId
  return <div className="video-modal-backdrop" role="presentation" onClick={onClose}>
   <section className="video-modal" role="dialog" aria-modal="true" aria-label={"Panorama "+resource.title} ref={containerRef} onClick={e=>e.stopPropagation()}>
    <header className="video-modal-header"><div><span className="eyebrow">PANORAMA DO LIVRO · +5 XP EXTRA</span><h2>{resource.title}</h2></div><button type="button" aria-label="Fechar vídeo" onClick={onClose}><X size={24}/></button></header>
-   {source.exact?<div className="video-frame"><iframe title={"BibleProject: "+resource.title} src={source.src} allow="autoplay; fullscreen; picture-in-picture; encrypted-media; accelerometer; gyroscope" allowFullScreen loading="eager" referrerPolicy="strict-origin-when-cross-origin"/></div>:<div className="video-player-external" role="note"><Video size={25}/><h3>Panorama disponível na fonte oficial</h3><p>O player individual deste livro ainda não foi verificado. Para evitar apresentar o panorama de outro livro, abra o recurso correspondente no BibleProject.</p><a href={resource.url} target="_blank" rel="noopener noreferrer" onClick={()=>setOfficialSourceOpened(true)}><ExternalLink size={17}/> ASSISTIR {resource.title.toLocaleUpperCase("pt-BR")}</a></div>}
-   <div className="video-controls">{source.exact&&<button type="button" className="secondary-cta" onClick={()=>{void containerRef.current?.requestFullscreen?.().catch(()=>setMessage("Utilize a opção de tela cheia do player."))}}><Expand size={17}/> TELA CHEIA</button>}<a href={resource.url} target="_blank" rel="noopener noreferrer" onClick={()=>setOfficialSourceOpened(true)}><ExternalLink size={16}/> Fonte original</a></div>
+   {source.exact?<div className="video-frame"><iframe title={"BibleProject: "+resource.title} src={source.src} allow="autoplay; fullscreen; picture-in-picture; encrypted-media; accelerometer; gyroscope" allowFullScreen loading="eager" referrerPolicy="strict-origin-when-cross-origin"/></div>:<div className="video-player-external" role="alert"><Video size={25}/><h3>Vídeo indisponível neste momento</h3><p>Não foi possível identificar o panorama deste livro. Feche e abra o vídeo novamente. A reprodução permanece dentro do LABGAME.</p></div>}
+   <div className="video-controls">{source.exact&&<button type="button" className="secondary-cta" onClick={()=>{void containerRef.current?.requestFullscreen?.().catch(()=>setMessage("Utilize a opção de tela cheia do player."))}}><Expand size={17}/> TELA CHEIA</button>}<a href={resource.url} target="_blank" rel="noopener noreferrer"><ExternalLink size={16}/> Fonte original</a></div>
    <p className="video-credit"><strong>BibleProject</strong> é o autor e proprietário deste conteúdo. Mais recursos em <a href="https://bibleproject.com" target="_blank" rel="noopener noreferrer">bibleproject.com</a>. O vídeo não substitui os capítulos da leitura anual.</p>
-   {!signedIn?<p className="video-status">Entre na sua conta para conquistar XP extra pelos vídeos.</p>:claimed?<p className="video-success"><CheckCircle2 size={20}/> +5 XP já registrado para este panorama.</p>:<div className="video-reward"><p>Assista ao panorama e confirme depois. A confirmação ficará disponível após {seconds>0?seconds+" segundos":"o período mínimo de exibição"}. O registro é uma declaração pessoal. O LABGAME acompanha o tempo de atividade no aplicativo, mas não consegue comprovar a reprodução do player externo. {source.exact?"":"Abra primeiro o panorama correto na fonte oficial para habilitar esta confirmação."}</p><button type="button" className="primary-cta" disabled={!session||seconds>0||busy||(!source.exact&&!officialSourceOpened)} onClick={()=>void claim()}>{busy?"REGISTRANDO...":"ASSISTI AO PANORAMA · +5 XP"}</button></div>}
+   {!signedIn?<p className="video-status">Entre na sua conta para conquistar XP extra pelos vídeos.</p>:claimed?<p className="video-success"><CheckCircle2 size={20}/> +5 XP já registrado para este panorama.</p>:<div className="video-reward"><p>Assista ao panorama e confirme depois. A confirmação ficará disponível após {seconds>0?seconds+" segundos":"o período mínimo de exibição"}. O registro é uma declaração pessoal. O LABGAME acompanha o tempo de atividade no aplicativo, mas não consegue comprovar a reprodução do player integrado.</p><button type="button" className="primary-cta" disabled={!session||seconds>0||busy||!source.exact} onClick={()=>void claim()}>{busy?"REGISTRANDO...":"ASSISTI AO PANORAMA · +5 XP"}</button></div>}
    {message&&<p role="status" className="feedback-message">{message}</p>}
   </section>
  </div>;

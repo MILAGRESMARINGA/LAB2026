@@ -93,7 +93,8 @@ export function AgentVoiceConsole(){
    announce("Pedido "+result.number+" registrado no GitHub. "+
      (result.classification==="approval_required"?"Esta tarefa precisa de autorização antes de qualquer alteração sensível.":"Os testes e a análise técnica serão organizados automaticamente."));
    const queue=await send("/v1/tasks");
-   setTasks(queue.tasks??[]);
+   const listed:QueueItem[]=queue.tasks??[];
+   setTasks(listed.some(task=>task.number===result.number)?listed:[{number:result.number,title:"LAB AGENTE · "+instruction.slice(0,70),url:result.url,state:"open"},...listed]);
   }catch(e){announce(e instanceof Error?e.message:"O pedido não foi registrado.")}
   finally{setBusy(false)}
  };

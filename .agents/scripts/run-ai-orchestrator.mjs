@@ -89,6 +89,18 @@ async function githubGet(pathname) {
   if (!response.ok) throw Error("GitHub read API returned HTTP " + response.status);
   return response.json();
 }
+async function previousCompilerFeedback(){
+ const attempt=Number(process.env.GITHUB_RUN_ATTEMPT??1);
+ if(attempt<2)return [];
+ try{
+  const history=await githubGet(`/actions/runs/${process.env.GITHUB_RUN_ID}/attempts/${attempt-1}/jobs?per_page=100`);
+  const failed=history.jobs?.find(j=>j.name==="verify"&&j.conclusion==="failure");
+  if(!failed)return [];
+  const response=await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/actions/jobs/${failed.id}/logs`,{headers:{authorization:"Bearer "+process.env.GITHUB_TOKEN,accept:"application/vnd.github+json"},signal:AbortSignal.timeout(15000)});
+  if(!response.ok)return [];
+  return (await response.text()).split("\n").filter(line=>/error TS\d+:/.test(line)).slice(0,8).map(line=>line.replace(/^\S+\s+/,"").slice(0,500));
+ }catch{return []}
+}
 async function enforceDailyRunLimit() {
   const runs = await githubGet("/actions/workflows/ai-agent-orchestrator.yml/runs?branch=lab-rebuild-2026&event=workflow_dispatch&per_page=100");
   const now = Date.now();
@@ -158,6 +170,8 @@ async function main() {
   try { briefing = createTaskBriefing({ task, issueNumber: process.env.AGENT_ISSUE_NUMBER, runId: process.env.GITHUB_RUN_ID, agent: specialist.id, manifest, approvedBudget }); }
   catch { return stop("BLOCKED: executive task briefing could not be validated."); }
   const context = contextFor(specialist.id);
+  const compilerFeedback=await previousCompilerFeedback();
+  if(compilerFeedback.length)context.push({path:"trusted-runner:previous-compiler-feedback",excerpt:true,content:"The previous generated patch failed compilation. Correct these errors; include every new symbol implementation and do not import nonexistent exports.\n"+compilerFeedback.join("\n")});
   briefing.output_contract = "Return files with path, find (unique existing source substring; empty only for a NEW file), content (replacement or full new file). One entry per file. Preserve all unmatched source. Include focused tests. No shell commands.";
   const requestBody = promptFor(task, specialist.id, specialist.path, context, briefing);
   if (Buffer.byteLength(JSON.stringify(requestBody), "utf8") > manifest.cost_policy.ai_orchestrator.max_request_bytes_per_run) return stop("BLOCKED: request exceeds manifest byte budget.");
@@ -177,11 +191,14 @@ async function main() {
   const payload = await response.json();
   if (!Number.isSafeInteger(payload?.usage?.output_tokens) || payload.usage.output_tokens > MAX_OUTPUT_TOKENS || payload.usage.output_tokens > manifest.cost_policy.ai_orchestrator.max_output_tokens_per_run) return stop("BLOCKED: provider output usage is missing or exceeds token cap.");
   let result;
-  try { result = JSON.parse(getOutputText(payload) ?? ""); } catch { return stop("BLOCKED: model output did not satisfy JSON format."); }
+  try { result = JSON.parse(getOutputText(payload) ?? ""); } catch { output("retryable_patch_failure","true"); return stop("BLOCKED: model output did not satisfy JSON format."); }
   if (result.agent !== specialist.id || result.production_mutation_required || !Number.isFinite(result.estimated_incremental_cost_brl) || result.estimated_incremental_cost_brl > approvedBudget) return stop("BLOCKED: agent identity, production scope, or estimated budget failed validation.");
   if (result.blocked_reason || !result.files?.length) return stop("BLOCKED: " + (result.blocked_reason || "agent returned no files."));
   let materialized;
-  try { materialized = materializeEdits(root, result.files, specialist.id); } catch (error) { return stop("BLOCKED: exact edits rejected: " + error.message); }
+  try { materialized = materializeEdits(root, result.files, specialist.id); } catch (error) {
+    if(error.message==="Replacement must match exactly once"||error.message==="No-op replacement")output("retryable_patch_failure","true");
+    return stop("BLOCKED: exact edits rejected: " + error.message);
+  }
   const validated = validateAgentPatch(materialized, specialist.id);
   if (!validated.ok) return stop("BLOCKED: " + validated.reason);
   const artifactDir = path.join(process.env.RUNNER_TEMP ?? os.tmpdir(), "lab-agent-patch");
