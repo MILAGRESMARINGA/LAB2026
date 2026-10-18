@@ -1299,3 +1299,6 @@ BEGIN
 END $study_generation_cache_and_limits$;
 RESET ROLE;
 SELECT 'LAB STUDY GENERATION AUTH, CACHE, IDEMPOTENCY, LAYERS AND RATE LIMITS PASSED' AS result;
+
+-- Content-only expansion is tested after the original six-study assertions.
+\i scripts/tests/p1-study-seed-smoke.sql

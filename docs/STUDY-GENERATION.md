@@ -25,3 +25,12 @@ API calls may incur charges; no R$ 0 claim is made. The owner has authorized bou
 ## Validation status
 
 `npm run verify:engineering`, `npm test`, PostgreSQL 16/17 smoke tests and `deno check` use deterministic provider mocks and disposable databases. They do not prove live inference, production migration or Edge Function deployment. A CI green result is not production homologation.
+
+## P1 editorial expansion prepared for review
+
+Nine additional Layer 1 units for days 4–7 are prepared under
+`lab-app/scripts/sql/seeds/p1-study-days-4-7.json`, with a generated additive SQL
+seed that inserts drafts only. Psalm 3 has separate day-5 and day-6 identities to
+match the 365/366-day plans. The seed is not an automatic migration and has not
+been published to production. See `P1-STUDIES-AND-GC-HOMOLOGATION.md` for review,
+cache-hit verification and the concrete GC pilot acceptance cases.
