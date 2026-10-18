@@ -89,15 +89,15 @@ async function enforceDailyRunLimit() {
     run.head_branch === "lab-rebuild-2026" && now - Date.parse(run.created_at) >= 0 && now - Date.parse(run.created_at) < 86_400_000).length;
 }
 export function extractTaskFromIssueBody(value) {
-  const lines = String(value ?? "").replace(/\\r\\n/g, "\\n").split("\\n");
+  const lines = String(value ?? "").replace(/\r\n/g, "\n").split("\n");
   const heading = lines.findIndex(line => line.trim() === "## Solicitação para fila LABGame");
   if (heading < 0) return "";
   const task = [];
   for (const line of lines.slice(heading + 1)) {
     if (line.trim() === "## Política") break;
-    task.push(line.replace(/^>\\s?/, ""));
+    task.push(line.replace(/^>\s?/, ""));
   }
-  return task.join("\\n").trim();
+  return task.join("\n").trim();
 }
 
 async function taskFromIssue() {
