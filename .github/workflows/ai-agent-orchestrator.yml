@@ -1,4 +1,5 @@
 name: Controlled LABGame coding agent
+run-name: "LAB coding · Issue ${{ inputs.issue_number || 'direct' }}"
 
 on:
   workflow_dispatch:
@@ -11,6 +12,11 @@ on:
         description: "Trusted LAB Agent issue created by the voice intake"
         required: false
         type: string
+      approved_spend_usd:
+        description: "President-approved USD task cap, at most 0.25; reserves up to 3 model responses"
+        required: true
+        default: "0"
+        type: string
       approved_spend_brl:
         description: "President-approved maximum model spend for this run; 0 disables inference"
         required: true
@@ -20,7 +26,7 @@ on:
 permissions: {}
 
 concurrency:
-  group: labgame-agent-${{ github.event.inputs.issue_number || github.run_id }}
+  group: labgame-agent-global-budget
   cancel-in-progress: false
 
 jobs:
@@ -56,9 +62,16 @@ jobs:
           RUNNER_TEMP: ${{ runner.temp }}
           AGENT_TASK: ${{ github.event.inputs.task }}
           AGENT_ISSUE_NUMBER: ${{ github.event.inputs.issue_number }}
+          APPROVED_SPEND_USD: ${{ github.event.inputs.approved_spend_usd }}
           APPROVED_SPEND_BRL: ${{ github.event.inputs.approved_spend_brl }}
         run: |
           node .agents/scripts/run-ai-orchestrator.mjs
+      - name: Account consumed model attempt
+        if: always() && steps.generate.outputs.model_attempt_consumed == 'true'
+        run: echo "Model response or uncertain delivery counted."
+      - name: Account rejected or unsent request
+        if: always() && steps.generate.outputs.model_attempt_consumed == 'false'
+        run: echo "Provider rejected or request was never sent; no model attempt consumed."
       - name: Upload generated patch as data only
         if: steps.generate.outputs.patch_ready == 'true'
         uses: actions/upload-artifact@v4
@@ -92,7 +105,7 @@ jobs:
           path: ${{ runner.temp }}/lab-agent-patch
       - name: Install project dependencies without credentials
         working-directory: lab-app
-        run: npm ci --no-audit --no-fund
+        run: npm install --no-audit --no-fund
       - name: Apply validated patch and run allowlisted tests without secrets
         env:
           AGENT_PATCH_FILE: ${{ runner.temp }}/lab-agent-patch/patch.json
@@ -114,6 +127,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      actions: write
     steps:
       - name: Checkout trusted publisher code without persisted credentials
         uses: actions/checkout@v4
@@ -140,6 +154,7 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_SHA: ${{ github.sha }}
           GITHUB_RUN_ID: ${{ github.run_id }}
+          AGENT_ISSUE_NUMBER: ${{ github.event.inputs.issue_number }}
           AGENT_PATCH_FILE: ${{ runner.temp }}/lab-agent-patch/patch.json
           GITHUB_REF: ${{ github.ref }}
         run: node .agents/scripts/publish-agent-pr.mjs

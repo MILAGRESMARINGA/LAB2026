@@ -30,7 +30,8 @@ export function routeSpecialist(task, manifest) {
     [/\b(teste|qa|e2e|confiabilidade|smoke)\b/i, "qa-reliability-engineer"],
     [/\b(edge function|api|backend|rpc|deno)\b/i, "backend-engineer"],
   ];
-  const id = routes.find(([pattern]) => pattern.test(task))?.[1] ?? "principal-architect";
+  const objective = String(task).split(/[.!?\n]/)[0];
+  const id = (routes.find(([pattern]) => pattern.test(objective)) ?? routes.find(([pattern]) => pattern.test(task)))?.[1] ?? "principal-architect";
   return manifest.agents.find(agent => agent.id === id) ?? null;
 }
 

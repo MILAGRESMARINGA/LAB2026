@@ -76,3 +76,11 @@ Registre requisito, agente, alvo, alterações, política de custo, riscos, coma
 Os doze contratos substituem a composição P0 de oito agentes. Relatórios P0 datados são histórico e não prova de aceite P1. Nenhum gate pendente é aprovado por esta mudança. A execução de código é controlada por aprovação explícita de custo, allowlist de escrita, testes sem credenciais e Draft PR; produção e merge permanecem sob revisão humana.
 
 O teto de chamadas sobe de 8 para 12, tokens de saída de 1.024 para 1.536 e entrada acumulada de 65.536 para 98.304 bytes para incluir todos os papéis. Uma execução a cada 24h, 128 tokens/chamada e zero retries permanecem. São limites de uso, não garantia de preço; não foi disparada inferência nesta atualização.
+
+## Limites de tentativas e aprovação em USD — 18/10/2026
+
+O runner serializa tarefas, faz uma chamada por execução e permite no máximo três respostas do modelo (incluindo entregas incertas) por Issue e três globalmente em 24 horas. Reexecuções antigas usam a data de cada tentativa, não a criação do run. Histórico acima de 100 runs bloqueia até reconciliação explícita. Rejeições HTTP 4xx não consomem resposta; cinco execuções em 24 horas limitam falhas de infraestrutura e reexecuções. Cancelamentos/timeouts contam conservadoramente. O histórico inclui cada tentativa de um run, inclusive reruns. As tentativas 1 e 2 do run 39094300608 foram verificadas: parser vazio e HTTP 429, respectivamente; ambas anteriores à inferência.
+
+O dispatch exige `approved_spend_usd`, até US$ 0.25 para a tarefa. Antes da chamada, o runner reserva custo de três respostas usando bytes de entrada como limite conservador de tokens, limite de saída e margem de 2x sobre o preço padrão gpt-6-luna verificado em 18/10/2026 (https://developers.openai.com/api/docs/pricing). O orçamento em BRL legado valida a estimativa declarada pelo modelo, não representa cobrança medida. Nenhuma recarga automática ou tentativa automática é feita. O limite do provedor continua necessário; preços precisam de revisão se mudarem.
+
+O publisher dispara LAB CI explicitamente na branch gerada: PRs criados pelo GITHUB_TOKEN não acionam o evento pull_request automaticamente. O token de escrita permanece exclusivo do publisher; o job de testes continua sem segredos.

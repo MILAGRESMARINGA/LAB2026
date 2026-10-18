@@ -9,7 +9,7 @@ const briefing = fs.readFileSync(".agents/scripts/task-briefing.mjs", "utf8");
 const core = fs.readFileSync(".agents/scripts/agent-writer-core.mjs", "utf8");
 assert.match(workflow, /workflow_dispatch:/);
 assert.match(workflow, /generate:[\s\S]*?contents:\s*read[\s\S]*?OPENAI_API_KEY:/);
-assert.match(workflow, /verify:[\s\S]*?contents:\s*read[\s\S]*?npm ci[\s\S]*?verify-agent-patch\.mjs/);
+assert.match(workflow, /verify:[\s\S]*?contents:\s*read[\s\S]*?npm install[\s\S]*?verify-agent-patch\.mjs/);
 assert.match(workflow, /publish:[\s\S]*?contents:\s*write[\s\S]*?pull-requests:\s*write/);
 assert.match(workflow, /needs:\s*\[generate, verify\]/);
 assert.match(workflow, /github\.ref == 'refs\/heads\/lab-rebuild-2026'/);

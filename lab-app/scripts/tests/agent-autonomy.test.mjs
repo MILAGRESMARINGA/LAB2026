@@ -44,7 +44,7 @@ test("agent workflow separates generation, verification, and publication credent
   assert.match(workflow, /OPENAI_API_KEY:/);
   assert.match(workflow, /contents: read[\s\S]*?issues: read/);
   assert.match(workflow, /contents: write[\s\S]*?pull-requests: write/);
-  assert.match(workflow, /verify:[\s\S]*?npm ci[\s\S]*?verify-agent-patch\.mjs/);
+  assert.match(workflow, /verify:[\s\S]*?npm install[\s\S]*?verify-agent-patch\.mjs/);
   assert.match(workflow, /publish:[\s\S]*?needs: \[generate, verify\]/);
   assert.doesNotMatch(generator, /child_process|spawn\(|applyAgentPatch|createDraftPr|git ref|pulls.*POST/i);
   assert.doesNotMatch(verifier + workflow.slice(workflow.indexOf("  verify:"), workflow.indexOf("  publish:")), /OPENAI_API_KEY|GITHUB_TOKEN|secrets\./);
