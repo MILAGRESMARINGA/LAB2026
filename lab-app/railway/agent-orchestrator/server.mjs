@@ -15,7 +15,9 @@ const incident=/\b(exclu(?:ir|s[aã]o)|apag(?:ar|ue)|delet(?:ar|e)|remov(?:er|a)
 const quotas=new Map();
 
 export function classifyTask(text){
- return incident.test(text)?"approval_required":"review";
+ // Recognize only explicit, narrow prohibitions; other risky clauses remain checked.
+ const scope=String(text).replace(/\b(?:não alterar|sem (?:alterar|mudar)) (?:o banco de produção|produção, banco, migrations ou dados reais|dados da produção|produção|banco de produção)\b[.!]?/giu,"");
+ return incident.test(scope)?"approval_required":"review";
 }
 export function settings(env){
  const origins=(env.LAB_AGENT_ALLOWED_ORIGINS??"").split(",").map(s=>s.trim()).filter(Boolean);
