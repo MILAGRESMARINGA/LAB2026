@@ -81,7 +81,15 @@ export async function execute(env=process.env,fetcher=fetch){
  const branch="agent/intake-"+number;
  const path=".agents/intake/issue-"+number+".md";
  const branchRef=await call("/git/ref/heads/"+branch).catch(()=>null);
- if(branchRef)return {status:"already_triaged",branch};
+ if(branchRef){
+  // Resume a previously created intake after dispatch/network failures.
+  // The code executor independently enforces per-task and daily attempt limits.
+  await call("/actions/workflows/ai-agent-orchestrator.yml/dispatches","POST",{
+   ref:"lab-rebuild-2026",
+   inputs:{issue_number:String(number),approved_spend_usd:"0.25",approved_spend_brl:"1.50",task:""}
+  });
+  return {status:"already_triaged",branch,codingRunStarted:true};
+ }
  const main=await call("/git/ref/heads/main");
  const sha=main.object.sha;
  await call("/git/refs","POST",{ref:"refs/heads/"+branch,sha});
