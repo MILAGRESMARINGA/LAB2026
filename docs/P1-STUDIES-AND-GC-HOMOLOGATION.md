@@ -36,7 +36,7 @@ Textos em linguagem de discipulado, sem transcrição de tradução protegida ou
 
 ## Homologação GC O Caminho — critérios executáveis
 
-Executar fixtures somente em ambiente descartável. Não inflar o grupo real com contas sintéticas. Usar o ID verificado do grupo; nome semelhante não autoriza duplicação.
+O smoke PG16/PG17 inclui fixtures de 3, 20 e 100 consentidos com média/score iguais e um caso em que novo membro consentido com zero XP reduz a média de 30 para 22,5. Executar fixtures somente em ambiente descartável. Não inflar o grupo real com contas sintéticas. Usar o ID verificado do grupo; nome semelhante não autoriza duplicação.
 
 | Caso | Procedimento | Aceite |
 |---|---|---|
