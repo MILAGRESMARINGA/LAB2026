@@ -1,5 +1,6 @@
 import {describe,expect,it} from "vitest";
-import {getBibleProjectVideoForChapter,getNewTestamentVideoCatalog} from "../src/domain/bibleproject";
+import {getBibleProjectVideoForChapter,getNewTestamentVideoCatalog,getBibleProjectVideos} from "../src/domain/bibleproject";
+import {OLD_TESTAMENT,NEW_TESTAMENT} from "../src/domain/canon";
 import {embeddedPlayer,videoKeyFromUrl} from "../src/components/BibleProjectPlayer";
 import {readBibleChapter} from "../src/features/bible";
 
@@ -35,13 +36,25 @@ describe("Vídeos BibleProject integrados",()=>{
   const matthew=getBibleProjectVideoForChapter("Mateus",1)!;
   expect(embeddedPlayer(matthew,"Lucas")).toEqual({src:null,exact:false});
  });
- it("evita atribuir vídeo de Mateus a outro livro sem Mux verificado",()=>{
+ it("reproduz Joel no player integrado com o panorama correto",()=>{
   const player=embeddedPlayer(joel,"Joel");
-  expect(player.exact).toBe(false);
-  expect(player.src).toBeNull();
+  expect(player.exact).toBe(true);
+  expect(player.src).toContain("TRxY1it9PYtn4029XOvmawOB3YtlH9cQl7e5AowkPUEo");
   const marcos=getBibleProjectVideoForChapter("Marcos",1)!;
   expect(embeddedPlayer(marcos,"Marcos").exact).toBe(true);
   expect(embeddedPlayer(marcos,"Marcos").src).toMatch(/^https:\/\/player\.mux\.com\//);
+ });
+ it("cobre os 66 livros e todas as partes no mesmo player de Gênesis",()=>{
+  const canon=[...OLD_TESTAMENT,...NEW_TESTAMENT];
+  expect(canon).toHaveLength(66);
+  for(const [book] of canon){
+   const resources=getBibleProjectVideos(book);
+   expect(resources.length,book).toBeGreaterThan(0);
+   for(const resource of resources){
+    expect(embeddedPlayer(resource,book).exact,book+": "+resource.title).toBe(true);
+    expect(embeddedPlayer(resource,book).src).toMatch(/^https:\/\/player\.mux\.com\/[A-Za-z0-9]+$/);
+   }
+  }
  });
  it("não aceita referências bíblicas fora do cânon",async()=>{
   await expect(readBibleChapter("67:1")).rejects.toThrow("Referência inválida");
