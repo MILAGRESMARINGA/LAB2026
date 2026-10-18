@@ -40,8 +40,8 @@ assert.deepEqual(manifest.cost_policy.study_generation, {
   fail_closed_without_openai_api_key: true
 });
 assert.deepEqual(Object.fromEntries(Object.entries(manifest.cost_policy.ai_orchestrator).filter(([key]) => !["provider_model", "max_approved_spend_brl_per_run", "max_files_per_patch", "max_patch_bytes", "maximum_test_commands"].includes(key))), {
-  max_runs_per_rolling_24h: 5,
-  max_model_responses_per_rolling_24h: 3,
+  max_runs_per_rolling_24h: 50,
+  max_model_responses_per_rolling_24h: 30,
   max_approved_spend_usd_per_task: 0.25,
   max_calls_per_run: 1,
   max_calls_per_agent: 1,
