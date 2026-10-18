@@ -1,10 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { validateAgentPatch } from "./agent-writer-core.mjs";
 import { createTaskBriefing, routeSpecialist } from "./task-briefing.mjs";
 
-const root = process.cwd();
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const manifest = JSON.parse(fs.readFileSync(path.join(root, ".agents/manifest.json"), "utf8"));
 const MAX_TIMEOUT_MS = 90_000;
 const MAX_OUTPUT_TOKENS = 6000;
@@ -88,6 +88,18 @@ async function enforceDailyRunLimit() {
   return (runs.workflow_runs ?? []).filter(run => String(run.id) !== String(process.env.GITHUB_RUN_ID) &&
     run.head_branch === "lab-rebuild-2026" && now - Date.parse(run.created_at) >= 0 && now - Date.parse(run.created_at) < 86_400_000).length;
 }
+export function extractTaskFromIssueBody(value) {
+  const lines = String(value ?? "").replace(/\r\n/g, "\n").split("\n");
+  const heading = lines.findIndex(line => line.trim() === "## Solicitação para fila LABGame");
+  if (heading < 0) return "";
+  const task = [];
+  for (const line of lines.slice(heading + 1)) {
+    if (line.trim() === "## Política") break;
+    task.push(line.replace(/^>\s?/, ""));
+  }
+  return task.join("\n").trim();
+}
+
 async function taskFromIssue() {
   const number = Number(process.env.AGENT_ISSUE_NUMBER);
   if (!Number.isSafeInteger(number) || number < 1) throw Error("Invalid issue number");
@@ -95,8 +107,7 @@ async function taskFromIssue() {
   if (issue.pull_request || issue.state !== "open" || issue.title?.startsWith("LAB AGENTE · ") !== true ||
       !String(issue.body ?? "").includes("## Solicitação para fila LABGame") || issue.user?.id !== 173290142 ||
       issue.user?.login !== "MILAGRESMARINGA" || issue.author_association !== "OWNER") throw Error("Issue is not a verified owner task");
-  let task = String(issue.body).split("\n## Política")[0].split("\n## Solicitação para fila LABGame")[1]?.trim() ?? "";
-  return task.split("\n").map(line => line.replace(/^>\s?/, "")).join("\n").trim();
+  return extractTaskFromIssueBody(issue.body);
 }
 async function main() {
   if (process.env.LAB_AGENT_SMOKE_TEST === "true") return stop("SKIPPED: smoke mode performs no inference and receives no secrets.");

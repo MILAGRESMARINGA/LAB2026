@@ -93,3 +93,32 @@ test("workflow requires privileged author; cannot execute arbitrary pull request
  assert.ok(!yaml.includes("pull_request_target:"));
  assert.ok(!yaml.includes("eval("));
 });
+
+
+import {extractTaskFromIssueBody} from "../../../.agents/scripts/run-ai-orchestrator.mjs";
+
+test("issue task parser accepts a request section at document start", () => {
+ const body = [
+  "## Solicitação para fila LABGame", "",
+  "> Ajustar contraste do menu móvel.",
+  "> Validar os alvos de toque.", "",
+  "## Política",
+  "- Não alterar produção."
+ ].join("\n");
+ assert.equal(extractTaskFromIssueBody(body), "Ajustar contraste do menu móvel.\nValidar os alvos de toque.");
+});
+
+test("issue task parser accepts a preceding BET and CRLF", () => {
+ const body = [
+  "## BET", "Tarefa P1-021", "",
+  "## Solicitação para fila LABGame", "",
+  "> Corrigir o menu móvel com foco acessível.", "",
+  "## Critérios", "- Testar viewport", "",
+  "## Política", "- Sem mutação de produção."
+ ].join("\r\n");
+ assert.equal(extractTaskFromIssueBody(body), "Corrigir o menu móvel com foco acessível.\n\n## Critérios\n- Testar viewport");
+});
+
+test("issue task parser returns empty when request section is missing", () => {
+ assert.equal(extractTaskFromIssueBody("## Política\nNão é uma tarefa."), "");
+});
