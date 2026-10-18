@@ -36,6 +36,9 @@ test("untrusted issue text becomes quoted documentation, not shell commands",()=
  assert.ok(md.includes("> rm -rf /"));
  assert.ok(md.includes("＠github-admin"));
  assert.ok(md.includes("não implementa"));
+ assert.ok(md.includes("Briefing Executivo de Tarefa (BET)"));
+ assert.ok(md.includes("Agente principal: `ux-designer`"));
+ assert.ok(md.includes("Nenhuma execução paga autorizada"));
 });
 test("untrusted author cannot request Github write actions",async()=>{
  const networkCase=network({user:{login:"attacker",id:999999},author_association:"NONE"});

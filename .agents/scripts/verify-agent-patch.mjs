@@ -34,14 +34,17 @@ async function main() {
   const head = await gitHead();
   if (patch.schema_version !== 1 || patch.base_sha !== head || patch.base_sha !== process.env.GITHUB_SHA) throw Error("Patch base SHA does not match the checked out trusted source.");
   if (typeof patch.agent !== "string" || typeof patch.summary !== "string" || !Array.isArray(patch.test_commands)) throw Error("Malformed patch metadata.");
-  const valid = validateAgentPatch(patch.files);
+  const valid = validateAgentPatch(patch.files, patch.agent);
   if (!valid.ok) throw Error("Patch rejected: " + valid.reason);
   const allowed = new Set(["npm run verify:engineering", "npm test", "npm run build"]);
   if (patch.test_commands.some(command => !allowed.has(command))) throw Error("Patch requested a command outside the fixed allowlist.");
-  applyAgentPatch(root, valid.files);
+  applyAgentPatch(root, valid.files, patch.agent);
   const commands = [...new Set(["npm run verify:engineering", "npm test", "npm run build", ...patch.test_commands])];
   for (const command of commands) await run(command);
-  const report = { schema_version: 1, base_sha: patch.base_sha, agent: patch.agent, summary: patch.summary, files: valid.files, task: patch.task, estimated_incremental_cost_brl: patch.estimated_incremental_cost_brl, checks: commands, verified_at: new Date().toISOString() };
+  if (!patch.briefing || patch.briefing.principal_agent !== patch.agent || !patch.briefing.task_id || !Array.isArray(patch.briefing.acceptance_criteria) ||
+      patch.briefing.cost_authorization?.approved_for_this_run !== true || patch.briefing.cost_authorization?.presidential_approval_required !== true ||
+      !(patch.briefing.cost_authorization.approved_budget_brl > 0)) throw Error("Patch has no valid approved executive task briefing.");
+  const report = { schema_version: 1, base_sha: patch.base_sha, agent: patch.agent, summary: patch.summary, files: valid.files, task: patch.task, briefing: patch.briefing, estimated_incremental_cost_brl: patch.estimated_incremental_cost_brl, checks: commands, verified_at: new Date().toISOString() };
   const reportPath = path.join(path.dirname(file), "verified-patch.json");
   fs.writeFileSync(reportPath, JSON.stringify(report), { mode: 0o600 });
   if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, "## LABGame patch verification — PASSED\n\nAgent: `" + patch.agent + "`.\n\nChecks: " + commands.map(command => "`" + command + "`").join(", ") + ".\n\nThe test runner received no model key, GitHub token, or production credentials.\n");

@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { validateAgentPatch, taskBranchName } from "./agent-writer-core.mjs";
+import { renderTaskBriefing } from "./task-briefing.mjs";
 
 const repo = process.env.GITHUB_REPOSITORY;
 const token = process.env.GITHUB_TOKEN;
@@ -25,9 +26,11 @@ async function main() {
   const patch = JSON.parse(fs.readFileSync(patchFile, "utf8"));
   const report = JSON.parse(fs.readFileSync(reportFile, "utf8"));
   if (patch.base_sha !== process.env.GITHUB_SHA || report.base_sha !== process.env.GITHUB_SHA || report.agent !== patch.agent) throw Error("Verified artifact does not match this workflow commit.");
-  const valid = validateAgentPatch(patch.files);
-  if (!valid.ok || !Array.isArray(report.checks) || report.checks.length < 3) throw Error("Patch or verification report is invalid.");
+  const valid = validateAgentPatch(patch.files, patch.agent);
+  if (!valid.ok || !Array.isArray(report.checks) || report.checks.length < 3 || !patch.briefing ||
+      patch.briefing.cost_authorization?.approved_for_this_run !== true || !(patch.briefing.cost_authorization.approved_budget_brl > 0)) throw Error("Patch or verification report is invalid.");
   if (JSON.stringify(report.files) !== JSON.stringify(valid.files) || report.estimated_incremental_cost_brl !== patch.estimated_incremental_cost_brl ||
+      JSON.stringify(report.briefing) !== JSON.stringify(patch.briefing) ||
       !["npm run verify:engineering", "npm test", "npm run build"].every(command => report.checks.includes(command))) {
     throw Error("Verification report does not attest to this exact patch and required check set.");
   }
@@ -53,6 +56,7 @@ async function main() {
     "- FinOps: estimativa informada pelo gerador R$ " + Number(patch.estimated_incremental_cost_brl).toFixed(2) + "; a cobrança efetiva deve ser confirmada no painel do provedor.",
     "- Produção: nenhuma migration ou função foi publicada; nenhum auto-merge foi habilitado.",
     "- Base: `" + patch.base_sha + "`.",
+    "\n" + renderTaskBriefing(patch.briefing),
     "\n### Solicitação recebida\n> " + taskText,
     "\nEste PR permanece em rascunho e exige revisão humana e checks de CI antes de merge.",
   ].join("\n");

@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { validateAgentPatch } from "./agent-writer-core.mjs";
+import { createTaskBriefing, routeSpecialist } from "./task-briefing.mjs";
 
 const root = process.cwd();
 const manifest = JSON.parse(fs.readFileSync(path.join(root, ".agents/manifest.json"), "utf8"));
@@ -21,21 +22,6 @@ function stop(message) {
   summary("## LABGame agent run — " + (message.startsWith("BLOCKED:") ? "BLOCKED" : "SKIPPED") + "\n\n" + message.replace(/^(BLOCKED:|SKIPPED:)\s*/, ""));
   if (message.startsWith("BLOCKED:")) process.exitCode = 1;
 }
-function chooseAgent(task) {
-  const routes = [
-    [/\b(rls|security|seguran[cç]a|senha|anti[- ]?cheat|definer|policy|permiss[aã]o)\b/i, "security-engineer"],
-    [/\b(migration|migrations|postgres|database|banco|sql|backup|restaura[cç][aã]o)\b/i, "database-engineer"],
-    [/\b(exegese|teologi|b[ií]blia|cap[ií]tulo|estudo|pentecostal|arminian)\b/i, "biblical-canon-engineer"],
-    [/\b(flame|chama|xp|streak|ranking|gamifica|recompensa|c[eé]lula|grupo)\b/i, "gamification-engineer"],
-    [/\b(interface|design|ux|acessibilidade|microintera[cç][aã]o|layout|menu|contraste|espa[cç]amento)\b/i, "ux-designer"],
-    [/\b(email|e-mail|webhook|notifica[cç][aã]o|integra[cç][aã]o)\b/i, "integration-engineer"],
-    [/\b(ci|workflow|vercel|deploy|observabilidade|monitoramento|log)\b/i, "platform-observability-engineer"],
-    [/\b(teste|qa|e2e|confiabilidade|smoke)\b/i, "qa-reliability-engineer"],
-    [/\b(edge function|api|backend|rpc|deno)\b/i, "backend-engineer"],
-  ];
-  const id = routes.find(([pattern]) => pattern.test(task))?.[1] ?? "principal-architect";
-  return manifest.agents.find(agent => agent.id === id);
-}
 function contextFor(agentId) {
   const paths = fs.readFileSync(path.join(root, ".agents/trusted-context-files.json"), "utf8");
   const mapping = JSON.parse(paths)[agentId] ?? [];
@@ -53,7 +39,7 @@ function contextFor(agentId) {
   }
   return files;
 }
-function promptFor(task, agent, contract, context) {
+function promptFor(task, agent, contract, context, briefing) {
   const contractText = fs.readFileSync(path.join(root, ".agents", contract), "utf8");
   return {
     model: manifest.cost_policy.ai_orchestrator.provider_model,
@@ -66,7 +52,7 @@ function promptFor(task, agent, contract, context) {
         "Only change allowlisted LABGame source, tests, Edge Function source, or additive SQL migrations. No workflows, policies, manifests, package files, generated content, CRM files, or production actions.",
         "Do not include credentials, personal data, database dumps, backups, or production data. If unsafe or not implementable, return files:[] and a concise blocked_reason.",
       ].join(" ") + "\n\nSPECIALIST CONTRACT:\n" + contractText },
-      { role: "user", content: JSON.stringify({ task, agent, repository_context: context }) },
+      { role: "user", content: JSON.stringify({ briefing, repository_context: context }) },
     ],
     text: { format: { type: "json_schema", name: "labgame_agent_patch", strict: true, schema: {
       type: "object", additionalProperties: false,
@@ -127,10 +113,13 @@ async function main() {
   catch { return stop("BLOCKED: task issue could not be verified."); }
   if (task.length < 15 || task.length > 3000) return stop("BLOCKED: task must contain 15–3000 characters.");
   if (/(supabase\s+(db\s+push|functions\s+deploy)|production\s+(deploy|migration)|delete\s+account|charge|billing|secrets?)/i.test(task)) return stop("BLOCKED: task requests production, secret, destructive, or billing work.");
-  const specialist = chooseAgent(task);
+  const specialist = routeSpecialist(task, manifest);
   if (!specialist) return stop("BLOCKED: no specialist contract found.");
+  let briefing;
+  try { briefing = createTaskBriefing({ task, issueNumber: process.env.AGENT_ISSUE_NUMBER, runId: process.env.GITHUB_RUN_ID, agent: specialist.id, manifest, approvedBudget }); }
+  catch { return stop("BLOCKED: executive task briefing could not be validated."); }
   const context = contextFor(specialist.id);
-  const requestBody = promptFor(task, specialist.id, specialist.path, context);
+  const requestBody = promptFor(task, specialist.id, specialist.path, context, briefing);
   if (Buffer.byteLength(JSON.stringify(requestBody), "utf8") > manifest.cost_policy.ai_orchestrator.max_request_bytes_per_run) return stop("BLOCKED: request exceeds manifest byte budget.");
   const response = await fetch("https://api.openai.com/v1/responses", { method: "POST", headers: { authorization: "Bearer " + process.env.OPENAI_API_KEY, "content-type": "application/json" }, body: JSON.stringify(requestBody), signal: AbortSignal.timeout(MAX_TIMEOUT_MS) });
   if (!response.ok) return stop("BLOCKED: provider returned HTTP " + response.status + "; response body suppressed.");
@@ -140,13 +129,14 @@ async function main() {
   try { result = JSON.parse(getOutputText(payload) ?? ""); } catch { return stop("BLOCKED: model output did not satisfy JSON format."); }
   if (result.agent !== specialist.id || result.production_mutation_required || !Number.isFinite(result.estimated_incremental_cost_brl) || result.estimated_incremental_cost_brl > approvedBudget) return stop("BLOCKED: agent identity, production scope, or estimated budget failed validation.");
   if (result.blocked_reason || !result.files?.length) return stop("BLOCKED: " + (result.blocked_reason || "agent returned no files."));
-  const validated = validateAgentPatch(result.files);
+  const validated = validateAgentPatch(result.files, specialist.id);
   if (!validated.ok) return stop("BLOCKED: " + validated.reason);
   const artifactDir = path.join(process.env.RUNNER_TEMP ?? os.tmpdir(), "lab-agent-patch");
   fs.mkdirSync(artifactDir, { recursive: true });
   const artifact = {
     schema_version: 1,
     base_sha: process.env.GITHUB_SHA,
+    briefing,
     task,
     agent: specialist.id,
     summary: result.summary,

@@ -4,11 +4,19 @@
  */
 import {classifyTask} from "../railway/agent-orchestrator/server.mjs";
 import {pathToFileURL} from "node:url";
+import fs from "node:fs";
+import {createTaskBriefing,renderTaskBriefing,routeSpecialist} from "../../.agents/scripts/task-briefing.mjs";
 
 // Stable GitHub numeric owner ID, verified against GitHub's issue.author_association.
 // The Actions GITHUB_TOKEN cannot read collaborator permissions with admin scope.
 // This allowlist is deliberately NOT configurable through an issue body.
 const OWNER_ID=173290142;
+const MANIFEST=JSON.parse(fs.readFileSync(new URL("../../.agents/manifest.json",import.meta.url),"utf8"));
+function issueTask(issue){
+ const body=String(issue.body??"");
+ const section=body.split("## Solicitação para fila LABGame")[1]?.split("\n## Política")[0]??body;
+ return section.split("\n").map(line=>line.replace(/^>\s?/ ,"")).join("\n").trim();
+}
 export function isTrustedIssue(issue){
  return Boolean(issue&&Number.isSafeInteger(issue.number)&&issue.number>0&&
   issue.title?.startsWith("LAB AGENTE · ")&&
@@ -21,9 +29,13 @@ export function fileContent(issue){
  const body=String(issue.body??"");
  const lines=body.slice(0,9000).replace(/\r/g,"").split("\n")
   .map(x=>"> "+x.replace(/@/g,"＠")).join("\n");
+ const task=issueTask(issue);
+ const agent=routeSpecialist(issue.title+"\n"+task,MANIFEST);
+ const briefing=agent?createTaskBriefing({task,issueNumber:issue.number,agent:agent.id,manifest:MANIFEST,approvedBudget:0}):null;
  return "# LABGame — Pedido "+issue.number+"\n\n"+
   "Estado: **triagem automática; nenhuma alteração funcional foi realizada**.\n\n"+
   "Issue original: https://github.com/MILAGRESMARINGA/LAB2026/issues/"+issue.number+"\n\n"+
+  (briefing?renderTaskBriefing(briefing)+"\n\n":"## Briefing Executivo de Tarefa (BET)\n\nAgente responsável pendente de classificação; triagem não autorizou execução.\n\n")+
   "## Pedido (conteúdo não confiável)\n\n"+lines+
   "\n\n## Próximas etapas\n\n"+
   "- [ ] Arquiteto e agente de desenvolvimento avaliam os requisitos.\n"+

@@ -27,20 +27,7 @@ assert.equal(manifest.orchestration.llm_can_write_repository, true, "writes are 
 assert.equal(manifest.cost_policy.incremental_cost_limit_brl, 0, "paid inference is disabled absent an explicit run budget");
 assert.deepEqual(manifest.orchestration.repository_write_scope, ["agent/*", "auto/*"]);
 assert.deepEqual(manifest.orchestration.protected_branches, ["main", "lab-rebuild-2026"]);
-assert.deepEqual(manifest.orchestration.workflow_call_order, [
-  "principal-architect",
-  "backend-engineer",
-  "database-engineer",
-  "integration-engineer",
-  "security-engineer",
-  "qa-reliability-engineer",
-  "frontend-ux-engineer",
-  "ux-designer",
-  "gamification-engineer",
-  "biblical-canon-engineer",
-  "platform-observability-engineer",
-  "ai-engineer"
-], "AI runtime must run eleven specialists sequentially and synthesize last with ai-engineer");
+assert.equal(manifest.orchestration.task_dispatch_mode, "single-primary-specialist-per-task; support-and-review agents are listed in each BET");
 assert.equal(manifest.cost_policy.api_usage, "president-approved-per-run-budget-required");
 assert.equal(manifest.cost_policy.no_paid_plan_upgrade, true);
 assert.deepEqual(manifest.cost_policy.study_generation, {
@@ -65,6 +52,22 @@ assert.equal(manifest.cost_policy.ai_orchestrator.provider_model, "gpt-6-luna");
 assert.equal(manifest.cost_policy.ai_orchestrator.max_approved_spend_brl_per_run, 100);
 assert.deepEqual(manifest.cost_policy.ai_orchestrator.maximum_test_commands, ["npm run verify:engineering", "npm test", "npm run build"]);
 assert.deepEqual(manifest.agents.map((agent) => agent.id), expected, "manifest must contain the official twelve agents in order");
+for (const agent of manifest.agents) {
+  assert.ok(Array.isArray(agent.write_paths), agent.id + " must declare explicit file ownership");
+  for (const glob of agent.write_paths) {
+    assert.ok(glob.startsWith("lab-app/"), agent.id + " may write only under lab-app/");
+    assert.ok(!glob.startsWith("lab-app/.github/") && !glob.startsWith("lab-app/.agents/"), agent.id + " cannot edit governance policy");
+    assert.ok(!glob.includes("package.json") && !glob.includes("package-lock"), agent.id + " cannot alter dependencies");
+  }
+}
+const role = id => manifest.agents.find(agent => agent.id === id);
+assert.deepEqual(role("frontend-ux-engineer").write_paths.slice(0, 2), [
+  "lab-app/src/App.tsx",
+  "lab-app/src/components/**/*.tsx"
+], "frontend UX must not own domain, feature, or database implementation paths");
+assert.ok(role("frontend-ux-engineer").write_paths.every(glob => !glob.includes("supabase/") && !glob.includes("src/features/") && !glob.includes("src/domain/")));
+assert.ok(role("database-engineer").write_paths.every(glob => glob.includes("supabase/migrations/") || glob.includes("scripts/tests/")));
+assert.ok(role("security-engineer").write_paths.some(glob => glob.includes("supabase/migrations/")));
 
 const agentRoot = path.join(root, ".agents/agents");
 const actual = fs.readdirSync(agentRoot, { withFileTypes: true })

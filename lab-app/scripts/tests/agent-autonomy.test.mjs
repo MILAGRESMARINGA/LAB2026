@@ -6,8 +6,10 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { applyAgentPatch, taskBranchName, validateAgentPatch } from "../../../.agents/scripts/agent-writer-core.mjs";
+import { createTaskBriefing, renderTaskBriefing, routeSpecialist } from "../../../.agents/scripts/task-briefing.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
+const manifest = JSON.parse(fs.readFileSync(path.join(repoRoot, ".agents/manifest.json"), "utf8"));
 
 test("agent patch accepts only scoped source paths and applies in isolated workspace", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "lab-agent-test-"));
@@ -73,4 +75,36 @@ test("zero approved spend skips inference and produces no patch artifact", () =>
     assert.match(fs.readFileSync(output, "utf8"), /patch_ready=false/);
     assert.equal(fs.existsSync(path.join(runnerTemp, "lab-agent-patch", "patch.json")), false);
   } finally { fs.rmSync(temp, { recursive: true, force: true }); }
+});
+
+test("agent roles cannot write files owned by another specialist", () => {
+  const style = [{ path: "lab-app/src/style.css", content: ".menu { color: #222; }" }];
+  const migration = [{ path: "lab-app/supabase/migrations/202610180001_test.sql", content: "select 1;" }];
+  assert.equal(validateAgentPatch(style, "ux-designer").ok, true);
+  assert.equal(validateAgentPatch(migration, "frontend-ux-engineer").ok, false);
+  assert.equal(validateAgentPatch(migration, "database-engineer").ok, true);
+  assert.equal(validateAgentPatch(style, "database-engineer").ok, false);
+  assert.equal(validateAgentPatch(style, "principal-architect").ok, false);
+  assert.equal(validateAgentPatch(style, "unknown-specialist").ok, false);
+});
+
+test("BET assigns specialists, review partners, explicit cost authority, and security invariants", () => {
+  const ux = routeSpecialist("Ajustar contraste e espaçamento visual do menu", manifest);
+  const bible = routeSpecialist("Criar estudo exegético Pentecostal Arminiano", manifest);
+  assert.equal(ux.id, "ux-designer");
+  assert.equal(bible.id, "biblical-canon-engineer");
+  const draft = createTaskBriefing({ task: "Ajustar o menu mobile", issueNumber: 21, agent: ux.id, manifest, approvedBudget: 0 });
+  const approved = createTaskBriefing({ task: "Ajustar o menu mobile", issueNumber: 21, agent: ux.id, manifest, approvedBudget: 1.25 });
+  const bibleBriefing = createTaskBriefing({ task: "Criar estudo exegético Pentecostal Arminiano", issueNumber: 22, agent: bible.id, manifest, approvedBudget: 1.25 });
+  const gameBriefing = createTaskBriefing({ task: "Ajustar o ranking da célula e a Chama", issueNumber: 23, agent: "gamification-engineer", manifest, approvedBudget: 1.25 });
+  assert.equal(draft.task_id, "P1-ISSUE-021");
+  assert.ok(draft.support_and_review_agents.includes("qa-reliability-engineer"));
+  assert.equal(draft.cost_authorization.approved_for_this_run, false);
+  assert.equal(approved.cost_authorization.approved_for_this_run, true);
+  assert.match(draft.security_and_data_invariants, /search_path = ''/);
+  assert.match(bibleBriefing.theology_contract, /livre-arbítrio/);
+  assert.match(bibleBriefing.theology_contract, /determinismo\/calvinismo/);
+  assert.match(gameBriefing.product_contract, /média de XP por membro ativo/);
+  assert.match(renderTaskBriefing(draft), /Requer aprovação presidencial/);
+  assert.match(renderTaskBriefing(approved), /Aprovado para esta execução até R\$ 1\.25/);
 });
