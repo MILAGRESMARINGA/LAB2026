@@ -177,11 +177,14 @@ async function main() {
   const payload = await response.json();
   if (!Number.isSafeInteger(payload?.usage?.output_tokens) || payload.usage.output_tokens > MAX_OUTPUT_TOKENS || payload.usage.output_tokens > manifest.cost_policy.ai_orchestrator.max_output_tokens_per_run) return stop("BLOCKED: provider output usage is missing or exceeds token cap.");
   let result;
-  try { result = JSON.parse(getOutputText(payload) ?? ""); } catch { return stop("BLOCKED: model output did not satisfy JSON format."); }
+  try { result = JSON.parse(getOutputText(payload) ?? ""); } catch { output("retryable_patch_failure","true"); return stop("BLOCKED: model output did not satisfy JSON format."); }
   if (result.agent !== specialist.id || result.production_mutation_required || !Number.isFinite(result.estimated_incremental_cost_brl) || result.estimated_incremental_cost_brl > approvedBudget) return stop("BLOCKED: agent identity, production scope, or estimated budget failed validation.");
   if (result.blocked_reason || !result.files?.length) return stop("BLOCKED: " + (result.blocked_reason || "agent returned no files."));
   let materialized;
-  try { materialized = materializeEdits(root, result.files, specialist.id); } catch (error) { return stop("BLOCKED: exact edits rejected: " + error.message); }
+  try { materialized = materializeEdits(root, result.files, specialist.id); } catch (error) {
+    if(error.message==="Replacement must match exactly once"||error.message==="No-op replacement")output("retryable_patch_failure","true");
+    return stop("BLOCKED: exact edits rejected: " + error.message);
+  }
   const validated = validateAgentPatch(materialized, specialist.id);
   if (!validated.ok) return stop("BLOCKED: " + validated.reason);
   const artifactDir = path.join(process.env.RUNNER_TEMP ?? os.tmpdir(), "lab-agent-patch");
