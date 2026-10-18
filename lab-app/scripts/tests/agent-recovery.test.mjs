@@ -16,3 +16,9 @@ test("safety, provider and QA failures without protocol marker are not retried",
  const fetcher=async()=>new Response(JSON.stringify({jobs:[{id:8,name:"generate",conclusion:"failure",steps:[]}]}));
  assert.equal((await recoverAgentRun(event,"fake",fetcher)).status,"not_retryable");
 });
+test("marked QA failures regenerate the patch rather than rerunning broken code",async()=>{
+ const calls=[];
+ const fetcher=async(url,init)=>{calls.push({url,method:init.method});return new Response(init.method==="POST"?null:JSON.stringify({jobs:[{id:8,name:"generate",conclusion:"success",steps:[]},{id:9,name:"verify",conclusion:"failure",steps:[{name:"Account retryable patch QA failure",conclusion:"success"}]}]}),{status:init.method==="POST"?201:200})};
+ assert.equal((await recoverAgentRun(event,"fake",fetcher)).status,"retry_requested");
+ assert.ok(calls[1].url.endsWith("/actions/jobs/8/rerun"));
+});
