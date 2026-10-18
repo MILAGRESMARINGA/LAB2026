@@ -55,6 +55,7 @@ export function AgentVoiceConsole(){
  const [selected,setSelected]=useState<number|null>(null);
  const [evidence,setEvidence]=useState<TaskEvidence|null>(null);
  const [trackingError,setTrackingError]=useState("");
+ const [receipt,setReceipt]=useState<{number:number;url:string}|null>(null);
  useEffect(()=>{
   if(selected===null)return;
   let active=true;
@@ -86,10 +87,13 @@ export function AgentVoiceConsole(){
   setBusy(true);
   try{
    const result=await send("/v1/tasks",{instruction});
+   setReceipt({number:result.number,url:result.url});
+   setSelected(result.number);
    edit("");
    announce("Pedido "+result.number+" registrado no GitHub. "+
      (result.classification==="approval_required"?"Esta tarefa precisa de autorização antes de qualquer alteração sensível.":"Os testes e a análise técnica serão organizados automaticamente."));
-   await load();
+   const queue=await send("/v1/tasks");
+   setTasks(queue.tasks??[]);
   }catch(e){announce(e instanceof Error?e.message:"O pedido não foi registrado.")}
   finally{setBusy(false)}
  };
@@ -151,6 +155,7 @@ export function AgentVoiceConsole(){
      <RefreshCw size={16}/> VER FILA</button>
    </div>
    <p role="status" aria-live="polite" className="feedback-message">{status}</p>
+   {receipt&&<p>Último pedido registrado: <a href={receipt.url} target="_blank" rel="noopener noreferrer">#{receipt.number} · Abrir tarefa no GitHub</a>. Registro não significa execução iniciada.</p>}
    {tasks.length>0&&<div aria-label="Fila de tarefas dos agentes">
     <h3>Tarefas registradas</h3>
     {tasks.map(task=><p key={task.number}>
