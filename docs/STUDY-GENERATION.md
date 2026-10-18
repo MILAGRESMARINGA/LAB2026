@@ -10,9 +10,9 @@ The available RAG source in this runtime is the verified Bible text only. No hum
 
 ## Seeded content and layer readiness
 
-The current migration seeds six curated studies, all in Layer 1 for days 1–3: Genesis 1 connected with John 1; Psalm 1 separate; Genesis 2–3 connected and John 2 separate; Genesis 4–5 connected and Psalm 2 separate. Layer 2 (leadership preparation) and Layer 3 (complete theology and eschatology) have no curated seeds at this time. They depend on authenticated generation after their respective 30/90-day unlock thresholds unless later curated seeds are added.
+The original migration seeds six curated studies, all in Layer 1 for days 1–3: Genesis 1 connected with John 1; Psalm 1 separate; Genesis 2–3 connected and John 2 separate; Genesis 4–5 connected and Psalm 2 separate. Layer 2 (leadership preparation) and Layer 3 (complete theology and eschatology) have no curated seeds at this time. They depend on authenticated generation after their respective 30/90-day unlock thresholds unless later curated seeds are added.
 
-Do not describe these six studies as a full systematic theology course or as a complete public-domain-author library. Model-generated studies are not human-curated seeds.
+Do not describe these seeds as a full systematic theology course or as a complete public-domain-author library. Model-generated studies are not human-curated seeds.
 
 ## Cache, provider and quotas
 
@@ -25,3 +25,20 @@ API calls may incur charges; no R$ 0 claim is made. The owner has authorized bou
 ## Validation status
 
 `npm run verify:engineering`, `npm test`, PostgreSQL 16/17 smoke tests and `deno check` use deterministic provider mocks and disposable databases. They do not prove live inference, production migration or Edge Function deployment. A CI green result is not production homologation.
+
+## P1 editorial expansion prepared for review
+
+Nine additional Layer 1 units for days 4–7 are prepared under
+`lab-app/scripts/sql/seeds/p1-study-days-4-7.json`, with a generated additive SQL
+seed that inserts drafts only. Psalm 3 has separate day-5 and day-6 identities to
+match the 365/366-day plans. On 2026-10-18 the reviewed nine rows were inserted
+and separately published in production: 15 published units now cover days 1–7.
+The original six rows and V2 release flag were preserved. The seed is not an
+automatic migration. See `P1-STUDIES-AND-GC-HOMOLOGATION.md` for review,
+cache-hit verification and the concrete GC pilot acceptance cases.
+
+The reader now loads published curated units under the caller's RLS before calling
+`study-generate`. It preserves connected/separate units and checks complete,
+nonoverlapping coverage against server-resolved chapter references. A cache query
+error or partial editorial coverage never falls through to a paid generation.
+No curated units retains the existing server-validated generation path.
