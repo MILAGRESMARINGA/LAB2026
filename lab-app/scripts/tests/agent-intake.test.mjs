@@ -69,7 +69,8 @@ test("safe admin request opens intake PR and dispatches code flow with zero paid
  assert.ok(n.calls.some(x=>x.url.endsWith("/actions/workflows/lab-ci.yml/dispatches")));
  const codingDispatch=n.calls.find(x=>x.url.endsWith("/actions/workflows/ai-agent-orchestrator.yml/dispatches"));
  assert.ok(codingDispatch);
- assert.equal(JSON.parse(codingDispatch.body).inputs.approved_spend_brl,"0");
+ assert.equal(JSON.parse(codingDispatch.body).inputs.approved_spend_usd,"0.25");
+ assert.equal(JSON.parse(codingDispatch.body).inputs.approved_spend_brl,"1.50");
  assert.equal(outcome.codingRunStarted,true);
 });
 test("GitHub restriction 403 on PR creation preserves branch, report and CI",async()=>{

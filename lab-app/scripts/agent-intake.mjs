@@ -71,7 +71,7 @@ export async function execute(env=process.env,fetcher=fetch){
  if(!isTrustedIssue(issue))return {status:"untrusted"};
  // Classify only the quoted request, never our standard policy boilerplate.
  const userRequest=String(issue.body).split("\n## Política")[0];
- if(classifyTask(issue.title+"\n"+userRequest)==="approval_required"||
+ if(classifyTask(issue.title+"\n"+issueTask(issue))==="approval_required"||
     (issue.labels??[]).some(label=>label.name==="lab-approval-required")){
   await call("/issues/"+number+"/comments","POST",{
    body:"LABGame: solicitação registrada, mas exige aprovação humana para operações de risco. Nenhuma execução, migração ou compra foi iniciada."
@@ -110,7 +110,7 @@ export async function execute(env=process.env,fetcher=fetch){
  try{
   await call("/actions/workflows/ai-agent-orchestrator.yml/dispatches","POST",{
    ref:"lab-rebuild-2026",
-   inputs:{issue_number:String(number),approved_spend_brl:"0",task:""}
+   inputs:{issue_number:String(number),approved_spend_usd:"0.25",approved_spend_brl:"1.50",task:""}
   });
   codingRunStarted=true;
  }catch(e){
@@ -120,7 +120,7 @@ export async function execute(env=process.env,fetcher=fetch){
   body:"LABGame: triagem criada em "+(pr?.html_url??refUrl)+
    (pr?" (PR draft).":" (branch, criação de PR bloqueada por configuração GitHub).")+
    (ciStarted?" CI solicitada.":" CI não iniciada: permissões GitHub Actions insuficientes.")+
-   (codingRunStarted?" O workflow controlado foi acionado com orçamento R$ 0,00; ele não fará inferência paga nem alteração de código sem aprovação orçamentária explícita.":" O workflow de código não pôde ser acionado por configuração de permissões.")+
+   (codingRunStarted?" Executor de código acionado sob autorização presidencial: teto de US$ 0,25 por tarefa e limite de três respostas do modelo.":" O workflow de código não pôde ser acionado por configuração de permissões.")+
    " Nenhum código do aplicativo ou dado real foi alterado por esta triagem."
  });
  return {status:pr?"triaged":"triaged_without_pr",number:pr?.number??null,url:pr?.html_url??refUrl,branch,ciStarted,codingRunStarted};
