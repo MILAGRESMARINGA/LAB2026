@@ -10,6 +10,18 @@ const config={LAB_AGENT_ENABLED:"true",
  LAB_AGENT_GITHUB_TOKEN:"test-github-only",
  LAB_AGENT_ALLOWED_ORIGINS:origin,
  LAB_AGENT_ADMIN_USER_IDS:admin};
+test("queue includes unlabelled voice issues and excludes unrelated issues",async()=>{
+ const fetcher=async url=>new Response(JSON.stringify(url.includes("/auth/v1/user")?
+  {id:admin,app_metadata:{labgame_orchestrator_admin:true}}:
+  [{number:33,title:"LAB AGENTE · Estudos",state:"open",labels:[]},{number:34,title:"Outra issue",state:"open"}]),{status:200});
+ const r=await handle(request("GET"),config,fetcher,99000000);
+ assert.equal(r.status,200);
+ assert.deepEqual((await r.json()).tasks.map(t=>t.number),[33]);
+});
+test("approval status survives missing GitHub labels",()=>{
+ const result=summarizeTask({number:33,title:"LAB AGENTE · Estudos",body:"Classificação automática: approval_required.",labels:[]},{total_count:0,workflow_runs:[]},[]);
+ assert.equal(result.stage,"approval_required");
+});
 function request(method="POST",body={instruction:"Corrija a interface dos botões em dispositivo móvel."},headers={}){
  return new Request("https://voice.local/v1/tasks",{
   method,headers:{origin,authorization:"Bearer "+token,"content-type":"application/json",...headers},
