@@ -89,6 +89,18 @@ async function githubGet(pathname) {
   if (!response.ok) throw Error("GitHub read API returned HTTP " + response.status);
   return response.json();
 }
+async function previousCompilerFeedback(){
+ const attempt=Number(process.env.GITHUB_RUN_ATTEMPT??1);
+ if(attempt<2)return [];
+ try{
+  const history=await githubGet(`/actions/runs/${process.env.GITHUB_RUN_ID}/attempts/${attempt-1}/jobs?per_page=100`);
+  const failed=history.jobs?.find(j=>j.name==="verify"&&j.conclusion==="failure");
+  if(!failed)return [];
+  const response=await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/actions/jobs/${failed.id}/logs`,{headers:{authorization:"Bearer "+process.env.GITHUB_TOKEN,accept:"application/vnd.github+json"},signal:AbortSignal.timeout(15000)});
+  if(!response.ok)return [];
+  return (await response.text()).split("\n").filter(line=>/error TS\d+:/.test(line)).slice(0,8).map(line=>line.replace(/^\S+\s+/,"").slice(0,500));
+ }catch{return []}
+}
 async function enforceDailyRunLimit() {
   const runs = await githubGet("/actions/workflows/ai-agent-orchestrator.yml/runs?branch=lab-rebuild-2026&event=workflow_dispatch&per_page=100");
   const now = Date.now();
@@ -158,6 +170,8 @@ async function main() {
   try { briefing = createTaskBriefing({ task, issueNumber: process.env.AGENT_ISSUE_NUMBER, runId: process.env.GITHUB_RUN_ID, agent: specialist.id, manifest, approvedBudget }); }
   catch { return stop("BLOCKED: executive task briefing could not be validated."); }
   const context = contextFor(specialist.id);
+  const compilerFeedback=await previousCompilerFeedback();
+  if(compilerFeedback.length)context.push({path:"trusted-runner:previous-compiler-feedback",excerpt:true,content:"The previous generated patch failed compilation. Correct these errors; include every new symbol implementation and do not import nonexistent exports.\n"+compilerFeedback.join("\n")});
   briefing.output_contract = "Return files with path, find (unique existing source substring; empty only for a NEW file), content (replacement or full new file). One entry per file. Preserve all unmatched source. Include focused tests. No shell commands.";
   const requestBody = promptFor(task, specialist.id, specialist.path, context, briefing);
   if (Buffer.byteLength(JSON.stringify(requestBody), "utf8") > manifest.cost_policy.ai_orchestrator.max_request_bytes_per_run) return stop("BLOCKED: request exceeds manifest byte budget.");
