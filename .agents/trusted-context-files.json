@@ -1,5 +1,9 @@
 {
   "ux-designer": [
+    "lab-app/src/components/StudyGeneratorPanel.tsx",
+    "lab-app/src/components/StudyLayerRoadmap.tsx",
+    "lab-app/src/features/study-generate.ts",
+    "lab-app/src/domain/studies.ts",
     "lab-app/src/App.tsx",
     "lab-app/src/style.css",
     "lab-app/tests/profile-settings.test.ts"
