@@ -1,19 +1,22 @@
 import {BookOpen,CheckCircle2,Clock3,Loader2,MessageCircleHeart,Sparkles} from "lucide-react";
-import {useState} from "react";
-import {generateStudy,type GeneratedStudy} from "../features/study-generate";
+import {useEffect,useRef,useState} from "react";
+import {loadDayStudies,type GeneratedStudy} from "../features/study-generate";
 
 type Props={enabled:boolean;journeyDay:number|null;layer:1|2|3;resolveChapterRefs:()=>Promise<string[]>};
 
 export function StudyGeneratorPanel({enabled,journeyDay,layer,resolveChapterRefs}:Props){
- const [study,setStudy]=useState<GeneratedStudy|null>(null);
+ const [studies,setStudies]=useState<GeneratedStudy[]>([]);
+ const request=useRef(0);
+ useEffect(()=>{request.current++;setStudies([]);setError("");setBusy(false);return()=>{request.current++}},[enabled,journeyDay,layer]);
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState("");
  const load=async()=>{
   if(!enabled||journeyDay===null||busy)return;
+  const current=++request.current;
   setBusy(true);setError("");
-  try{const refs=await resolveChapterRefs();setStudy(await generateStudy({journeyDay,layer,chapterRefs:refs}))}
-  catch(e){setError(e instanceof Error?e.message:"Não foi possível carregar o estudo da etapa.")}
-  finally{setBusy(false)}
+  try{const refs=await resolveChapterRefs();const result=await loadDayStudies({journeyDay,layer,chapterRefs:refs});if(current===request.current)setStudies(result)}
+  catch(e){if(current===request.current)setError(e instanceof Error?e.message:"Não foi possível carregar o estudo da etapa.")}
+  finally{if(current===request.current)setBusy(false)}
  };
  return <section className="study-generator" aria-label="Estudo exegético da etapa atual">
   <div className="study-generator-heading"><div><span className="eyebrow">ESTUDO DA ETAPA ATUAL</span><h2>Leia com contexto</h2></div><Sparkles size={22} aria-hidden="true"/></div>
@@ -22,7 +25,7 @@ export function StudyGeneratorPanel({enabled,journeyDay,layer,resolveChapterRefs
    <button type="button" className="secondary-cta" disabled={busy} onClick={()=>void load()}>{busy?<><Loader2 size={17} className="spin"/> PREPARANDO ESTUDO...</>:<><BookOpen size={17}/> ABRIR ESTUDO DO DIA {journeyDay}</>}</button>
    {error&&<p className="feedback-message" role="alert">{error}</p>}
   </>}
-  {study&&<article className="generated-study" aria-live="polite">
+  {studies.map(study=><article key={study.study_key} className="generated-study" aria-live="polite">
    <div className="generated-study-meta"><span className="eyebrow">CAMADA {study.layer} · {study.cache?"CACHE PUBLICADO":"NOVO CACHE"}</span><span>{study.chapter_refs.join(" · ")}</span></div>
    <h3>{study.title}</h3>
    <StudySection title="Panorama" text={study.content.summary}/>
@@ -33,7 +36,7 @@ export function StudyGeneratorPanel({enabled,journeyDay,layer,resolveChapterRefs
    <StudySection title="Prática de hoje" text={study.content.application}/>
    <div className="generated-study-questions"><strong><MessageCircleHeart size={17}/> Perguntas para reflexão</strong><ol>{study.content.reflection_questions.map(question=><li key={question}>{question}</li>)}</ol></div>
    <div className="generated-study-prayer"><strong><CheckCircle2 size={17}/> Oração sugerida</strong><p>{study.content.prayer}</p></div>
-  </article>}
+  </article>)}
  </section>;
 }
 

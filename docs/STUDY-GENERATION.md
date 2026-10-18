@@ -34,3 +34,9 @@ seed that inserts drafts only. Psalm 3 has separate day-5 and day-6 identities t
 match the 365/366-day plans. The seed is not an automatic migration and has not
 been published to production. See `P1-STUDIES-AND-GC-HOMOLOGATION.md` for review,
 cache-hit verification and the concrete GC pilot acceptance cases.
+
+The reader now loads published curated units under the caller's RLS before calling
+`study-generate`. It preserves connected/separate units and checks complete,
+nonoverlapping coverage against server-resolved chapter references. A cache query
+error or partial editorial coverage never falls through to a paid generation.
+No curated units retains the existing server-validated generation path.
