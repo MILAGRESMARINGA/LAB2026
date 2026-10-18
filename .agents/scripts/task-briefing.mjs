@@ -19,6 +19,10 @@ const UX = "Interface sem poluição visual, legível para leitura prolongada, a
 const GAMIFICATION = "Não somar XP bruto pelo volume de membros. Ranking de grupo usa média de XP por membro ativo e fator explícito de constância coletiva. Intensidade da Chama é apresentação do progresso validado pelo servidor; nunca aceitar relógio ou conclusão enviados como autoridade pelo cliente.";
 
 export function routeSpecialist(task, manifest) {
+  const objective = String(task).split(/[.!?\n]/)[0];
+  if(/\b(clic[aá]ve(?:l|is)|navega[cç][aã]o|interface|menu|contraste|espa[cç]amento)\b/i.test(objective)){
+    return manifest.agents.find(agent=>agent.id==="ux-designer")??null;
+  }
   const routes = [
     [/\b(rls|security|seguran[cç]a|senha|anti[- ]?cheat|definer|policy|permiss[aã]o)\b/i, "security-engineer"],
     [/\b(migration|migrations|postgres|database|banco|sql|backup|restaura[cç][aã]o)\b/i, "database-engineer"],
@@ -30,7 +34,6 @@ export function routeSpecialist(task, manifest) {
     [/\b(teste|qa|e2e|confiabilidade|smoke)\b/i, "qa-reliability-engineer"],
     [/\b(edge function|api|backend|rpc|deno)\b/i, "backend-engineer"],
   ];
-  const objective = String(task).split(/[.!?\n]/)[0];
   const id = (routes.find(([pattern]) => pattern.test(objective)) ?? routes.find(([pattern]) => pattern.test(task)))?.[1] ?? "principal-architect";
   return manifest.agents.find(agent => agent.id === id) ?? null;
 }
