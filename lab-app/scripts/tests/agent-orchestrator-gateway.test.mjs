@@ -22,6 +22,10 @@ test("approval status survives missing GitHub labels",()=>{
  const result=summarizeTask({number:33,title:"LAB AGENTE · Estudos",body:"Classificação automática: approval_required.",labels:[]},{total_count:0,workflow_runs:[]},[]);
  assert.equal(result.stage,"approval_required");
 });
+test("explicit production prohibition does not block code work or hide a destructive clause",()=>{
+ assert.equal(classifyTask("Corrigir estudos. Não alterar produção, banco, migrations ou dados reais."),"review");
+ assert.equal(classifyTask("Corrigir estudos. Não alterar produção. Excluir contas."),"approval_required");
+});
 function request(method="POST",body={instruction:"Corrija a interface dos botões em dispositivo móvel."},headers={}){
  return new Request("https://voice.local/v1/tasks",{
   method,headers:{origin,authorization:"Bearer "+token,"content-type":"application/json",...headers},
