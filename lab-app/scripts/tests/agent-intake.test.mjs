@@ -116,7 +116,7 @@ test("issue task parser accepts a preceding BET and CRLF", () => {
   "## Critérios", "- Testar viewport", "",
   "## Política", "- Sem mutação de produção."
  ].join("\r\n");
- assert.equal(extractTaskFromIssueBody(body), "Corrigir o menu móvel com foco acessível.");
+ assert.equal(extractTaskFromIssueBody(body), "Corrigir o menu móvel com foco acessível.\\n\\n## Critérios\\n- Testar viewport");
 });
 
 test("issue task parser returns empty when request section is missing", () => {
