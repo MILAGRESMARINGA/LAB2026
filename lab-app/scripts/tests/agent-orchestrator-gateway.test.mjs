@@ -22,6 +22,13 @@ test("approval status survives missing GitHub labels",()=>{
  const result=summarizeTask({number:33,title:"LAB AGENTE · Estudos",body:"Classificação automática: approval_required.",labels:[]},{total_count:0,workflow_runs:[]},[]);
  assert.equal(result.stage,"approval_required");
 });
+test("reviewed PR remains visible after a failed generation attempt",()=>{
+ const issue={number:43,title:"LAB AGENTE · GC",labels:[]};
+ const runs={total_count:1,workflow_runs:[{id:1,display_title:"LAB coding · Issue 43",status:"completed",conclusion:"failure"}]};
+ const pr={number:46,head:{ref:"agent/task-43-run-1",repo:{full_name:REPO}},state:"open",draft:false};
+ assert.equal(summarizeTask(issue,runs,[pr]).stage,"review");
+ assert.equal(summarizeTask(issue,runs,[{...pr,merged_at:"2026-10-18"}]).stage,"merged");
+});
 test("explicit production prohibition does not block code work or hide a destructive clause",()=>{
  assert.equal(classifyTask("Corrigir estudos. Não alterar produção, banco, migrations ou dados reais."),"review");
  assert.equal(classifyTask("Corrigir estudos. Não alterar produção. Excluir contas."),"approval_required");
