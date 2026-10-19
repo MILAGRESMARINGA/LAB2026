@@ -51,6 +51,8 @@ export function AgentVoiceConsole(){
  const [busy,setBusy]=useState(false);
  const [listening,setListening]=useState(false);
  const [spoken,setSpoken]=useState(true);
+ const spokenRef=useRef(true);
+ useEffect(()=>{spokenRef.current=spoken;if(!spoken)window.speechSynthesis?.cancel()},[spoken]);
  const [status,setStatus]=useState("Diga sua solicitação. Vou registrar o pedido para os agentes.");
  const [tasks,setTasks]=useState<QueueItem[]>([]);
  const [selected,setSelected]=useState<number|null>(null);
@@ -73,7 +75,7 @@ export function AgentVoiceConsole(){
  const recognizer=useRef<NativeRecognizer|null>(null);
  const recognitionSupported=Boolean(listenCtor());
  useEffect(()=>()=>{recognizer.current?.stop();if(typeof window!=="undefined")window.speechSynthesis?.cancel()},[]);
- const announce=(text:string)=>{setStatus(text);replyOut(text,spoken)};
+ const announce=(text:string)=>{setStatus(text);replyOut(text,spokenRef.current)};
  const edit=(text:string)=>{textRef.current=text;setDraft(text)};
  const load=async()=>{
   setBusy(true);
