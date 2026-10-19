@@ -93,6 +93,7 @@ test("BET assigns specialists, review partners, explicit cost authority, and sec
   const bible = routeSpecialist("Criar estudo exegético Pentecostal Arminiano", manifest);
   assert.equal(ux.id, "ux-designer");
   assert.equal(bible.id, "biblical-canon-engineer");
+  assert.equal(routeSpecialist("Melhore a acessibilidade dos botões que expandem cada estudo em StudyGeneratorPanel.tsx. Não alterar banco.", manifest).id, "ux-designer");
   const draft = createTaskBriefing({ task: "Ajustar o menu mobile", issueNumber: 21, agent: ux.id, manifest, approvedBudget: 0 });
   const approved = createTaskBriefing({ task: "Ajustar o menu mobile", issueNumber: 21, agent: ux.id, manifest, approvedBudget: 1.25 });
   const bibleBriefing = createTaskBriefing({ task: "Criar estudo exegético Pentecostal Arminiano", issueNumber: 22, agent: bible.id, manifest, approvedBudget: 1.25 });
