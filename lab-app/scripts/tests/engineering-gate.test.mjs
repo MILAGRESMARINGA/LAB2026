@@ -27,6 +27,10 @@ test("SECURITY DEFINER requires restricted search_path",()=>{
  const safe=`CREATE FUNCTION public.safe_fn() RETURNS integer LANGUAGE sql SECURITY DEFINER SET search_path='' AS $$ SELECT 1 $$;`;
  assert.deepEqual(scanMigrations(safe),[]);
 });
+test("RLS review recognizes private schemas and cannot confuse same-name tables",()=>{
+ assert.deepEqual(scanMigrations("CREATE TABLE private_area.events(id int); ALTER TABLE private_area.events ENABLE ROW LEVEL SECURITY;"),[]);
+ assert.ok(scanMigrations("CREATE TABLE private_area.events(id int); ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;").some(x=>x.includes("private_area.events")));
+});
 test("rejects GRANT ALL to anonymous/public",()=>{
  assert.ok(scanMigrations("GRANT ALL ON public.leaderboards TO anon;").some(x=>x.includes("GRANT ALL")));
 });
