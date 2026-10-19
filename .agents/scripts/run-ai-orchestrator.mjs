@@ -98,7 +98,10 @@ async function previousCompilerFeedback(){
   if(!failed)return [];
   const response=await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/actions/jobs/${failed.id}/logs`,{headers:{authorization:"Bearer "+process.env.GITHUB_TOKEN,accept:"application/vnd.github+json"},signal:AbortSignal.timeout(15000)});
   if(!response.ok)return [];
-  return (await response.text()).split("\n").filter(line=>/error TS\d+:/.test(line)).slice(0,8).map(line=>line.replace(/^\S+\s+/,"").slice(0,500));
+  const logs=(await response.text()).replace(/\u001b\[[0-9;]*m/g,"");
+  const compiler=logs.split("\n").filter(line=>/error TS\d+:/.test(line)).slice(0,8).map(line=>line.replace(/^\S+\s+/,"").slice(0,500));
+  const tests=[...logs.matchAll(/FAIL\s+(tests\/[a-zA-Z0-9_./-]+\.test\.tsx?)\b/g)].slice(0,8).map(match=>"Prior patch failed assertions in "+match[1]+". Preserve baseline behavior and align tests with the requested change.");
+  return [...compiler,...new Set(tests)].slice(0,8);
  }catch{return []}
 }
 async function enforceDailyRunLimit() {

@@ -167,3 +167,25 @@ jobs:
           AGENT_PATCH_FILE: ${{ runner.temp }}/lab-agent-patch/patch.json
           GITHUB_REF: ${{ github.ref }}
         run: node .agents/scripts/publish-agent-pr.mjs
+
+  request-recovery:
+    needs: [generate, verify]
+    if: always() && (needs.generate.result == 'failure' || needs.verify.result == 'failure')
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Queue trusted recovery after failed generation or QA
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node .agents/scripts/recover-agent-run.mjs --dispatch
+
