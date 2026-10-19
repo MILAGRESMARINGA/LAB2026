@@ -37,7 +37,7 @@ async function send(path:string,body?:Record<string,string>){
   method:body?"POST":"GET",
   headers:{authorization:"Bearer "+session.access_token,...(body?{"content-type":"application/json"}:{})},
   ...(body?{body:JSON.stringify(body)}:{}),
-  signal:AbortSignal.timeout(20000)
+  signal:AbortSignal.timeout(path==="/v1/manager"?60000:20000)
  });
  const value=await response.json().catch(()=>({}));
  if(!response.ok)throw Error(value.message||"Não foi possível acessar a fila de tarefas.");
