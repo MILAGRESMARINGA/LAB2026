@@ -14,7 +14,7 @@ Nunca habilitar com `LAB_AGENT_ENABLED=true` antes de configurar origin allowlis
 
 Comandos: `status`, `lembrar: decisão` e `prioridade alta para tarefa 47` (também normal/baixa). Pelo microfone: `gerente, status`. Prioridades organizam a consulta; não reordenam runners já iniciados. Pedidos de código continuam no fluxo separado de registro de tarefas.
 
-A migration `20261019003218_agent_manager_private_memory.sql` cria tabelas com RLS em schema privado, sem grants a leitores ou usuários autenticados. A RPC verifica identidade e a metadata administrativa atual em auth.users a cada chamada; não usa user_metadata nem depende de claims administrativos desatualizados no JWT. O gateway mantém a segunda allowlist independente. Dados são isolados por conta e removidos por cascade ao excluir o usuário.
+A migration `20261019004712_agent_manager_private_memory.sql` cria tabelas com RLS em schema privado, sem grants a leitores ou usuários autenticados. A RPC verifica identidade e a metadata administrativa atual em auth.users a cada chamada; não usa user_metadata nem depende de claims administrativos desatualizados no JWT. O gateway mantém a segunda allowlist independente. Dados são isolados por conta e removidos por cascade ao excluir o usuário.
 
 Reutiliza a chave pública e a sessão do usuário, sem service_role ou armazenamento no navegador. O modo operacional funciona sem IA. Não inserir senhas ou dados pessoais. Padrões comuns de credenciais são rejeitados antes de salvar ou registrar tarefas públicas; a detecção não é um detector universal de segredos.
 
