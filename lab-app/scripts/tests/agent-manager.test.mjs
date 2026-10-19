@@ -58,3 +58,32 @@ test("a duplicate message replays its original reply without side effects",async
  const response=await handle(req({request_id:requestId,message:"status"}),env,fetcher,88400000);
  assert.equal((await response.json()).receipt.reply,"Resposta já registrada");assert.equal(writes,0);
 });
+test("status uses real run and PR evidence and never writes public GitHub data",async()=>{
+ let saved;
+ const fetcher=async(url,init)=>{
+  if(url.includes("/auth/"))return Response.json({id:owner,app_metadata:{labgame_orchestrator_admin:true}});
+  if(url.includes("/rpc/")){
+   const args=JSON.parse(init.body);if(args.p_request_id)saved=args;
+   return Response.json({...empty,priorities:[{issue_number:47,priority:"high"}]});
+  }
+  assert.ok(!init.method||init.method==="GET");
+  if(url.includes("/issues?"))return Response.json([{number:47,title:"LAB AGENTE · Teste",labels:[]}]);
+  if(url.includes("/actions/"))return Response.json({workflow_runs:[{display_title:"LAB coding · Issue 47",status:"in_progress"}]});
+  if(url.includes("/pulls?"))return Response.json([]);
+  throw Error("Unexpected request");
+ };
+ const response=await handle(req({request_id:requestId,message:"status"}),env,fetcher,88500000);
+ const value=await response.json();assert.equal(response.status,200);
+ assert.equal(value.tasks[0].stage,"running");assert.equal(value.tasks[0].priority,"high");
+ assert.match(saved.p_reply,/#47: executando; prioridade alta/);
+});
+test("priority rejects unrelated issues before committing memory",async()=>{
+ let writes=0;
+ const fetcher=async(url,init)=>{
+  if(url.includes("/auth/"))return Response.json({id:owner,app_metadata:{labgame_orchestrator_admin:true}});
+  if(url.includes("/rpc/")){if(JSON.parse(init.body).p_request_id)writes++;return Response.json(empty)}
+  return Response.json({number:47,title:"Unrelated issue"});
+ };
+ const response=await handle(req({request_id:requestId,message:"prioridade alta para tarefa 47"}),env,fetcher,88600000);
+ assert.equal(response.status,404);assert.equal(writes,0);
+});
