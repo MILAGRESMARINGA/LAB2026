@@ -9,7 +9,7 @@ Atualizado em 18/10/2026 (America/Sao_Paulo). Objetivo: pedido por voz/texto →
 | Geração, testes e Draft PR | Comprovado novamente: Issue 47 → run 39180540593 → Draft PR 51. Geração, QA e publicação passaram sem edição manual do patch após as correções de orquestração dos PRs 49 e 50. |
 | Recuperação automática | Controlador explícito publicado no PR 50; sete testes de recuperação passam. Não houve retentativa automática no run de sucesso da Issue 47; recuperação real ainda não homologada. |
 | Retorno ao painel | Consulta de tarefa, execução e PR publicada; recibo persistente e atualização a cada 30 segundos enquanto visível. |
-| Gerente conversacional | Pendente: memória de decisões, decomposição de objetivos, priorização de fila e conversa contínua. Cadastro de tarefas não equivale a gerente autônomo. |
+| Gerente conversacional | Versão operacional: memória privada, decisões, prioridades e consulta de estados por texto/voz. Comandos explícitos, sem inferência. Decomposição de objetivos e conversa livre por IA ainda pendentes. |
 | Revisão, merge e publicação autônomos | Não homologados; o executor abre Draft PR. Revisão e publicação recentes conduzidas pelo operador. |
 | n8n e Datadog | Opcionais; não provisionados nesta entrega. |
 
@@ -17,7 +17,7 @@ Atualizado em 18/10/2026 (America/Sao_Paulo). Objetivo: pedido por voz/texto →
 
 O ensaio da Issue 47 concluiu geração, QA e Draft PR sem edição manual do patch na execução final. Entrada pelo GitHub conectado, não por uma nova sessão de microfone. A projeção do gateway sobre os dados reais retornou stage=draft_pr, run=39180540593 e pr=51. Isso valida a projeção de acompanhamento, mas não substitui um novo ensaio autenticado no navegador.
 
-Próximo marco: gerente conversacional com estado persistente, priorização e decomposição de tarefas; em paralelo, comprovar uma recuperação real quando ocorrer falha elegível. O Draft PR 51 permanece separado de merge e publicação.
+Marco em implementação: memória privada e prioridades no Supabase, com idempotência, separação entre administradores e revogação imediata da autorização no banco. O modo operacional entende comandos explícitos por texto/voz; não representa conversa livre por modelo. Próximo marco: interpretação e decomposição por IA com execução auditada; em paralelo, comprovar uma recuperação real quando ocorrer falha elegível. O Draft PR 51 permanece separado de merge e publicação.
 
 Evidências:
 - Tarefa: https://github.com/MILAGRESMARINGA/LAB2026/issues/47
