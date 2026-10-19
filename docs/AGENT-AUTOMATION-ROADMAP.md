@@ -9,7 +9,7 @@ Atualizado em 18/10/2026 (America/Sao_Paulo). Objetivo: pedido por voz/texto →
 | Geração, testes e Draft PR | Comprovado novamente: Issue 47 → run 39180540593 → Draft PR 51. Geração, QA e publicação passaram sem edição manual do patch após as correções de orquestração dos PRs 49 e 50. |
 | Recuperação automática | Controlador explícito publicado no PR 50; sete testes de recuperação passam. Não houve retentativa automática no run de sucesso da Issue 47; recuperação real ainda não homologada. |
 | Retorno ao painel | Consulta de tarefa, execução e PR publicada; recibo persistente e atualização a cada 30 segundos enquanto visível. |
-| Gerente conversacional | Versão operacional: memória privada, decisões, prioridades e consulta de estados por texto/voz. Comandos explícitos, sem inferência. Decomposição de objetivos e conversa livre por IA ainda pendentes. |
+| Gerente conversacional | Memória privada, decisões, prioridades e estados por texto/voz. Conversa livre e propostas para 12 especialistas implementadas, ativadas somente com OPENAI_API_KEY privada no Railway; configuração e ensaio real ainda pendentes. Comandos operacionais funcionam sem inferência. |
 | Revisão, merge e publicação autônomos | Não homologados; o executor abre Draft PR. Revisão e publicação recentes conduzidas pelo operador. |
 | n8n e Datadog | Opcionais; não provisionados nesta entrega. |
 
@@ -17,7 +17,7 @@ Atualizado em 18/10/2026 (America/Sao_Paulo). Objetivo: pedido por voz/texto →
 
 O ensaio da Issue 47 concluiu geração, QA e Draft PR sem edição manual do patch na execução final. Entrada pelo GitHub conectado, não por uma nova sessão de microfone. A projeção do gateway sobre os dados reais retornou stage=draft_pr, run=39180540593 e pr=51. Isso valida a projeção de acompanhamento, mas não substitui um novo ensaio autenticado no navegador.
 
-Marco em implementação: memória privada e prioridades no Supabase, com idempotência, separação entre administradores e revogação imediata da autorização no banco. O modo operacional entende comandos explícitos por texto/voz; não representa conversa livre por modelo. Próximo marco: interpretação e decomposição por IA com execução auditada; em paralelo, comprovar uma recuperação real quando ocorrer falha elegível. O Draft PR 51 permanece separado de merge e publicação.
+Marco em implementação: memória privada e prioridades no Supabase, com idempotência, separação entre administradores e revogação imediata da autorização no banco. O modo operacional entende comandos explícitos por texto/voz. A conversa por IA propõe etapas e critérios para os especialistas, mas não executa planos; depende da chave privada no Railway e de ensaio real. Próximo marco: transformar propostas em tarefas auditadas, comprovar recuperação real e homologar a publicação. O Draft PR 51 permanece separado de merge e publicação.
 
 Evidências:
 - Tarefa: https://github.com/MILAGRESMARINGA/LAB2026/issues/47
