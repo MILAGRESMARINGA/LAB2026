@@ -96,6 +96,7 @@ BEGIN
  IF p_action NOT IN('state','tick','pause','ended','quiz') OR p_action IS NULL THEN RAISE EXCEPTION 'Ação inválida'; END IF;
  IF p_position IS NULL OR p_position<0 OR p_position='Infinity'::float8 OR p_position='NaN'::float8 OR p_sequence IS NULL OR p_sequence<0 THEN RAISE EXCEPTION 'Posição inválida'; END IF;
  PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(u::text,2116));
+ at_time:=clock_timestamp();
  IF p_run IS NOT NULL AND (NOT EXISTS(SELECT 1 FROM public.lab_v2_runs WHERE id=p_run AND user_id=u AND status='active')
    OR NOT EXISTS(SELECT 1 FROM public.lab_v2_release_controls WHERE enabled)) THEN RAISE EXCEPTION 'Jornada indisponível'; END IF;
  SELECT * INTO c FROM public.lab_video_catalog WHERE video_key=p_video_key;

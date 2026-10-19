@@ -126,8 +126,8 @@ export function BibleProjectPlayer({resource,book,signedIn,onClose,onBonus,runId
   const token=sessionRef.current?.session_id;
   if(!supabase||!eligibleContext||!token||!sessionRef.current?.ready)return Promise.resolve();
   const version=generation.current;
-  if(action==="tick"&&tickPending.current)return queue.current;
-  if(action==="tick")tickPending.current=true;
+  if((action==="tick"||action==="ended")&&tickPending.current)return queue.current;
+  if(action==="tick"||action==="ended")tickPending.current=true;
   const seq=++sequence.current;
   const submittedAnswers=action==="quiz"?{...answers}:null;
   queue.current=queue.current.then(async()=>{
@@ -140,7 +140,7 @@ export function BibleProjectPlayer({resource,book,signedIn,onClose,onBonus,runId
     setFeedback(state.feedback??[]);
     if(state.already_awarded){onBonus(Number(state.total_xp??0));setMessage(state.awarded?"Panorama concluído: +5 XP!":"Este panorama já recebeu XP.")}
    }
-  }).catch(()=>{if(alive.current&&version===generation.current)setMessage("Conexão interrompida. Reabra o panorama para retomar.")}).finally(()=>{if(action==="tick"&&version===generation.current)tickPending.current=false});
+  }).catch(()=>{if(alive.current&&version===generation.current)setMessage("Conexão interrompida. Reabra o panorama para retomar.")}).finally(()=>{if((action==="tick"||action==="ended")&&version===generation.current)tickPending.current=false});
   return queue.current;
  };
  useEffect(()=>{
