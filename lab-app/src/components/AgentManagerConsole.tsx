@@ -2,7 +2,7 @@ import {useEffect,useRef,useState} from "react";
 import {MessageSquare,Send,RefreshCw} from "lucide-react";
 
 type ManagerEvent={id:number;request_id:string;message:string;reply:string;kind:string;created_at:string};
-type ManagerState={events:ManagerEvent[];priorities:{issue_number:number;priority:string}[];history_partial:boolean;receipt?:{reply:string}|null};
+type ManagerState={events:ManagerEvent[];priorities:{issue_number:number;priority:string}[];history_partial:boolean;ai_available?:boolean;receipt?:{reply:string}|null};
 type Props={request:(path:string,body?:Record<string,string>)=>Promise<ManagerState>;onReply:(text:string)=>void;onTask:(number:number)=>void;voiceMessage:{id:string;text:string}|null};
 export function AgentManagerConsole({request,onReply,onTask,voiceMessage}:Props){
  const [state,setState]=useState<ManagerState|null>(null);
@@ -47,7 +47,7 @@ export function AgentManagerConsole({request,onReply,onTask,voiceMessage}:Props)
  return <section className="agent-manager" aria-label="Conversa com o gerente">
   <h3><MessageSquare size={19} aria-hidden="true"/> Gerente · Memória e prioridades</h3>
   <p>Guarde decisões e acompanhe a fila. Experimente: “status”, “lembrar: validar os vídeos antes de publicar” ou “prioridade alta para tarefa 47”. Pelo microfone, comece com “gerente”.</p>
-  <p className="small-caption">Modo operacional: decisões e prioridades ficam na sua memória privada. Não geram código nem alteram a ordem de execuções já iniciadas. A interpretação livre e a decomposição por IA ainda não estão disponíveis.</p>
+  <p className="small-caption">{state?.ai_available?"Conversa por IA disponível: posso esclarecer objetivos e propor etapas para os especialistas. Propostas não são executadas automaticamente. As mensagens e o contexto necessário são enviados ao provedor de IA.":"Modo operacional: conversa livre por IA ainda não está configurada. Posso guardar decisões, organizar prioridades e consultar a fila por comandos explícitos."} Decisões e prioridades ficam na sua memória privada e não alteram execuções já iniciadas.</p>
   {state&&state.events.length===0&&<p>Nenhuma conversa salva. Suas próximas mensagens aparecerão aqui ao voltar.</p>}
   {state&&state.events.length>0&&<ol className="agent-manager-history" aria-label="Histórico privado da conversa">
    {state.events.map(event=><li key={event.request_id}>
