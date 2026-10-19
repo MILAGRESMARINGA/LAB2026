@@ -34,8 +34,8 @@ export function GeneratedStudyCard({study}:{study:GeneratedStudy}){
  const contentId=useId();
  return <article className="generated-study">
   <div className="generated-study-meta"><span className="eyebrow">CAMADA {study.layer} · {study.cache?"CACHE PUBLICADO":"NOVO CACHE"}</span></div>
-  <h3><button type="button" className="generated-study-toggle" aria-expanded={open} aria-controls={contentId} onClick={()=>setOpen(value=>!value)}>
-   <span>{study.title}</span><span className="generated-study-toggle-action"><BookOpen size={18} aria-hidden="true"/><span>{open?"Recolher estudo":"Abrir conteúdo e referências bíblicas"}</span><ChevronDown className="generated-study-toggle-chevron" size={18} aria-hidden="true"/></span>
+  <h3><button type="button" className="generated-study-toggle" aria-label={`${open?"Recolher estudo":"Abrir estudo"}: ${study.title}`} aria-expanded={open} aria-controls={contentId} onClick={()=>setOpen(value=>!value)}>
+   <span>{study.title}</span><span className="generated-study-toggle-action"><BookOpen size={18} aria-hidden="true"/><span>{open?"Recolher estudo":"Abrir estudo"}</span><ChevronDown className="generated-study-toggle-chevron" size={18} aria-hidden="true"/></span>
   </button></h3>
   <div id={contentId} className="generated-study-content" hidden={!open}>
    <section className="generated-study-references" aria-label="Referências bíblicas">

@@ -10,15 +10,25 @@ const study:GeneratedStudy={
 };
 
 describe("cartão acessível de estudo bíblico",()=>{
- it("oferece um controle com estado inicial fechado e identifica conteúdo e referências",()=>{
+ it("oferece um controle com nome de ação e título, estado inicial fechado e conteúdo identificado",()=>{
   const html=renderToStaticMarkup(createElement(GeneratedStudyCard,{study}));
   expect(html).toContain('aria-expanded="false"');
-  expect(html).toContain("Abrir conteúdo e referências bíblicas");
+  expect(html).toContain('aria-label="Abrir estudo: A promessa e a fé"');
+  expect(html).toContain("Abrir estudo");
   expect(html).toContain('aria-controls=');
   expect(html).toContain('aria-label="Referências bíblicas"');
   expect(html).toContain("Gênesis 12");
   expect(html).toContain("Gálatas 3");
   expect(html).toContain("Resumo fictício.");
   expect(html).toContain("hidden=");
+ });
+
+ it("dá nomes acessíveis distintos a estudos com títulos diferentes",()=>{
+  const otherStudy:GeneratedStudy={...study,study_key:"other-study",title:"O chamado de Abraão"};
+  const html=[study,otherStudy]
+   .map(item=>renderToStaticMarkup(createElement(GeneratedStudyCard,{study:item})))
+   .join("");
+  expect(html).toContain('aria-label="Abrir estudo: A promessa e a fé"');
+  expect(html).toContain('aria-label="Abrir estudo: O chamado de Abraão"');
  });
 });
