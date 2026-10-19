@@ -6,6 +6,7 @@
 import {createServer} from "node:http";
 import {pathToFileURL} from "node:url";
 import {managerInstruction,managerIntent,managerReply,orderedTasks} from "./manager.mjs";
+import {converseManager} from "./manager-ai.mjs";
 
 export const REPO="MILAGRESMARINGA/LAB2026";
 export const SUPABASE_ORIGIN="https://azejfxvaamgkmfmwdzjn.supabase.co";
@@ -14,6 +15,16 @@ const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]
 const MAX_TEXT=3000;
 const incident=/\b(exclu(?:ir|s[aã]o)|apag(?:ar|ue)|delet(?:ar|e)|remov(?:er|a)|migr(?:ar|a[cç][aã]o)|produ[cç][aã]o|production|deploy|dom[ií]nio|auth|senha|password|chave|token|rls|permiss[aã]o|custo|pagar|comprar|plano pago|assinatura|supabase|billing)\b/i;
 const quotas=new Map();
+const managerPending=new Map();
+async function singleManagerMessage(key,message,work){
+ const current=managerPending.get(key);
+ if(current){
+  if(current.message!==message)throw Error("Mensagem inválida.");
+  return (await current.promise).clone();
+ }
+ const promise=work();managerPending.set(key,{message,promise});
+ try{return (await promise).clone()}finally{managerPending.delete(key)}
+}
 
 export function classifyTask(text){
  // Recognize only explicit, narrow prohibitions; other risky clauses remain checked.
@@ -143,25 +154,26 @@ export async function handle(request,env=process.env,fetcher=fetch,now=Date.now(
  if(!limitUser(user.id,now,request.method))return json(429,{message:"Limite temporário: aguarde um minuto."},origin,config);
  try{
   if(manager){
-   if(request.method==="GET")return json(200,await managerState(token,config,fetcher),origin,config);
+   if(request.method==="GET")return json(200,{...await managerState(token,config,fetcher),ai_available:Boolean(env.OPENAI_API_KEY)},origin,config);
    const raw=await request.text();
    if(Buffer.byteLength(raw,"utf8")>MAX_REQUEST_BYTES)return json(413,{message:"Pedido muito grande."},origin,config);
    let payload;try{payload=JSON.parse(raw)}catch{return json(400,{message:"JSON inválido."},origin,config)}
    if(!UUID.test(payload?.request_id??""))return json(400,{message:"Identificador da mensagem inválido."},origin,config);
    const text=managerInstruction(payload.message);
    const intent=managerIntent(text);
+   return await singleManagerMessage(user.id+":"+payload.request_id,text,async()=>{
    const state=await managerState(token,config,fetcher);
    const previous=state.events?.find(event=>event.request_id===payload.request_id);
    if(previous){
     if(previous.message!==text)return json(409,{message:"Esta mensagem já foi enviada com outro conteúdo."},origin,config);
-    return json(200,{...state,receipt:{request_id:previous.request_id,reply:previous.reply}},origin,config);
+    return json(200,{...state,ai_available:Boolean(env.OPENAI_API_KEY),receipt:{request_id:previous.request_id,reply:previous.reply}},origin,config);
    }
    let evidence=[];
    if(intent.kind==="priority"){
     const issue=await gh("/issues/"+intent.issue,{},config,fetcher);
     if(issue.pull_request||!issue.title?.startsWith("LAB AGENTE · "))return json(404,{message:"Tarefa não encontrada."},origin,config);
    }
-   if(intent.kind==="status"){
+   if(intent.kind==="status"||(intent.kind==="conversation"&&env.OPENAI_API_KEY)){
     const [issues,runs,pulls]=await Promise.all([
      gh("/issues?state=open&sort=created&direction=desc&per_page=100",{},config,fetcher),
      gh("/actions/workflows/ai-agent-orchestrator.yml/runs?per_page=100",{},config,fetcher),
@@ -170,9 +182,12 @@ export async function handle(request,env=process.env,fetcher=fetch,now=Date.now(
     evidence=orderedTasks(issues.filter(issue=>!issue.pull_request&&issue.title?.startsWith("LAB AGENTE · "))
      .map(issue=>summarizeTask(issue,runs,pulls)),state.priorities??[]);
    }
+   const reply=intent.kind==="conversation"&&env.OPENAI_API_KEY?
+    await converseManager({key:env.OPENAI_API_KEY,message:text,events:state.events,tasks:evidence},fetcher):managerReply(intent,evidence);
    const saved=await managerState(token,config,fetcher,{p_request_id:payload.request_id,p_message:text,
-    p_reply:managerReply(intent,evidence),p_kind:intent.kind,p_issue:intent.issue??null,p_priority:intent.priority??null});
-   return json(200,{...saved,tasks:evidence},origin,config);
+    p_reply:reply,p_kind:intent.kind,p_issue:intent.issue??null,p_priority:intent.priority??null});
+   return json(200,{...saved,tasks:evidence,ai_available:Boolean(env.OPENAI_API_KEY)},origin,config);
+   });
   }
   if(detail){
    const number=Number(detail[1]);
