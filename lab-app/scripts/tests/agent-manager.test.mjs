@@ -87,3 +87,27 @@ test("priority rejects unrelated issues before committing memory",async()=>{
  const response=await handle(req({request_id:requestId,message:"prioridade alta para tarefa 47"}),env,fetcher,88600000);
  assert.equal(response.status,404);assert.equal(writes,0);
 });
+test("concurrent retries share one AI response and one private commit",async()=>{
+ let aiCalls=0,writes=0;let release;
+ const barrier=new Promise(resolve=>{release=resolve});
+ const fetcher=async(url,init)=>{
+  if(url.includes("/auth/"))return Response.json({id:owner,app_metadata:{labgame_orchestrator_admin:true}});
+  if(url.includes("/rpc/")){
+   const args=JSON.parse(init.body);
+   if(args.p_request_id){writes++;return Response.json({...empty,receipt:{reply:args.p_reply}})}
+   await barrier;return Response.json(empty);
+  }
+  if(url.includes("api.openai.com")){aiCalls++;return Response.json({output_text:JSON.stringify({reply:"Proponho testar a interface antes da revisão.",steps:[]})})}
+  if(url.includes("/actions/"))return Response.json({workflow_runs:[]});
+  return Response.json([]);
+ };
+ const body={request_id:requestId,message:"Como devemos organizar a próxima melhoria?"};
+ const first=handle(req(body),{...env,OPENAI_API_KEY:"test-provider-only"},fetcher,88700000);
+ const second=handle(req(body),{...env,OPENAI_API_KEY:"test-provider-only"},fetcher,88700000);
+ release();
+ const responses=await Promise.all([first,second]);
+ assert.deepEqual(responses.map(r=>r.status),[200,200]);
+ assert.equal(aiCalls,1);assert.equal(writes,1);
+ const data=await responses[0].json();assert.equal(data.ai_available,true);
+ assert.ok(!JSON.stringify(data).includes("test-provider-only"));
+});
