@@ -53,7 +53,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Set up Node 20 LTS
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
       - name: Verify pinned Supabase CLI and release commands without credentials
@@ -152,7 +152,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Set up Node 20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
       - name: Install LAB client SDK
@@ -272,7 +272,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Set up Node 20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
       - name: Validate manifest, prompts and shared guardrails
@@ -299,7 +299,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Set up Node 20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
       - name: Publish evidence summary and enforce green gates
