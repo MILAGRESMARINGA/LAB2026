@@ -1341,5 +1341,5 @@ SELECT 'LAB STUDY GENERATION AUTH, CACHE, IDEMPOTENCY, LAYERS AND RATE LIMITS PA
 
 -- Content-only expansion is tested after the original six-study assertions.
 \i scripts/tests/p1-study-seed-smoke.sql
-\i supabase/migrations/20261019003218_agent_manager_private_memory.sql
+\i supabase/migrations/20261019004712_agent_manager_private_memory.sql
 \i scripts/tests/agent-manager-private-smoke.sql
