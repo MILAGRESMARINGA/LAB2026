@@ -3,7 +3,7 @@ export function managerInstruction(value){
  if(typeof value!=="string")throw Error("Mensagem inválida.");
  const text=value.normalize("NFC").replace(/\p{C}/gu," ").trim();
  if(text.length<2||text.length>3000)throw Error("A mensagem deve ter de 2 a 3000 caracteres.");
- if(/\b(?:sk-(?:proj-|svcacct-)?[a-z0-9_-]{12,}|gh[pousr]_[a-z0-9_]{15,}|github_pat_[a-z0-9_]{15,}|eyJ[a-z0-9_-]{15,}\.[a-z0-9_-]+\.[a-z0-9_-]+)\b|-----BEGIN [A-Z ]*PRIVATE KEY-----|(?:senha|password|api[_ -]?key|token|service_role)\s*[:=]\s*\S{4,}/i.test(text))throw Error("Não envie senhas, tokens ou chaves. A mensagem não foi salva.");
+ if(/\b(?:sk-(?:proj-|svcacct-)?[a-z0-9_-]{12,}|sb_secret_[a-z0-9_-]{10,}|gh[pousr]_[a-z0-9_]{15,}|github_pat_[a-z0-9_]{15,}|eyJ[a-z0-9_-]{15,}\.[a-z0-9_-]+\.[a-z0-9_-]+)\b|-----BEGIN [A-Z ]*PRIVATE KEY-----|(?:senha|password|api[_ -]?key|token|service_role)\s*[:=]\s*\S{4,}/i.test(text))throw Error("Não envie senhas, tokens ou chaves. A mensagem não foi salva.");
  return text;
 }
 export function managerIntent(text){
