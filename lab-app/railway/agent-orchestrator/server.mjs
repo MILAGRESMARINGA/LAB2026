@@ -5,6 +5,7 @@
  */
 import {createServer} from "node:http";
 import {pathToFileURL} from "node:url";
+import {managerInstruction,managerIntent,managerReply,orderedTasks} from "./manager.mjs";
 
 export const REPO="MILAGRESMARINGA/LAB2026";
 export const SUPABASE_ORIGIN="https://azejfxvaamgkmfmwdzjn.supabase.co";
@@ -35,7 +36,7 @@ export function cleanRequest(value){
  if(typeof value!=="string")throw Error("Pedido inválido.");
  const text=value.normalize("NFC").replace(/\p{C}/gu," ").trim();
  if(text.length<15||text.length>MAX_TEXT)throw Error("O pedido deve ter de 15 a 3000 caracteres.");
- return text;
+ return managerInstruction(text);
 }
 function json(status,body,origin,config){
  return new Response(JSON.stringify(body),{status,headers:{
@@ -45,12 +46,12 @@ function json(status,body,origin,config){
   ...(origin&&config.origins.has(origin)?{"access-control-allow-origin":origin}: {})
  }});
 }
-function limitUser(id,at){
+function limitUser(id,at,method){
  const span=Math.floor(at/60000);
- const key=id+":"+span;
+ const key=id+":"+method+":"+span;
  if(quotas.size>500)quotas.clear();
  const n=(quotas.get(key)??0)+1;quotas.set(key,n);
- return n<=5; // No uncontrolled CI/runs from repeated voice transcripts.
+ return n<=(method==="GET"?20:5); // Reads never launch runs; mutations remain bounded.
 }
 async function getAdmin(token,config,fetcher){
  const r=await fetcher(SUPABASE_ORIGIN+"/auth/v1/user",{
@@ -77,6 +78,14 @@ async function gh(path,options,config,fetcher){
   },signal:AbortSignal.timeout(15000)
  });
  if(!r.ok)throw Error("GitHub request failed (HTTP "+r.status+")");
+ return r.json();
+}
+async function managerState(token,config,fetcher,args={}){
+ const r=await fetcher(SUPABASE_ORIGIN+"/rest/v1/rpc/lab_agent_manager_state",{
+  method:"POST",headers:{apikey:config.apiKey,authorization:"Bearer "+token,"content-type":"application/json"},
+  body:JSON.stringify(args),signal:AbortSignal.timeout(15000)
+ });
+ if(!r.ok)throw Error("Private manager storage unavailable");
  return r.json();
 }
 // Read-only projection of GitHub evidence. Never infer success from a green
@@ -120,7 +129,8 @@ export async function handle(request,env=process.env,fetcher=fetch,now=Date.now(
   }});
  }
  const detail=/^\/v1\/tasks\/([1-9][0-9]{0,8})$/.exec(path);
- if((path!=="/v1/tasks"&&!detail)||!["GET","POST"].includes(request.method)||(detail&&request.method!=="GET"))
+ const manager=path==="/v1/manager";
+ if((path!=="/v1/tasks"&&!detail&&!manager)||!["GET","POST"].includes(request.method)||(detail&&request.method!=="GET"))
   return json(404,{message:"Rota não encontrada."},origin,config);
  if(!config.enabled||!config.githubToken||!config.apiKey||config.admins.size===0||config.origins.size===0)
   return json(503,{message:"Orquestrador ainda não foi habilitado."},origin,config);
@@ -130,8 +140,40 @@ export async function handle(request,env=process.env,fetcher=fetch,now=Date.now(
  let user;
  try{user=await getAdmin(token,config,fetcher)}catch{return json(503,{message:"Não foi possível verificar a sessão."},origin,config)}
  if(!user)return json(403,{message:"Sua conta não tem permissão para criar tarefas."},origin,config);
- if(!limitUser(user.id,now))return json(429,{message:"Limite temporário: aguarde um minuto."},origin,config);
+ if(!limitUser(user.id,now,request.method))return json(429,{message:"Limite temporário: aguarde um minuto."},origin,config);
  try{
+  if(manager){
+   if(request.method==="GET")return json(200,await managerState(token,config,fetcher),origin,config);
+   const raw=await request.text();
+   if(Buffer.byteLength(raw,"utf8")>MAX_REQUEST_BYTES)return json(413,{message:"Pedido muito grande."},origin,config);
+   let payload;try{payload=JSON.parse(raw)}catch{return json(400,{message:"JSON inválido."},origin,config)}
+   if(!UUID.test(payload?.request_id??""))return json(400,{message:"Identificador da mensagem inválido."},origin,config);
+   const text=managerInstruction(payload.message);
+   const intent=managerIntent(text);
+   const state=await managerState(token,config,fetcher);
+   const previous=state.events?.find(event=>event.request_id===payload.request_id);
+   if(previous){
+    if(previous.message!==text)return json(409,{message:"Esta mensagem já foi enviada com outro conteúdo."},origin,config);
+    return json(200,{...state,receipt:{request_id:previous.request_id,reply:previous.reply}},origin,config);
+   }
+   let evidence=[];
+   if(intent.kind==="priority"){
+    const issue=await gh("/issues/"+intent.issue,{},config,fetcher);
+    if(issue.pull_request||!issue.title?.startsWith("LAB AGENTE · "))return json(404,{message:"Tarefa não encontrada."},origin,config);
+   }
+   if(intent.kind==="status"){
+    const [issues,runs,pulls]=await Promise.all([
+     gh("/issues?state=open&sort=created&direction=desc&per_page=100",{},config,fetcher),
+     gh("/actions/workflows/ai-agent-orchestrator.yml/runs?per_page=100",{},config,fetcher),
+     gh("/pulls?state=all&per_page=100",{},config,fetcher)
+    ]);
+    evidence=orderedTasks(issues.filter(issue=>!issue.pull_request&&issue.title?.startsWith("LAB AGENTE · "))
+     .map(issue=>summarizeTask(issue,runs,pulls)),state.priorities??[]);
+   }
+   const saved=await managerState(token,config,fetcher,{p_request_id:payload.request_id,p_message:text,
+    p_reply:managerReply(intent,evidence),p_kind:intent.kind,p_issue:intent.issue??null,p_priority:intent.priority??null});
+   return json(200,{...saved,tasks:evidence},origin,config);
+  }
   if(detail){
    const number=Number(detail[1]);
    const issue=await gh("/issues/"+number,{},config,fetcher);
@@ -170,9 +212,9 @@ export async function handle(request,env=process.env,fetcher=fetch,now=Date.now(
   })},config,fetcher);
   return json(201,{number:issue.number,url:issue.html_url,classification},origin,config);
  }catch(e){
-  if(e?.message?.startsWith("O pedido")||e?.message==="Pedido inválido.")
+  if(/^(O pedido|A mensagem|Mensagem inválida|Não envie)/.test(e?.message??"")||e?.message==="Pedido inválido.")
    return json(400,{message:e.message},origin,config);
-  return json(502,{message:"Falha na comunicação com o GitHub. Nenhuma execução foi confirmada."},origin,config);
+  return json(502,{message:manager?"Não foi possível confirmar a conversa. Tente novamente sem alterar a mensagem para evitar duplicação.":"Falha na comunicação com o GitHub. Nenhuma execução foi confirmada."},origin,config);
  }
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
