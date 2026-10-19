@@ -1,6 +1,7 @@
 {
   "ux-designer": [
     "lab-app/src/components/StudyGeneratorPanel.tsx",
+    "lab-app/tests/study-generator-panel.test.ts",
     "lab-app/src/components/StudyLayerRoadmap.tsx",
     "lab-app/src/features/study-generate.ts",
     "lab-app/src/domain/studies.ts",
