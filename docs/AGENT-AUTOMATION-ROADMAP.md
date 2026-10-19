@@ -6,8 +6,8 @@ Atualizado em 18/10/2026 (America/Sao_Paulo). Objetivo: pedido por voz/texto →
 |---|---|
 | Canal administrativo | Publicado; JWT Supabase, app_metadata administrativa, allowlist de usuário e CORS no gateway Railway. Serviço online não comprova execução concluída. |
 | Intake e briefing | Acionamento automático nas Issues 33, 43 e 47; contratos de 12 especialistas. Nem todos têm execução real homologada. |
-| Geração, testes e Draft PR | Fluxo automático na Issue 33 / PR 41; ajustes de revisão e publicação realizados pelo operador. |
-| Recuperação automática | Em homologação. A Issue 47 expôs identificação incorreta do nome dinâmico da execução e roteamento de acessibilidade para teologia; correções no PR 49. Teste unitário não equivale a recuperação real comprovada. |
+| Geração, testes e Draft PR | Comprovado novamente: Issue 47 → run 39180540593 → Draft PR 51. Geração, QA e publicação passaram sem edição manual do patch após as correções de orquestração dos PRs 49 e 50. |
+| Recuperação automática | Controlador explícito publicado no PR 50; sete testes de recuperação passam. Não houve retentativa automática no run de sucesso da Issue 47; recuperação real ainda não homologada. |
 | Retorno ao painel | Consulta de tarefa, execução e PR publicada; recibo persistente e atualização a cada 30 segundos enquanto visível. |
 | Gerente conversacional | Pendente: memória de decisões, decomposição de objetivos, priorização de fila e conversa contínua. Cadastro de tarefas não equivale a gerente autônomo. |
 | Revisão, merge e publicação autônomos | Não homologados; o executor abre Draft PR. Revisão e publicação recentes conduzidas pelo operador. |
@@ -15,7 +15,16 @@ Atualizado em 18/10/2026 (America/Sao_Paulo). Objetivo: pedido por voz/texto →
 
 ## Próximo aceite
 
-Executar a Issue 47 pelo intake com o código corrigido e acompanhar geração, QA e Draft PR sem editar manualmente o patch produzido. Se houver falha elegível, comprovar recuperação automática; se a primeira tentativa passar, registrar que recuperação permanece sem ensaio real. A entrada deste ensaio foi feita pelo GitHub conectado, não por uma nova sessão de microfone no navegador.
+O ensaio da Issue 47 concluiu geração, QA e Draft PR sem edição manual do patch na execução final. Entrada pelo GitHub conectado, não por uma nova sessão de microfone. A projeção do gateway sobre os dados reais retornou stage=draft_pr, run=39180540593 e pr=51. Isso valida a projeção de acompanhamento, mas não substitui um novo ensaio autenticado no navegador.
+
+Próximo marco: gerente conversacional com estado persistente, priorização e decomposição de tarefas; em paralelo, comprovar uma recuperação real quando ocorrer falha elegível. O Draft PR 51 permanece separado de merge e publicação.
+
+Evidências:
+- Tarefa: https://github.com/MILAGRESMARINGA/LAB2026/issues/47
+- Executor: https://github.com/MILAGRESMARINGA/LAB2026/actions/runs/39180540593
+- Draft PR sem edição manual do patch: https://github.com/MILAGRESMARINGA/LAB2026/pull/51
+- CI completo sobre o mesmo head 577931fcf810340081497a2a500273892b6148f7: https://github.com/MILAGRESMARINGA/LAB2026/actions/runs/39180626575 (consultar estado real).
+- Correções do controlador: PRs 49 e 50, ambos integrados após CI completo.
 
 ## Configuração vigente
 
