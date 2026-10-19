@@ -715,3 +715,12 @@ body.video-modal-open{overflow:hidden}
 .study-reward-feedback{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid #a4c65b;border-radius:14px;background:linear-gradient(120deg,#2d4430,#23393c);color:#dfff96}.study-reward-feedback>svg{color:#f7d45c;flex:0 0 auto}.study-reward-feedback strong,.study-reward-feedback span{display:block}.study-reward-feedback span{color:#b8caca;font-size:12px;line-height:1.45;margin-top:4px}
 @media(max-width:650px){.study-layer-list{grid-template-columns:1fr}.study-layer-card{min-height:auto}.generated-study-meta{flex-direction:column;gap:5px}}
 .agent-manager{margin:16px 0 24px;padding:18px;border:1px solid #48636a;border-radius:18px;background:#182e35;min-width:0}.agent-manager h3{display:flex;align-items:center;gap:8px}.agent-manager-history{list-style:none;margin:16px 0;padding:0;max-height:420px;overflow:auto;overscroll-behavior:contain}.agent-manager-history li{padding:14px 0;border-bottom:1px solid #48636a}.agent-manager-history p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6}.agent-message-input{display:block;box-sizing:border-box;width:100%;max-width:100%;min-height:104px;margin:10px 0 14px;padding:14px;border:1px solid #6c858b;border-radius:12px;background:#11262e;color:#eef6f5;font:inherit;line-height:1.5;resize:vertical}.agent-message-input:focus-visible{outline:3px solid #b6df56;outline-offset:3px}.agent-message-input::placeholder{color:#aec3c7}.agent-manager .ps-actions{flex-wrap:wrap}
+
+/* Panorama progress and comprehension stay usable on narrow screens. */
+.video-frame mux-player{display:block;width:100%;height:100%;--media-object-fit:contain}
+.video-reward progress{width:100%;height:16px;accent-color:var(--lime,#a9d633)}
+.video-reward fieldset{min-width:0;margin:18px 0;padding:16px;border:1px solid #6d858d;border-radius:14px}
+.video-reward legend{font-weight:700;white-space:normal;overflow-wrap:anywhere}
+.video-quiz-option{display:flex;align-items:flex-start;gap:12px;margin:8px 0;padding:12px;border:1px solid #536b74;border-radius:10px;cursor:pointer}
+.video-quiz-option input{flex:0 0 auto;width:20px;height:20px;margin:2px 0;accent-color:#b3df47}
+.video-quiz-option:focus-within{outline:3px solid #b3df47;outline-offset:2px}
