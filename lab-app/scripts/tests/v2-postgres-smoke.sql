@@ -6,7 +6,7 @@ CREATE ROLE authenticated NOLOGIN;
 CREATE ROLE service_role NOLOGIN BYPASSRLS;
 CREATE SCHEMA auth;
 GRANT USAGE ON SCHEMA auth TO authenticated;
-CREATE TABLE auth.users(id uuid PRIMARY KEY,last_sign_in_at timestamptz DEFAULT now());
+CREATE TABLE auth.users(id uuid PRIMARY KEY,last_sign_in_at timestamptz DEFAULT now(),raw_app_meta_data jsonb NOT NULL DEFAULT '{}'::jsonb);
 -- Disposable Auth stub: a fresh session is tied to the JWT identity.
 CREATE TABLE auth.sessions(id uuid PRIMARY KEY,user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,created_at timestamptz NOT NULL DEFAULT now());
 CREATE OR REPLACE FUNCTION auth.fake_session() RETURNS trigger LANGUAGE plpgsql AS $fake$
@@ -1341,3 +1341,5 @@ SELECT 'LAB STUDY GENERATION AUTH, CACHE, IDEMPOTENCY, LAYERS AND RATE LIMITS PA
 
 -- Content-only expansion is tested after the original six-study assertions.
 \i scripts/tests/p1-study-seed-smoke.sql
+\i supabase/migrations/20261019003218_agent_manager_private_memory.sql
+\i scripts/tests/agent-manager-private-smoke.sql
