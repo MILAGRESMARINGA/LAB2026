@@ -91,6 +91,27 @@ try{
  assert.ifError(ownErr);
  assert.deepEqual(ownPrefs,{enabled:true,reading_popup:true,reading_email:false});
 
+ // Private manager memory: real user JWTs, fresh server-side admin checks.
+ const {error:managerDenied}=await a.rpc("lab_agent_manager_state");
+ assert.equal(managerDenied?.code,"42501");
+ for(const id of ids.slice(0,2)){
+  const {error}=await admin.auth.admin.updateUserById(id,{app_metadata:{labgame_orchestrator_admin:true}});
+  assert.ifError(error);
+ }
+ const managerArgs={p_request_id:crypto.randomUUID(),p_message:"lembrar: validar interface local",p_reply:"Decisão de teste salva",p_kind:"decision"};
+ const {data:memory,error:memoryError}=await a.rpc("lab_agent_manager_state",managerArgs);
+ assert.ifError(memoryError);assert.equal(memory.events.length,1);
+ const {data:replayed,error:replayedError}=await a.rpc("lab_agent_manager_state",managerArgs);
+ assert.ifError(replayedError);assert.equal(replayed.events.length,1);
+ const {data:otherMemory,error:otherMemoryError}=await b.rpc("lab_agent_manager_state");
+ assert.ifError(otherMemoryError);assert.deepEqual(otherMemory.events,[]);
+ for(const id of ids.slice(0,2)){
+  const {error}=await admin.auth.admin.updateUserById(id,{app_metadata:{labgame_orchestrator_admin:false}});
+  assert.ifError(error);
+ }
+ const {error:revokedManager}=await a.rpc("lab_agent_manager_state");
+ assert.equal(revokedManager?.code,"42501","Revocation takes effect without refreshing JWT claims");
+
  const {data:noStage,error:notReady}=await a.rpc("lab_v2_start",{p_plan_length:365});
  assert.equal(noStage,null);
  assert.ok(notReady?.message?.includes("não liberada"),

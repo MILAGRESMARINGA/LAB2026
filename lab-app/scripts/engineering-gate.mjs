@@ -72,10 +72,11 @@ export function scanSource(text,file="<source>"){
 /** Consolidated SQL review across migration revisions: later migrations may apply RLS. */
 export function scanMigrations(sql){
  const messages=[];
- const tables=[...sql.matchAll(/\bCREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:public\.)?([a-z][a-z_0-9]*)/gi)].map(m=>m[1]);
+ const tables=[...sql.matchAll(/\bCREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?((?:[a-z][a-z_0-9]*\.)?[a-z][a-z_0-9]*)/gi)].map(m=>m[1].toLowerCase());
  for(const table of new Set(tables)){
-  const escaped=table; // SQL identifiers are restricted to [a-z_0-9] above.
-  const re=new RegExp("\\bALTER\\s+TABLE\\s+(?:public\\.)?"+escaped+"\\s+ENABLE\\s+ROW\\s+LEVEL\\s+SECURITY\\b","i");
+  const qualified=table.includes(".")?table:"public."+table;
+  const escaped=qualified.startsWith("public.")?"(?:public\\.)?"+qualified.slice(7):qualified.replace(".","\\.");
+  const re=new RegExp("\\bALTER\\s+TABLE\\s+"+escaped+"\\s+ENABLE\\s+ROW\\s+LEVEL\\s+SECURITY\\b","i");
   if(!re.test(sql))messages.push("Tabela sem RLS explícita: "+table);
  }
  const declarations=[...sql.matchAll(/\bCREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+(?:public\.)?([a-z][a-z_0-9]*)\s*\(/gi)];

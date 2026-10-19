@@ -1,6 +1,7 @@
 import {useEffect,useRef,useState} from "react";
 import {Bot,Mic,MicOff,Send,Volume2,VolumeX,RefreshCw,ExternalLink} from "lucide-react";
 import {supabase} from "../lib/supabase";
+import {AgentManagerConsole} from "./AgentManagerConsole";
 
 type VoiceResult={results:ArrayLike<ArrayLike<{transcript:string}>>};
 type NativeRecognizer={
@@ -27,7 +28,7 @@ function replyOut(message:string,enabled:boolean){
  utterance.lang="pt-BR";utterance.rate=1;utterance.pitch=1;
  window.speechSynthesis.speak(utterance);
 }
-async function send(path:string,body?:{instruction:string}){
+async function send(path:string,body?:Record<string,string>){
  if(!api||!/^https:\/\//.test(api))throw Error("Servidor dos agentes ainda não foi habilitado.");
  if(!supabase)throw Error("Entre em sua conta do LABGame.");
  const {data:{session},error}=await supabase.auth.getSession();
@@ -36,7 +37,7 @@ async function send(path:string,body?:{instruction:string}){
   method:body?"POST":"GET",
   headers:{authorization:"Bearer "+session.access_token,...(body?{"content-type":"application/json"}:{})},
   ...(body?{body:JSON.stringify(body)}:{}),
-  signal:AbortSignal.timeout(20000)
+  signal:AbortSignal.timeout(path==="/v1/manager"?60000:20000)
  });
  const value=await response.json().catch(()=>({}));
  if(!response.ok)throw Error(value.message||"Não foi possível acessar a fila de tarefas.");
@@ -50,12 +51,15 @@ export function AgentVoiceConsole(){
  const [busy,setBusy]=useState(false);
  const [listening,setListening]=useState(false);
  const [spoken,setSpoken]=useState(true);
+ const spokenRef=useRef(true);
+ useEffect(()=>{spokenRef.current=spoken;if(!spoken)window.speechSynthesis?.cancel()},[spoken]);
  const [status,setStatus]=useState("Diga sua solicitação. Vou registrar o pedido para os agentes.");
  const [tasks,setTasks]=useState<QueueItem[]>([]);
  const [selected,setSelected]=useState<number|null>(null);
  const [evidence,setEvidence]=useState<TaskEvidence|null>(null);
  const [trackingError,setTrackingError]=useState("");
  const [receipt,setReceipt]=useState<{number:number;url:string}|null>(null);
+ const [managerMessage,setManagerMessage]=useState<{id:string;text:string}|null>(null);
  useEffect(()=>{
   if(selected===null)return;
   let active=true;
@@ -71,7 +75,7 @@ export function AgentVoiceConsole(){
  const recognizer=useRef<NativeRecognizer|null>(null);
  const recognitionSupported=Boolean(listenCtor());
  useEffect(()=>()=>{recognizer.current?.stop();if(typeof window!=="undefined")window.speechSynthesis?.cancel()},[]);
- const announce=(text:string)=>{setStatus(text);replyOut(text,spoken)};
+ const announce=(text:string)=>{setStatus(text);replyOut(text,spokenRef.current)};
  const edit=(text:string)=>{textRef.current=text;setDraft(text)};
  const load=async()=>{
   setBusy(true);
@@ -101,7 +105,10 @@ export function AgentVoiceConsole(){
  const interpret=(phrase:string)=>{
   const t=phrase.trim();
   setHeard(t);
-  if(/^(?:enviar|registrar|confirmar|pode registrar)(?: tarefa| pedido)?[.!]?$/i.test(t)){
+  const managerCommand=/^(?:gerente|neural master)[,: ]+(.+)$/i.exec(t);
+  if(managerCommand){
+   setManagerMessage({id:crypto.randomUUID(),text:managerCommand[1]});
+  }else if(/^(?:enviar|registrar|confirmar|pode registrar)(?: tarefa| pedido)?[.!]?$/i.test(t)){
    if(textRef.current.length>=15)void submit(textRef.current);
    else announce("Ainda não há um pedido completo para registrar.");
   }else if(/^(?:status|listar tarefas|mostrar tarefas|como est[aá] a fila)[?!.]?$/i.test(t)){
@@ -134,6 +141,7 @@ export function AgentVoiceConsole(){
   <summary><span><Bot size={19}/> Central de agentes · Voz</span></summary>
   <div className="ps-settings-body">
    <p className="muted">Área restrita da administração. Solicite melhorias, consulte a fila e receba respostas em áudio. Pedidos sensíveis não são executados sem aprovação.</p>
+   <AgentManagerConsole request={send} onReply={announce} onTask={setSelected} voiceMessage={managerMessage}/>
    <div className="ps-actions">
     <button type="button" className="secondary-cta" onClick={listen} disabled={busy||!recognitionSupported}>
      {listening?<MicOff size={18}/>:<Mic size={18}/>} {listening?"PARAR DE OUVIR":"FALAR COM AGENTES"}
@@ -146,7 +154,7 @@ export function AgentVoiceConsole(){
    <p className="small-caption">O reconhecimento de fala pode ser processado pelo fornecedor do navegador. Não dite senhas, tokens ou dados pessoais. Nenhum áudio é salvo pelo LABGame.</p>
    {heard&&<p className="small-caption">Última fala reconhecida: {heard}</p>}
    <label htmlFor="lab-agent-instruction"><strong>Pedido aos agentes</strong></label>
-   <textarea id="lab-agent-instruction" rows={4} maxLength={3000}
+   <textarea id="lab-agent-instruction" className="agent-message-input" rows={4} maxLength={3000}
     placeholder="Ex.: Testem o cadastro e preparem uma correção em PR, sem mudar dados da produção."
     value={draft} onChange={e=>edit(e.target.value)} disabled={busy}/>
    <div className="ps-actions">
