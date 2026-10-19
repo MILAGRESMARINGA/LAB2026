@@ -272,7 +272,7 @@ jobs:
           PY
 
       - name: Checkout reviewed migrations
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
@@ -359,7 +359,7 @@ jobs:
           PY
 
       - name: Checkout reviewed function source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
