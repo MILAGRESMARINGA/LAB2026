@@ -4,7 +4,7 @@ import {pathToFileURL} from "node:url";
 const REPO="MILAGRESMARINGA/LAB2026";
 export async function recoverAgentRun(event,token,fetcher=fetch){
  const run=event?.workflow_run;
- if(!run||event.action!=="completed"||run.name!=="Controlled LABGame coding agent"||run.event!=="workflow_dispatch"||run.conclusion!=="failure"||run.head_branch!=="lab-rebuild-2026"||run.head_repository?.full_name!==REPO||!Number.isSafeInteger(run.id)||!Number.isSafeInteger(run.run_attempt)||run.run_attempt>=3||!["MILAGRESMARINGA","github-actions[bot]"].includes(run.actor?.login))return {status:"ignored"};
+ if(!run||event.action!=="completed"||run.path!==".github/workflows/ai-agent-orchestrator.yml"||run.event!=="workflow_dispatch"||run.conclusion!=="failure"||run.head_branch!=="lab-rebuild-2026"||run.head_repository?.full_name!==REPO||!Number.isSafeInteger(run.id)||!Number.isSafeInteger(run.run_attempt)||run.run_attempt>=3||!["MILAGRESMARINGA","github-actions[bot]"].includes(run.actor?.login))return {status:"ignored"};
  if(!token)throw Error("Recovery token unavailable");
  const call=async(path,method="GET")=>{
   const r=await fetcher("https://api.github.com/repos/"+REPO+path,{method,headers:{authorization:"Bearer "+token,accept:"application/vnd.github+json","x-github-api-version":"2022-11-28"},signal:AbortSignal.timeout(15000)});
