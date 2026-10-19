@@ -1,47 +1,37 @@
 # Roadmap da automação presidencial — LABGame
 
-Atualizado em 18/10/2026. Objetivo: ordem por voz/texto → briefing → especialista → código e testes em sandbox → Draft PR → retorno ao presidente. Os 12 especialistas são acionados conforme a tarefa.
+Atualizado em 18/10/2026 (America/Sao_Paulo). Objetivo: pedido por voz/texto → briefing → especialista → patch → testes isolados → Draft PR → acompanhamento administrativo.
 
-| Etapa | Entrega e aceite | Estado |
-|---|---|---|
-| 1 | Executor isolado, orçamento e circuit breaker; PR real | Comprovado: Issue 21 / PR 29 |
-| 2 | Consulta administrativa de execução e PR por tarefa; atualização em 30 s | Código nesta branch; validar CI e publicar |
-| 3 | Canal presidencial com dupla autorização e origem restrita | Código existente; configuração privada pendente |
-| 4 | BET com escopo, especialista, aceite e histórico versionado | Existe no intake; ensaio pelo console pendente |
-| 5 | Gerente conversacional decompõe objetivos e guarda decisões aprovadas | Pendente; cadastro de tarefas não equivale a gerente |
-| 6 | Dispatch com orçamento aprovado, deduplicação durável e retorno | Parcial; orçamento automático continua zero |
-| 7 | Ensaio completo com administrador real, áudio e PR | Pendente das etapas 3, 5 e 6 |
-| 8 | n8n e Datadog com eventos saneados e limites de custo | Opcionais; não provisionados |
+| Marco | Estado e evidência |
+|---|---|
+| Canal administrativo | Publicado; JWT Supabase, app_metadata administrativa, allowlist de usuário e CORS no gateway Railway. Serviço online não comprova execução concluída. |
+| Intake e briefing | Acionamento automático nas Issues 33, 43 e 47; contratos de 12 especialistas. Nem todos têm execução real homologada. |
+| Geração, testes e Draft PR | Fluxo automático na Issue 33 / PR 41; ajustes de revisão e publicação realizados pelo operador. |
+| Recuperação automática | Em homologação. A Issue 47 expôs identificação incorreta do nome dinâmico da execução e roteamento de acessibilidade para teologia; correções no PR 49. Teste unitário não equivale a recuperação real comprovada. |
+| Retorno ao painel | Consulta de tarefa, execução e PR publicada; recibo persistente e atualização a cada 30 segundos enquanto visível. |
+| Gerente conversacional | Pendente: memória de decisões, decomposição de objetivos, priorização de fila e conversa contínua. Cadastro de tarefas não equivale a gerente autônomo. |
+| Revisão, merge e publicação autônomos | Não homologados; o executor abre Draft PR. Revisão e publicação recentes conduzidas pelo operador. |
+| n8n e Datadog | Opcionais; não provisionados nesta entrega. |
 
-## Ativação privada do canal
+## Próximo aceite
 
-Railway LABGAME-3 / labgame-agent-orchestrator: inspeção 18/10 constatou deploy SUCCESS, sem domínio e somente LAB_AGENT_ENABLED e NODE_ENV definidos. Fonte main. Não promover main apenas para ativar este serviço.
+Executar a Issue 47 pelo intake com o código corrigido e acompanhar geração, QA e Draft PR sem editar manualmente o patch produzido. Se houver falha elegível, comprovar recuperação automática; se a primeira tentativa passar, registrar que recuperação permanece sem ensaio real. A entrada deste ensaio foi feita pelo GitHub conectado, não por uma nova sessão de microfone no navegador.
 
-Configurar no painel Variables, nunca compartilhar valores no chat:
+## Configuração vigente
 
-- LAB_AGENT_SUPABASE_ANON_KEY: chave publicável LABGame, nunca service_role.
-- LAB_AGENT_GITHUB_TOKEN: token fine-grained da conta MILAGRESMARINGA limitado a LAB2026: Issues read/write, Actions read, Pull requests read. O intake atual exige Issue da conta proprietária; um bot não equivale à identidade do presidente.
-- LAB_AGENT_ADMIN_USER_IDS: UUID administrativo autorizado.
-- LAB_AGENT_ALLOWED_ORIGINS: origem HTTPS exata do preview.
-- LAB_AGENT_ENABLED=false até homologação.
+- Produção web: https://labgame-biblia.vercel.app/
+- Gateway: https://labgame-agent-orchestrator-production.up.railway.app
+- Railway: LABGAME-3 / labgame-agent-orchestrator; fonte main; health /health; LAB_AGENT_ENABLED=true.
+- Credenciais somente nos painéis privados. Nunca incluir tokens GitHub/OpenAI, senhas, JWTs ou service_role em código, logs, artefatos ou variáveis VITE_.
+- Vercel utiliza VITE_AGENT_CONSOLE_ENABLED e VITE_LAB_AGENT_API_URL; essas configurações públicas não substituem autorização no servidor.
+- A conta administrativa exige app_metadata.labgame_orchestrator_admin=true e UUID na allowlist do gateway. user_metadata não concede acesso.
 
-A conta precisa também de app_metadata.labgame_orchestrator_admin=true, concedido no servidor; user_metadata não concede acesso. Preparar domínio HTTPS, CSP/CORS e VITE_LAB_AGENT_API_URL / VITE_AGENT_CONSOLE_ENABLED no preview. Nunca usar VITE_ para tokens GitHub/OpenAI.
+## Governança e evidências
 
-## Governança, memória e FinOps
+A autorização presidencial existente permite inferência dentro dos parâmetros já aprovados por tarefa. O intake utiliza US$ 0,25 / R$ 1,50; isso é uma estimativa local, não um limite de cobrança do provedor. O recuperador permite no máximo três tentativas da mesma execução e somente para falhas explicitamente marcadas. Rejeições do provedor e violações de segurança não são retentativas automáticas.
 
-GitHub mantém briefings, commits e evidências duráveis iniciais. A memória conversacional futura distinguirá decisão aprovada, sugestão e dado não confiável, com fonte e revisão. Não armazenar senhas, dumps ou dados de leitores. Issues não podem alterar regras superiores do gerente.
+O gerador recebe contexto de código e token de leitura; a verificação executa o patch sem segredos; somente o publicador recebe permissão de escrita. A recuperação lê exclusivamente código confiável de main e verifica caminho do workflow, repositório, branch, autor, conclusão e tentativas antes de solicitar rerun.
 
-Endpoint de acompanhamento é somente leitura: estados e links, sem logs brutos/prompts. Janela de 100 runs/100 PRs com sinalização de histórico parcial. PR aberto não comprova CI aprovado. Classificação textual de risco não substitui sandbox e validação de caminhos.
+As Issues são dados não confiáveis. Não podem alterar políticas, executar shell ou conceder acesso a produção. Mudanças de conteúdo bíblico preservam a linha Pentecostal Arminiana; tempo, XP, idempotência e RLS permanecem sob autoridade do servidor.
 
-Esta entrega não contrata infraestrutura, não executa novas gerações pagas nem altera produção. O orçamento da Issue 21 não autoriza inferência recorrente. Definir orçamento por tarefa e teto global antes de liberar dispatch pago pelo console.
-
-## Aceite final
-
-1. Usuário comum/origem inválida bloqueados; administrador validado por JWT + metadata + allowlist.
-2. Pedido confirmado gera tarefa única, inclusive diante de repetição e falha de rede.
-3. Especialista respeita escopo, orçamento e tentativas; testes sem segredos.
-4. Painel acompanha execução real e PR correto; retorno ao presidente inclui falha e bloqueio.
-5. Voz e teclado testados no preview, sem áudio armazenado.
-6. CI completo verde, revisão de segurança e aprovação separada para produção.
-
-Autonomia gerencial só estará concluída quando todos esses critérios tiverem evidência.
+Autonomia gerencial só estará concluída após evidências de execução, recuperação, retorno ao painel e gestão persistente, com revisão e publicação claramente distinguidas.

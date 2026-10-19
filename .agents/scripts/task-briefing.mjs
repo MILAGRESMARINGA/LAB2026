@@ -20,7 +20,7 @@ const GAMIFICATION = "Não somar XP bruto pelo volume de membros. Ranking de gru
 
 export function routeSpecialist(task, manifest) {
   const objective = String(task).split(/[.!?\n]/)[0];
-  if(/\b(clic[aá]ve(?:l|is)|navega[cç][aã]o|interface|menu|contraste|espa[cç]amento)\b/i.test(objective)){
+  if(/\b(clic[aá]ve(?:l|is)|navega[cç][aã]o|interface|menu|contraste|espa[cç]amento|acessibilidade|aria-expanded|aria-label)\b/i.test(objective)){
     return manifest.agents.find(agent=>agent.id==="ux-designer")??null;
   }
   const routes = [
