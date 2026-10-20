@@ -32,3 +32,7 @@ GitHub/Supabase/Vercel/Railway já fazem parte do projeto. Gemini e Datadog deve
 ## Limites de conteúdo
 
 As142perguntas e71panoramas do marco anterior não provam atenção humana: o sistema verifica sinais de reprodução e respostas. O aplicativo não deve afirmar que consegue medir atenção. Uma política tipológica orienta geração; não comprova leitura integral do manual de Habershon nem licença de traduções modernas. O catálogo do atlas é distinto de mapas visuais produzidos. Ver também LABGAME-P2-CONTENT-POLICY.md.
+
+## Conteúdo inicial verificável deste marco
+
+O conversor contém33entradas com padrões aproximados e explicação de horas/vigílias. O atlas contém14referências, sem imagens prontas. As introduções dos66livros são sínteses originais. O red-letter inicia com cinco trechos da ALM1911 (Mt4.4,7,10; At9.4; Ap22.20); narrador e resposta final em Ap22.20 permanecem normais. Isso não é o corpus integral. O seed é idempotente e exige correspondência exata com a transcrição.

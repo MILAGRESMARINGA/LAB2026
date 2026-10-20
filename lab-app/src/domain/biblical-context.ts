@@ -28,7 +28,7 @@ export const BIBLICAL_ATLAS:readonly AtlasEntry[] = [
  {id:'jerusalem-nt',title:'Jerusalém nos tempos de Jesus',books:[40,41,42,43,44],references:['Lc 22–24','Jo 18–20'],note:'Templo, Oliveiras e Cedrom; identificação de locais da paixão inclui propostas tradicionais.'},
  {id:'ezekiel-temple',title:'Planta da visão do templo de Ezequiel',books:[26],references:['Ez 40–48'],note:'Planta da visão literária, não uma planta arqueológica de edifício escavado.'},
 ];
-export type AncientMeasure={id:string;label:string;kind:'length'|'mass'|'capacity'|'wage';minimum:number;maximum:number;unit:string;context:string;reference:string};
+export type AncientMeasure={id:string;label:string;kind:'length'|'mass'|'capacity'|'wage'|'coin';minimum:number;maximum:number;unit:string;context:string;reference:string};
 export const ANCIENT_MEASURES:readonly AncientMeasure[] = [
  {id:'cubit',label:'Côvado comum',kind:'length',minimum:.45,maximum:.46,unit:'m',context:'Estimativa convencional; não substitui o côvado longo de Ezequiel.',reference:'Ez 40.5'},
  {id:'long-cubit',label:'Côvado longo de Ezequiel',kind:'length',minimum:.525,maximum:.53,unit:'m',context:'Côvado comum mais um palmo menor; uso em Ez 40–48.',reference:'Ez 40.5'},
@@ -39,6 +39,29 @@ export const ANCIENT_MEASURES:readonly AncientMeasure[] = [
  {id:'ephah',label:'Efa / bato — estimativas',kind:'capacity',minimum:22,maximum:37,unit:'L',context:'Fontes e padrões diferem; efa e bato têm equivalência no texto.',reference:'Ez 45.10–11'},
  {id:'homer',label:'Ômer / coro (dez efas)',kind:'capacity',minimum:220,maximum:370,unit:'L',context:'Não confundir ômer/coro com gômer de Êxodo 16.',reference:'Ez 45.11–14'},
  {id:'omer',label:'Gômer (décima parte de efa)',kind:'capacity',minimum:2.2,maximum:3.7,unit:'L',context:'Mantém o mesmo padrão da efa selecionada.',reference:'Êx 16.36'},
+ {id:'gerah',label:'Gera (1/20 de siclo)',kind:'mass',minimum:.00057,maximum:.00082,unit:'kg',context:'Varia com o padrão do siclo; 0,57 g no padrão de 11,4 g.',reference:'Êx 30.13'},
+ {id:'mina-at',label:'Mina / arrátel do AT — verificar tradução',kind:'mass',minimum:.57,maximum:.984,unit:'kg',context:'Mina de 50 ou 60 siclos, conforme o sistema; arrátel não é nome uniforme em todas as traduções.',reference:'1Rs 10.17; Ez 45.12'},
+ {id:'talent-at',label:'Talento do AT — vários padrões',kind:'mass',minimum:34.272,maximum:59,unit:'kg',context:'Estimativas históricas distintas; o metal e o padrão precisam ser identificados.',reference:'Êx 38.24–26'},
+ {id:'talent-nt-weight',label:'Talento como peso no NT',kind:'mass',minimum:41,maximum:59,unit:'kg',context:'Estimativas do peso em Apocalipse; não confundir com a unidade monetária das parábolas.',reference:'Ap 16.21'},
+ {id:'denarius-silver',label:'Denário — massa aproximada da moeda',kind:'mass',minimum:.0038,maximum:.004,unit:'kg',context:'Massa aproximada; teor e peso variam. Não é cotação em dinheiro atual.',reference:'Mt 22.19'},
+ {id:'tyrian-shekel',label:'Siclo fenício / tírio — padrão pesado',kind:'mass',minimum:.0144,maximum:.0146,unit:'kg',context:'Padrão associado ao tributo do templo; a identificação das trinta moedas é interpretação histórica.',reference:'Mt 17.24–27; 26.15'},
+ {id:'span',label:'Palmo comum',kind:'length',minimum:.2221,maximum:.225,unit:'m',context:'Medida convencional de uma mão aberta; duas vezes o palmo formam um côvado.',reference:'Êx 28.16'},
+ {id:'long-span',label:'Palmo no sistema longo de Ezequiel',kind:'length',minimum:.2591,maximum:.265,unit:'m',context:'Metade do côvado longo; não confundir com palmo menor.',reference:'Ez 43.13'},
+ {id:'fathom',label:'Braça',kind:'length',minimum:1.8,maximum:1.85,unit:'m',context:'Medida aproximada de braços abertos.',reference:'At 27.28'},
+ {id:'stadion',label:'Estádio',kind:'length',minimum:180,maximum:185,unit:'m',context:'Comprimento aproximado conforme o padrão utilizado.',reference:'Jo 11.18'},
+ {id:'roman-mile',label:'Milha romana',kind:'length',minimum:1478,maximum:1480,unit:'m',context:'Não equivale à milha inglesa moderna.',reference:'Mt 5.41'},
+ {id:'sabbath-walk',label:'Caminho de um sábado',kind:'length',minimum:800,maximum:1109,unit:'m',context:'Estimativas para dois mil côvados; não uma distância moderna exata.',reference:'At 1.12'},
+ {id:'log',label:'Logue (1/12 de him)',kind:'capacity',minimum:22/72,maximum:37/72,unit:'L',context:'Varia com o padrão do bato adotado.',reference:'Lv 14.10; Ez 45.24'},
+ {id:'hin',label:'Him (1/6 de bato)',kind:'capacity',minimum:22/6,maximum:37/6,unit:'L',context:'Doze logues; diferentes estimativas do bato produzem equivalências distintas.',reference:'Êx 29.40; Ez 45.24'},
+ {id:'seah',label:'Seá / sato (1/3 de efa)',kind:'capacity',minimum:22/3,maximum:37/3,unit:'L',context:'Medida seca; as três medidas em Mt 13 correspondem a três satos.',reference:'Gn 18.6; Mt 13.33'},
+ {id:'modius',label:'Alqueire / módio romano',kind:'capacity',minimum:8.75,maximum:8.75,unit:'L',context:'Estimativa do recipiente romano; não equivale aos alqueires regionais modernos.',reference:'Mt 5.15'},
+ {id:'metretes',label:'Metreta',kind:'capacity',minimum:39.3,maximum:40,unit:'L',context:'Cada talha em João comportava duas ou três metretas, não apenas uma.',reference:'Jo 2.6'},
+ {id:'assarion',label:'Assário — escala monetária convencional',kind:'coin',minimum:1/16,maximum:1/16,unit:'denário(s), na escala convencional',context:'Algumas fontes propõem outra razão histórica; não é conversão moderna.',reference:'Mt 10.29'},
+ {id:'quadrans',label:'Quadrante / ceitil',kind:'coin',minimum:1/64,maximum:1/64,unit:'denário(s), na escala convencional',context:'Um quarto de assário; ceitil é termo tradicional de tradução, não moeda romana diferente.',reference:'Mt 5.26; Mc 12.42'},
+ {id:'lepton',label:'Lepto / moeda da viúva',kind:'coin',minimum:1/128,maximum:1/128,unit:'denário(s), na escala convencional',context:'Dois leptos equivalem a um quadrante no texto de Marcos.',reference:'Mc 12.42'},
+ {id:'drachma',label:'Dracma — equivalência monetária',kind:'coin',minimum:1,maximum:1,unit:'denário(s), aproximadamente',context:'Equivalência convencional de valor; não impõe uma massa universal de prata.',reference:'Lc 15.8'},
+ {id:'stater',label:'Estáter / siclo — tributo do templo',kind:'coin',minimum:4,maximum:4,unit:'dracma(s), na escala convencional',context:'Duas didracmas; moeda suficiente para o tributo de duas pessoas.',reference:'Mt 17.24–27'},
+ {id:'talent-nt-money',label:'Talento monetário do NT',kind:'coin',minimum:6000,maximum:6000,unit:'denário(s), na escala convencional',context:'Sessenta minas de cem denários; não equivale a 12,6 kg por regra universal.',reference:'Mt 18.24; 25.15'},
  {id:'denarius',label:'Denário — diária no exemplo da parábola',kind:'wage',minimum:1,maximum:1,unit:'diária no exemplo de Mt 20',context:'Comparação narrativa; não é salário universal nem conversão em reais.',reference:'Mt 20.2'},
 ];
 export const CONTEXT_SOURCES = [
@@ -57,3 +80,8 @@ export function convertAncientMeasure(measureId:string,quantity:number):{minimum
  if(!measure||!Number.isFinite(quantity)||quantity<0||quantity>1_000_000)return null;
  return {minimum:quantity*measure.minimum,maximum:quantity*measure.maximum,unit:measure.unit};
 }
+
+export const BIBLICAL_TIME_NOTES = [
+ {id:'seasonal-hours',title:'Doze horas de luz',explanation:'A parte clara do dia podia ser dividida em doze horas, contadas a partir do nascer do sol. A duração dessas horas variava com a estação; a hora sexta indica aproximadamente o meio do dia, não um fuso horário moderno.',references:'Jo 11.9; Mt 20.1–12'},
+ {id:'night-watches',title:'Vigílias da noite',explanation:'O sistema hebraico é descrito com três vigílias; o sistema romano, com quatro. Marcos menciona tarde, meia-noite, canto do galo e manhã. A passagem precisa ser lida em seu contexto; não se aplica uma tabela única a todo o AT ou NT.',references:'Jz 7.19; Mc 13.35; Lc 12.38'},
+] as const;
