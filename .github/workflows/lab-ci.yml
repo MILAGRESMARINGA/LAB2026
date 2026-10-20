@@ -137,6 +137,12 @@ jobs:
         env:
           PGPASSWORD: labv2_ci_local_only
         run: psql -h 127.0.0.1 -p 5432 -U postgres -d labgame_v2_ci -v ON_ERROR_STOP=1 -f scripts/tests/v2-postgres-smoke.sql
+      - name: Verify Bible edition rights and reviewed speech on isolated database
+        env:
+          PGPASSWORD: labv2_ci_local_only
+        run: |
+          createdb -h 127.0.0.1 -p 5432 -U postgres labgame_bible_rights_ci
+          psql -h 127.0.0.1 -p 5432 -U postgres -d labgame_bible_rights_ci -v ON_ERROR_STOP=1 -f scripts/tests/bible-edition-postgres-smoke.sql
 
 
   supabase-local-auth:

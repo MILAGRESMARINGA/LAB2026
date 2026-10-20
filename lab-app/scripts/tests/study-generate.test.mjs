@@ -8,6 +8,10 @@ import {
   DEFAULT_MODEL,
   MAX_OUTPUT_TOKENS,
   MAX_PROMPT_BYTES,
+  studyConnectionPolicy,
+  VERIFIED_STUDY_CONNECTIONS,
+  VERIFIED_NARRATIVE_CONNECTIONS,
+  STUDY_CONTENT_VERSION,
 } from "../../supabase/functions/study-generate/core.mjs";
 
 const prepared = {
@@ -44,7 +48,10 @@ function validContent(overrides = {}) {
       "Que prática de santificação quero cultivar nesta semana?",
     ],
     prayer: "Senhor, obrigado por tua graça que nos chama e sustenta. Capacita-me a responder com fé, amor e obediência.",
-    references: [{ kind: "bible", chapter_id: "1:1", verse_start: 1, verse_end: 1 }],
+    references: [
+      { kind: "bible", chapter_id: "1:1", verse_start: 1, verse_end: 1 },
+      { kind: "bible", chapter_id: "43:1", verse_start: 1, verse_end: 1 },
+    ],
     study_groups: [
       { heading: "Observação", body: "Identifique quem age no texto e quais ações são descritas." },
       { heading: "Interpretação", body: "Explique a ideia central dentro da sequência do capítulo." },
@@ -286,4 +293,72 @@ test("oversized retrieved context fails before reserving or calling the model", 
   assert.equal(result.status, 413);
   assert.equal(calls.reserve, 0);
   assert.equal(modelCalls, 0);
+});
+
+
+test("approved pair connects only its chapters and keeps unrelated remainder separate", () => {
+  const policy = studyConnectionPolicy(["1:1", "19:1", "43:1"]);
+  assert.equal(policy.mode, "connected_with_separate_remainder");
+  assert.deepEqual(policy.connections.map((item) => item.id), ["creation-word"]);
+  assert.deepEqual(policy.separate_chapter_refs, ["19:1"]);
+  assert.equal(policy.connections[0].kind, "biblical_echo");
+  assert.equal(studyConnectionPolicy(["2:12", "46:5"]).connections[0].kind, "explicit_nt");
+  assert.deepEqual(studyConnectionPolicy(["42:24", "19:91"]).connections, []);
+  assert.equal(VERIFIED_STUDY_CONNECTIONS.length, 8);
+});
+
+test("unreviewed connections fail validation and never publish generated study", async () => {
+  const unrelated = {
+    ...prepared,
+    chapter_refs: ["42:24", "19:91"],
+    chapters: [
+      { chapter_id: "42:24", verses: [{ verse_number: 1, text: "Texto recuperado." }] },
+      { chapter_id: "19:91", verses: [{ verse_number: 1, text: "Texto recuperado." }] },
+    ],
+  };
+  const content = validContent({references: [{kind: "bible", chapter_id: "42:24", verse_start: 1, verse_end: 1}]});
+  assert.deepEqual(validateGeneratedStudy(content, unrelated.chapters), {ok: false, reason: "unverified_connection"});
+  assert.equal(validateGeneratedStudy({...content, theological_connection: null}, unrelated.chapters).ok, true);
+  const {repository, calls} = fakeRepository({async prepare() { return unrelated; }});
+  const result = await handlerFor(repository, {available: true, async generate() { return content; }})(request());
+  assert.equal(result.status, 502);
+  assert.equal(calls.publish, 0);
+  assert.equal(calls.fail, 1);
+});
+
+test("prompt separates interpretation from tradition, corrects facts, and protects optional reading", () => {
+  const prompt = buildStudyPrompt(prepared, {chapter_refs: prepared.chapter_refs, chapters: prepared.chapters});
+  assert.match(prompt, /necessidade de perseverança em Cristo/);
+  assert.match(prompt, /Não prometa cura automática/);
+  assert.match(prompt, /José foi vendido por vinte moedas/);
+  assert.match(prompt, /não identifica explicitamente Abibe/);
+  assert.match(prompt, /Gênesis 1 não menciona pomba/);
+  assert.match(prompt, /Fermento não significa sempre mal/);
+  assert.match(prompt, /nunca bloqueia a leitura diária/);
+  assert.match(prompt, /nenhuma obra humana foi recuperada aqui/);
+  assert.match(prompt, /"separate_chapter_refs":\["19:1"\]/);
+  assert.equal(STUDY_CONTENT_VERSION, "2026-10-ai-v2");
+});
+
+
+test("a connected study must cite the retrieved chapters on both sides of its approved key", () => {
+  const missingSide = validContent({references: [
+    {kind: "bible", chapter_id: "1:1", verse_start: 1, verse_end: 1},
+  ]});
+  assert.deepEqual(validateGeneratedStudy(missingSide, prepared.chapters), {ok: false, reason: "unverified_connection"});
+  assert.equal(validateGeneratedStudy(validContent(), prepared.chapters).ok, true);
+});
+
+
+test("reviewed narrative units remain connected without turning adjacency into typology", () => {
+  assert.equal(VERIFIED_NARRATIVE_CONNECTIONS.length, 4);
+  for (const unit of VERIFIED_NARRATIVE_CONNECTIONS) {
+    const policy = studyConnectionPolicy(unit.refs);
+    assert.equal(policy.connections.length, 1);
+    assert.equal(policy.connections[0].kind, "narrative_sequence");
+    assert.deepEqual(policy.separate_chapter_refs, []);
+  }
+  assert.deepEqual(studyConnectionPolicy(["1:10", "1:11"]).connections, []);
+  assert.deepEqual(studyConnectionPolicy(["1:15", "1:16"]).connections, []);
+  assert.deepEqual(studyConnectionPolicy(["1:6", "1:7", "43:3"]).separate_chapter_refs, ["43:3"]);
 });
