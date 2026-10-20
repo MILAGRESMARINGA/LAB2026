@@ -1,5 +1,8 @@
 import {useCallback,useEffect,useMemo,useState} from "react";
 import {BookOpen,CheckCircle2,Clock3,Crown,Flame,RotateCcw,ShieldCheck,Trophy} from "lucide-react";
+import {createNextGamePlan} from "../domain/game-plan-next";
+import {LiteraryJourneyOverview} from "./LiteraryJourneyOverview";
+import type {BibleProjectResource} from "../domain/bibleproject";
 import {CHAPTERS} from "../domain/canon";
 import {brazilianLeapDayStartAvailable} from "../domain/journey-plan-eligibility";
 import {BibleReader} from "./BibleReader";
@@ -10,7 +13,7 @@ import {
  type JourneyV2Chapter,type JourneyV2State,type JourneyV2Length
 } from "../features/journey-v2";
 
-type Props={userId:string;onState?:(state:JourneyV2State|null)=>void};
+type Props={userId:string;onVideo?:(resource:BibleProjectResource,book:string)=>void;onState?:(state:JourneyV2State|null)=>void};
 const dateBR=(iso:string)=>{
  const dt=new Date(iso);
  return new Intl.DateTimeFormat("pt-BR",{
@@ -27,7 +30,7 @@ const chapterName=(id:string)=>{
  const c=CHAPTERS.find(c=>c.id===id);
  return c?c.book+" "+c.chapter:id;
 };
-export function JourneyV2Panel({userId,onState}:Props){
+export function JourneyV2Panel({userId,onState,onVideo}:Props){
  const [game,setGame]=useState<JourneyV2State|null>(null);
  const [chapters,setChapters]=useState<JourneyV2Chapter[]>([]);
  const [checked,setChecked]=useState<string[]>([]);
@@ -69,6 +72,7 @@ export function JourneyV2Panel({userId,onState}:Props){
  const now=clock+serverOffset;
  const canChooseLeapPlan=brazilianLeapDayStartAvailable(new Date(now));
  const selectedPlan:JourneyV2Length=canChooseLeapPlan?startPlanLength:365;
+ const overviewPlan=useMemo(()=>createNextGamePlan(game?.plan_length??selectedPlan).stages,[game?.plan_length,selectedPlan]);
  const deadline=game?.normal_deadline_at?Date.parse(game.normal_deadline_at):null;
  const grace=game?.grace_deadline_at?Date.parse(game.grace_deadline_at):null;
  const eligible=game?.next_eligible_at?Date.parse(game.next_eligible_at):null;
@@ -100,6 +104,7 @@ export function JourneyV2Panel({userId,onState}:Props){
   <h1>Sua Jornada. <em>Um capítulo de cada vez.</em></h1>
   <p className="muted">3 ou 4 capítulos por etapa · 24 horas a partir da ativação · 6 horas de tolerância · 3 vidas mensais.</p>
   <ConsistencyFlame completedDays={game?.completed_stages??0} status={game?.status==="failed"?"failed":game?.status==="completed"?"completed":game?"active":"inactive"} timing={{serverNow:game?.server_at,deadlineAt:game?.normal_deadline_at,graceDeadlineAt:game?.grace_deadline_at}}/>
+  <LiteraryJourneyOverview plan={overviewPlan} activeDay={game?.stage??1} completedDays={game?.completed_stages??0} checked={checked}/>
   {error&&<p role="alert" className="feedback-message">{error}</p>}
   {canChooseLeapPlan&&(!game||game.status!=="active")&&
    <fieldset className="v2-consent" aria-label="Escolher a duração do plano">
@@ -162,7 +167,7 @@ export function JourneyV2Panel({userId,onState}:Props){
     </div>
     {!stageFinished&&selected&&!checkedSet.has(selected)&&
      <div className="v2-reading" key={selected}>
-      <BibleReader chapterId={selected} onOpen={beginSelectedChapter} busy={busy} onConfirm={read}/>
+      <BibleReader chapterId={selected} onVideo={onVideo} onOpen={beginSelectedChapter} busy={busy} onConfirm={read}/>
      </div>}
     {stageFinished&&<div className="v2-start" role="status">
      <h3><CheckCircle2 size={23}/> Etapa completa!</h3>

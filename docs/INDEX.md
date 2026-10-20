@@ -38,3 +38,6 @@ Nenhuma chave administrativa, SMTP, Resend ou OpenAI em `VITE_*`, nos commits ou
 
 ## Mudanças pendentes de aprovação operacional
 SMTP real e templates, staging Supabase, lockfile/revisão de dependências, RLS multiusuário, revisões de menores/LGPD, CSP enforce após telemetria, chave do provedor e publicação nativa.
+
+- [Diretriz e execução P1/P2](LABGAME-P2-EXECUTION.md)
+- [Política editorial e fontes P2](LABGAME-P2-CONTENT-POLICY.md)

@@ -1,4 +1,5 @@
 import {useState} from "react";
+import {LiteraryJourneyOverview} from "./LiteraryJourneyOverview";
 import {
  ArrowRight,Award,Bird,BookOpen,Check,CheckCircle2,Crown,Flame,
  Gift,Leaf,LockKeyhole,Medal,Sparkles,Star,Trophy
@@ -82,8 +83,8 @@ export function ChallengeJourney({plan,game,totalXP,preview=false,onStart,onRest
    <span className="lab-quest-award-icon"><Medal size={26} aria-hidden="true"/></span>
    <div>
     <span className="lab-quest-eyebrow">MÉRITO DE CONSTÂNCIA INDIVIDUAL</span>
-    <strong>{personalBadge?personalBadge.title:"Próxima medalha · 1.000 XP"}</strong>
-    <p>{personalBadge?"Medalha "+personalBadge.metal+" por XP pessoal confirmado. Seu desempenho não depende do GC.":"A medalha Alcance Supremo I será exibida após atingir 1.000 XP pessoais."}</p>
+    <strong>{personalBadge?personalBadge.title:"Conquista futura"}</strong>
+    <p>{personalBadge?"Medalha "+personalBadge.metal+" por XP pessoal confirmado. Seu desempenho não depende do GC.":"Uma conquista será revelada ao atingir 1.000 XP pessoais."}</p>
     {nextBadge&&<small>Próximo nível: {nextBadge.minimum.toLocaleString("pt-BR")} XP</small>}
    </div>
   </div>
@@ -91,6 +92,7 @@ export function ChallengeJourney({plan,game,totalXP,preview=false,onStart,onRest
    <div><span className="lab-quest-eyebrow">A TRILHA</span><h2>Um dia de cada vez</h2></div>
    <span className="lab-quest-map-hint">365 etapas</span>
   </div>
+  <LiteraryJourneyOverview plan={plan} activeDay={activeDay} completedDays={completedDays} checked={checked}/>
   <div className="lab-quest-map">
    <ol className="lab-quest-steps">
     {journeyWindow(activeDay).map((day,index)=>{
@@ -124,7 +126,7 @@ export function ChallengeJourney({plan,game,totalXP,preview=false,onStart,onRest
        <span className="lab-quest-talent-icon"><TreasureChest/></span>
        <div><strong>Baú de Talentos · {day} dias</strong>
         <p>{bestDays>=day?"Marco de constância registrado.":"Conclua "+day+" dias consecutivos para abrir este marco."}</p>
-        <button type="button" aria-controls="lab-quest-reward-detail" aria-expanded={detail?.kind==="talentos"&&detail.day===day} onClick={()=>showDetail({kind:"talentos",day})}>{bestDays>=day?"ABRIR REFLEXÃO":"VER RECOMPENSA"} <ArrowRight size={14}/></button>
+        <button type="button" aria-controls="lab-quest-reward-detail" aria-expanded={detail?.kind==="talentos"&&detail.day===day} disabled={bestDays<day} onClick={()=>showDetail({kind:"talentos",day})}>{bestDays>=day?"ABRIR REFLEXÃO":"MARCO FUTURO"} <ArrowRight size={14}/></button>
        </div>
       </div>}
      </li>
@@ -156,7 +158,7 @@ export function ChallengeJourney({plan,game,totalXP,preview=false,onStart,onRest
   <div className="lab-quest-finale">
    <div className="lab-quest-crown"><Crown size={26} aria-hidden="true"/></div>
    <div><span className="lab-quest-eyebrow">META FINAL</span><strong>O Galardão</strong>
-    <p>{finished?"Insígnia simbólica da conclusão alcançada.":"Uma coroa simbólica ao concluir as 365 etapas."}</p></div>
+    <p>{finished?"Veste do Peregrino · insígnia simbólica de conclusão alcançada.":"Uma insígnia será revelada ao concluir as 365 etapas."}</p></div>
    <button type="button" aria-label="Entenda o Galardão" aria-controls="lab-quest-reward-detail" aria-expanded={detail?.kind==="galardao"} onClick={()=>showDetail({kind:"galardao"})}><ArrowRight size={19}/></button>
   </div>
   <p className="lab-quest-footnote"><Star size={13}/> Os marcos registram apenas leitura. Dons espirituais não são distribuídos pelo aplicativo. {upcoming?"Próximo baú: "+upcoming+" dias de constância.":"Todos os marcos semanais registrados."}</p>

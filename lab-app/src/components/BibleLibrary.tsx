@@ -121,7 +121,7 @@ export function BibleLibrary({signedIn,onVideo}:Props){
    <strong>{book} {chapter}</strong>
    <button className="secondary-cta" type="button" disabled={!next} onClick={()=>step(1)}>Próximo <ArrowRight size={16}/></button>
   </div>
-  <div className="bible-library-reader"><BibleReader key={reference.chapterId} chapterId={reference.chapterId} highlightVerse={focusedVerse}/></div>
+  <div className="bible-library-reader"><BibleReader key={reference.chapterId} chapterId={reference.chapterId} onVideo={onVideo} highlightVerse={focusedVerse}/></div>
   <div className="bible-library-actions bible-library-actions-bottom">
    <button type="button" disabled={busy} className={"bible-save-button "+(isFavorite?"active":"")} onClick={()=>void toggle()} aria-pressed={isFavorite}>
     <Bookmark size={19} fill={isFavorite?"currentColor":"none"}/>{isFavorite?"Salvo nos favoritos":"Salvar capítulo"}

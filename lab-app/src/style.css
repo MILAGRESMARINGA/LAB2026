@@ -724,3 +724,12 @@ body.video-modal-open{overflow:hidden}
 .video-quiz-option{display:flex;align-items:flex-start;gap:12px;margin:8px 0;padding:12px;border:1px solid #536b74;border-radius:10px;cursor:pointer}
 .video-quiz-option input{flex:0 0 auto;width:20px;height:20px;margin:2px 0;accent-color:#b3df47}
 .video-quiz-option:focus-within{outline:3px solid #b3df47;outline-offset:2px}
+
+/* Optional contextual tools share the reader's accessible dark palette. */
+.biblical-context-panel{padding:18px;border:1px solid #526d73;border-radius:18px;margin:20px 0;background:#1c3037;color:#e7f0f3;overflow-wrap:anywhere}
+.biblical-context-panel summary{cursor:pointer;font-weight:750;min-height:44px;display:list-item;align-content:center;padding:6px 0}
+.biblical-context-panel details{border-top:1px solid #486169;padding:8px 0}
+.biblical-context-panel article{border-left:3px solid #a9cf76;padding:0 0 8px 14px;margin:18px 0}
+.biblical-context-panel dt{font-weight:700}.biblical-context-panel dd{margin:4px 0 12px;color:#c6d7dc}
+.biblical-context-panel label{display:block;margin:12px 0}.biblical-context-panel input,.biblical-context-panel select{display:block;max-width:100%;width:100%;box-sizing:border-box;min-height:44px;border:1px solid #769097;border-radius:10px;padding:10px;background:#14272f;color:#f1f7f9;font:inherit}
+.biblical-context-panel a{color:#bfe6f6;text-decoration:underline}.p2-reference-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:12px}

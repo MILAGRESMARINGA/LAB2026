@@ -50,7 +50,7 @@ test("the reader starts its server timer before displaying either journey chapte
  assert.doesNotMatch(v1+v2,/p_(?:started_at|elapsed_seconds|client_timestamp)/i);
  assert.match(app,/onOpen=\{beginGameChapter\}/);
  assert.match(v2Panel,/onOpen=\{beginSelectedChapter\}/);
- assert.match(reader,/await onOpenRef\.current\?\.\(chapterId\);\s*const data=await readBibleChapter\(chapterId\)/);
+ assert.match(reader,/await onOpenRef\.current\?\.\(chapterId\);\s*const data=await readBibleChapter\(chapterId,edition\)/);
 });
 
 test("CI proves immediate rejection, delayed success, XP idempotence and local-only backdating",()=>{
