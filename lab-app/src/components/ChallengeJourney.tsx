@@ -1,9 +1,9 @@
 import {useState} from "react";
-import {LiteraryJourneyOverview} from "./LiteraryJourneyOverview";
+import {JourneyRules} from "./JourneyRules";
 import {BiblicalWorldMap} from "./BiblicalWorldMap";
 import {
- ArrowRight,Award,Bird,BookOpen,Check,CheckCircle2,Crown,Flame,
- Gift,Leaf,LockKeyhole,Medal,Sparkles,Star,Trophy
+ ArrowRight,Award,BookOpen,Crown,Flame,
+ Gift,Leaf,Medal,Sparkles,Star
 } from "lucide-react";
 import type {GameDay} from "../domain/game-plan";
 import {ConsistencyFlame} from "./ConsistencyFlame";
@@ -11,8 +11,8 @@ import {GAME_DAYS} from "../domain/game-plan";
 import type {LabGameState} from "../features/lab-game";
 import {individualMilestone,nextIndividualMilestone} from "../domain/progression-v3";
 import {
- earnedTalentMilestones,FRUIT_OF_THE_SPIRIT,isWeeklyMilestone,
- journeyWindow,nextTalentMilestone,SPIRITUAL_GIFTS_EXAMPLES
+ earnedTalentMilestones,FRUIT_OF_THE_SPIRIT,
+ nextTalentMilestone,SPIRITUAL_GIFTS_EXAMPLES
 } from "../domain/journey-rewards";
 
 type Props={
@@ -21,28 +21,12 @@ type Props={
  totalXP:number;
  preview?:boolean;
  onStart:()=>void;
+ onUpgrade?:()=>void;
  onRestart?:()=>void;
  onExploreBible?:()=>void;
 };
 type Detail={kind:"talentos";day:number}|{kind:"dons"}|{kind:"galardao"}|null;
-const STAGE_TITLES:Record<number,string>={
- 1:"A Palavra dá o primeiro passo",
- 2:"Conhecendo a Deus",
- 3:"Vida em comunhão",
- 4:"Obediência na prática",
- 5:"Crescendo na Palavra"
-};
-const titleFor=(day:number):string=>STAGE_TITLES[day]??"Leitura diária";
-const chapterNames=(stage:GameDay):string=>stage.chapters.map(ch=>ch.book+" "+ch.chapter).join(" · ");
-
-function TreasureChest(){return <svg className="lab-chest-icon" viewBox="0 0 48 48" fill="none" aria-hidden="true" focusable="false">
- <path d="M7 23V17c0-9 7-13 17-13s17 4 17 13v6" stroke="currentColor" strokeWidth="4" strokeLinejoin="round"/>
- <rect x="5" y="22" width="38" height="22" rx="5" fill="currentColor"/>
- <path d="M5 28h38M17 23v20M31 23v20" stroke="#5d4215" strokeWidth="3"/>
- <rect x="20" y="24" width="8" height="11" rx="2" fill="#fff2bb"/>
- </svg>}
-
-export function ChallengeJourney({plan,game,totalXP,preview=false,onStart,onRestart,onExploreBible}:Props){
+export function ChallengeJourney({plan,game,totalXP,preview=false,onStart,onUpgrade,onRestart,onExploreBible}:Props){
  const [detail,setDetail]=useState<Detail>(null);
  const activeDay=Math.max(1,Math.min(GAME_DAYS,game?.day??1));
  const stage=plan[activeDay-1];
@@ -93,48 +77,9 @@ export function ChallengeJourney({plan,game,totalXP,preview=false,onStart,onRest
    <div><span className="lab-quest-eyebrow">A TRILHA</span><h2>Um dia de cada vez</h2></div>
    <span className="lab-quest-map-hint">365 etapas</span>
   </div>
-  <BiblicalWorldMap stage={activeDay} completedStages={completedDays} chapters={stage.chapters.map(ch=>({chapter_id:ch.id}))} plan={plan} onRead={onStart}/>
-  <LiteraryJourneyOverview plan={plan} activeDay={activeDay} completedDays={completedDays} checked={checked}/>
-  <div className="lab-quest-map">
-   <ol className="lab-quest-steps">
-    {journeyWindow(activeDay).map((day,index)=>{
-     const daily=plan[day-1];
-     const isCurrent=activeDay===day&&!done;
-     const isDone=day<=completedDays;
-     const locked=day>activeDay || (day===activeDay&&done);
-     return <li key={day} className="lab-quest-step-wrap">
-      <div className={"lab-quest-step "+(isDone?"completed":isCurrent?"current":"locked")+(index%2?" alternate":"")}>
-       <div className="lab-quest-point">
-        <span className="lab-quest-node" aria-hidden="true">{isDone?<Check size={26}/>:locked?<LockKeyhole size={22}/>:<BookOpen size={27}/>}</span>
-        {isCurrent&&<span className="lab-quest-dove" role="img" aria-label="Pomba: símbolo bíblico da presença e direção do Espírito Santo"><Bird size={29}/></span>}
-       </div>
-       <div className="lab-quest-step-content">
-        <span className="lab-quest-step-kicker">ETAPA {day} {isDone?"· CONCLUÍDA":isCurrent?"· ATUAL":"· BLOQUEADA"}</span>
-        <h3>{titleFor(day)}</h3>
-        <p>{chapterNames(daily)}</p>
-        {isCurrent&&<button type="button" className="lab-quest-start" onClick={onStart}>
-         {preview?"CRIAR CONTA E COMEÇAR":"INICIAR LEITURA"} <ArrowRight size={18}/>
-        </button>}
-        {day===activeDay&&done&&!finished&&<span className="lab-quest-wait"><CheckCircle2 size={15}/> Concluído. Próxima etapa amanhã.</span>}
-       </div>
-      </div>
-      {index===2&&<div className="lab-quest-special" aria-label="Estudo sobre dons espirituais e fruto do Espírito">
-       <span className="lab-quest-special-icon"><Leaf size={25}/></span>
-       <div><strong>Dons e fruto do Espírito</strong><p>Conheça o ensino bíblico sobre os dons e o caráter cristão.</p>
-        <button type="button" aria-expanded={detail?.kind==="dons"} aria-controls="lab-quest-reward-detail" onClick={()=>showDetail({kind:"dons"})}>EXPLORAR ESTUDO <ArrowRight size={14}/></button>
-       </div>
-      </div>}
-      {isWeeklyMilestone(day)&&<div className={"lab-quest-talent "+(bestDays>=day?"earned":"upcoming")}>
-       <span className="lab-quest-talent-icon"><TreasureChest/></span>
-       <div><strong>Baú de Talentos · {day} dias</strong>
-        <p>{bestDays>=day?"Marco de constância registrado.":"Conclua "+day+" dias consecutivos para abrir este marco."}</p>
-        <button type="button" aria-controls="lab-quest-reward-detail" aria-expanded={detail?.kind==="talentos"&&detail.day===day} disabled={bestDays<day} onClick={()=>showDetail({kind:"talentos",day})}>{bestDays>=day?"ABRIR REFLEXÃO":"MARCO FUTURO"} <ArrowRight size={14}/></button>
-       </div>
-      </div>}
-     </li>
-    })}
-   </ol>
-  </div>
+  <JourneyRules mode={preview?"demo":"legacy"} onUpgrade={onUpgrade}/>
+  <BiblicalWorldMap readLabel={preview?"CRIAR CONTA E COMEÇAR":"INICIAR LEITURA"} completedMessage="Concluído. Próxima etapa amanhã." readingAvailable={!done} stage={activeDay} completedStages={completedDays} chapters={stage.chapters.map(ch=>({chapter_id:ch.id}))} plan={plan} onRead={onStart}/>
+  <button type="button" className="secondary-cta" onClick={()=>showDetail({kind:"dons"})}>Dons e fruto do Espírito · estudo opcional</button>
   {detail&&<div className="lab-quest-detail" id="lab-quest-reward-detail" aria-live="polite">
    {detail.kind==="talentos"?<>
     <span className="lab-quest-eyebrow"><Sparkles size={14}/> TALENTOS · {detail.day} DIAS</span>

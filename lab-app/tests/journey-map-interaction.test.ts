@@ -6,25 +6,26 @@ import {BiblicalWorldMap} from '../src/components/BiblicalWorldMap';
 import {createNextGamePlan} from '../src/domain/game-plan-next';
 import {StudyReadingScreen} from '../src/components/StudyReadingScreen';
 describe('Jornada explorável e tela de estudo',()=>{
- it('explora o futuro sem disparar leitura e retorna à etapa atual',async()=>{
+ it('mantém todas as etapas dentro do mapa e explora sem iniciar leitura',async()=>{
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT=true;
   const host=document.createElement('div');document.body.append(host);const root=createRoot(host),read=vi.fn();
+  const plan=createNextGamePlan(365).stages;
   try{
-   await act(async()=>root.render(React.createElement(BiblicalWorldMap,{stage:1,completedStages:0,chapters:[],plan:createNextGamePlan(365).stages,onRead:read})));
-   const range=host.querySelector('input')!;
-   await act(async()=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!.call(range,'365');range.dispatchEvent(new Event('change',{bubbles:true}));range.dispatchEvent(new Event('input',{bubbles:true}))});
-   expect(host.textContent).toContain('Explorar etapa 365');expect(read).not.toHaveBeenCalled();
-   const zoom=[...host.querySelectorAll('button')].find(b=>b.getAttribute('aria-label')==='Ampliar mapa')!;
+   await act(async()=>root.render(React.createElement(BiblicalWorldMap,{stage:1,completedStages:0,chapters:[],plan,onRead:read})));
+   expect(host.querySelectorAll('svg [role="button"]')).toHaveLength(365);
+   const last=host.querySelector('svg [aria-label^="Etapa 365,"]')!;
+   await act(async()=>last.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true})));
+   expect(host.querySelector('.journey-map-detail h3')?.textContent).toContain('365 · Bloqueada');expect(read).not.toHaveBeenCalled();
+   expect(host.querySelector('.journey-map-detail .primary-cta')).toBeNull();
+   const efesios=plan.find(d=>d.chapters.some(c=>c.book==='Efésios'&&c.chapter===1))!;
+   await act(async()=>host.querySelector(`svg [aria-label^="Etapa ${efesios.day},"]`)!.dispatchEvent(new MouseEvent('click',{bubbles:true})));
+   expect(host.querySelector('.journey-map-detail')?.textContent).toContain('Éfeso');expect(host.querySelector('.journey-map-detail')?.textContent).toContain('Ásia Menor');expect(read).not.toHaveBeenCalled();
+   const zoom=host.querySelector('button[aria-label="Ampliar mapa"]') as HTMLButtonElement;
    await act(async()=>zoom.click());expect(host.querySelector('output')?.textContent).toBe('125%');
-   const city=host.querySelector('[aria-label="Explorar Éfeso"]')!;
-   await act(async()=>city.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true})));
-   expect(host.querySelector('.atlas-context')?.textContent).toContain('Ásia Menor');expect(read).not.toHaveBeenCalled();
-   const related=host.querySelector('.atlas-related button') as HTMLButtonElement;
-   expect(related).not.toBeNull();await act(async()=>related.click());
-   expect(host.textContent).toContain('Efésios 1');expect(read).not.toHaveBeenCalled();
-   const stop=host.querySelector('[aria-label^="Explorar etapa"][role="button"]')!;
-   await act(async()=>stop.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true})));
-   expect(read).not.toHaveBeenCalled();
+   await act(async()=>{[...host.querySelectorAll('button')].find(b=>b.textContent==='Ver jornada inteira')!.click()});
+   expect(host.querySelector('.is-overview')).not.toBeNull();expect(host.querySelectorAll('svg [role="button"]')).toHaveLength(365);
+   await act(async()=>{[...host.querySelectorAll('button')].find(b=>b.textContent==='Minha etapa')!.click()});
+   await act(async()=>{(host.querySelector('.journey-map-detail .primary-cta') as HTMLButtonElement).click()});expect(read).toHaveBeenCalledOnce();
   }finally{await act(async()=>root.unmount());host.remove()}
  });
  it('monta o conteúdo somente ao abrir e fecha pelo cancelamento nativo',async()=>{
