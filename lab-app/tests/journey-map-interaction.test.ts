@@ -19,6 +19,12 @@ describe('Jornada explorável e tela de estudo',()=>{
    const city=host.querySelector('[aria-label="Explorar Éfeso"]')!;
    await act(async()=>city.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true})));
    expect(host.querySelector('.atlas-context')?.textContent).toContain('Ásia Menor');expect(read).not.toHaveBeenCalled();
+   const related=host.querySelector('.atlas-related button') as HTMLButtonElement;
+   expect(related).not.toBeNull();await act(async()=>related.click());
+   expect(host.textContent).toContain('Efésios 1');expect(read).not.toHaveBeenCalled();
+   const stop=host.querySelector('[aria-label^="Explorar etapa"][role="button"]')!;
+   await act(async()=>stop.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true})));
+   expect(read).not.toHaveBeenCalled();
   }finally{await act(async()=>root.unmount());host.remove()}
  });
  it('monta o conteúdo somente ao abrir e fecha pelo cancelamento nativo',async()=>{
