@@ -1,0 +1,4 @@
+import {createRoot} from "react-dom/client";
+import {useState} from "react";
+import {BiblicalWorldMap} from "./components/BiblicalWorldMap";
+function Preview(){const [chapter,setChapter]=useState("49:1");return <main style={{maxWidth:1100,margin:"auto",padding:20,color:"#f2ecda"}}><p style={{letterSpacing:4,color:"#b4e44d"}}>LABGAME · PRÉVIA INTERATIVA</p><label>Contexto demonstrativo <select value={chapter} onChange={e=>setChapter(e.target.value)} style={{padding:12,marginLeft:12}}><option value="49:1">Efésios 1</option><option value="1:40">Gênesis 40</option><option value="2:20">Êxodo 20</option><option value="1:1">Gênesis 1 · local não determinado</option></select></label><BiblicalWorldMap stage={null} completedStages={0} chapters={[{chapter_id:chapter}]}/><p>Prévia visual. Nenhuma leitura ou pontuação é registrada.</p></main>};createRoot(document.getElementById("root")!).render(<Preview/>);
