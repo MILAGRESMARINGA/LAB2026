@@ -77,7 +77,7 @@ jobs:
         run: echo "Provider rejected or request was never sent; no model attempt consumed."
       - name: Upload generated patch as data only
         if: steps.generate.outputs.patch_ready == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: lab-agent-patch-${{ github.run_id }}
           path: ${{ runner.temp }}/lab-agent-patch/patch.json
@@ -120,7 +120,7 @@ jobs:
         if: always() && steps.verify.outcome == 'failure'
         run: echo "Generated patch failed QA; regenerate with prior compiler feedback."
       - name: Upload verified patch metadata
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: lab-agent-verified-patch-${{ github.run_id }}
           path: ${{ runner.temp }}/lab-agent-patch/verified-patch.json
