@@ -1,5 +1,6 @@
 import {useState} from "react";
 import {LiteraryJourneyOverview} from "./LiteraryJourneyOverview";
+import {BiblicalWorldMap} from "./BiblicalWorldMap";
 import {
  ArrowRight,Award,Bird,BookOpen,Check,CheckCircle2,Crown,Flame,
  Gift,Leaf,LockKeyhole,Medal,Sparkles,Star,Trophy
@@ -92,6 +93,7 @@ export function ChallengeJourney({plan,game,totalXP,preview=false,onStart,onRest
    <div><span className="lab-quest-eyebrow">A TRILHA</span><h2>Um dia de cada vez</h2></div>
    <span className="lab-quest-map-hint">365 etapas</span>
   </div>
+  <BiblicalWorldMap stage={activeDay} completedStages={completedDays} chapters={stage.chapters.map(ch=>({chapter_id:ch.id}))} plan={plan} onRead={onStart}/>
   <LiteraryJourneyOverview plan={plan} activeDay={activeDay} completedDays={completedDays} checked={checked}/>
   <div className="lab-quest-map">
    <ol className="lab-quest-steps">

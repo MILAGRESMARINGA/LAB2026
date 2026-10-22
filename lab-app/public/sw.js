@@ -46,7 +46,7 @@ self.addEventListener("fetch",event=>{
  if(request.mode==="navigate"){
   event.respondWith((async()=>{
    try{const online=await fetch(request);
-    if(online.ok){const cache=await caches.open(CACHE);await cache.put("/",online.clone());}
+    if(online.ok&&url.pathname==="/"){const cache=await caches.open(CACHE);await cache.put("/",online.clone());}
     return online;
    }catch(e){
     const cache=await caches.open(CACHE);

@@ -232,7 +232,11 @@ jobs:
       - name: Install headless Chromium for responsive UI smoke
         run: |
           npm install --no-save --no-audit --no-fund playwright
-          npx playwright install --with-deps chromium
+          if command -v google-chrome >/dev/null 2>&1; then
+            echo "LAB_BROWSER_EXECUTABLE_PATH=$(command -v google-chrome)" >> "$GITHUB_ENV"
+          else
+            npx playwright install --with-deps chromium
+          fi
       - name: Validate real LABGAME profile and mobile flow
         run: |
           set -a

@@ -2,6 +2,7 @@ import {useCallback,useEffect,useMemo,useState} from "react";
 import {BookOpen,CheckCircle2,Clock3,Crown,Flame,RotateCcw,ShieldCheck,Trophy} from "lucide-react";
 import {createNextGamePlan} from "../domain/game-plan-next";
 import {LiteraryJourneyOverview} from "./LiteraryJourneyOverview";
+import {BiblicalWorldMap} from "./BiblicalWorldMap";
 import type {BibleProjectResource} from "../domain/bibleproject";
 import {CHAPTERS} from "../domain/canon";
 import {brazilianLeapDayStartAvailable} from "../domain/journey-plan-eligibility";
@@ -104,6 +105,7 @@ export function JourneyV2Panel({userId,onState,onVideo}:Props){
   <h1>Sua Jornada. <em>Um capítulo de cada vez.</em></h1>
   <p className="muted">3 ou 4 capítulos por etapa · 24 horas a partir da ativação · 6 horas de tolerância · 3 vidas mensais.</p>
   <ConsistencyFlame completedDays={game?.completed_stages??0} status={game?.status==="failed"?"failed":game?.status==="completed"?"completed":game?"active":"inactive"} timing={{serverNow:game?.server_at,deadlineAt:game?.normal_deadline_at,graceDeadlineAt:game?.grace_deadline_at}}/>
+  <BiblicalWorldMap stage={game?.stage??null} completedStages={game?.completed_stages??0} chapters={chapters} plan={overviewPlan}/>
   <LiteraryJourneyOverview plan={overviewPlan} activeDay={game?.stage??1} completedDays={game?.completed_stages??0} checked={checked}/>
   {error&&<p role="alert" className="feedback-message">{error}</p>}
   {canChooseLeapPlan&&(!game||game.status!=="active")&&
@@ -139,7 +141,7 @@ export function JourneyV2Panel({userId,onState,onVideo}:Props){
    {game.cycle_award&&<p><strong>Coroa {game.cycle_award.cycle_number}</strong> · bônus +{game.cycle_award.bonus_xp.toLocaleString("pt-BR")} XP{game.cycle_award.perfect_constancy?" · Constância perfeita":""}</p>}
    <button type="button" className="primary-cta" disabled={busy} onClick={()=>void process(()=>startJourneyV2(selectedPlan))}><RotateCcw size={18}/> INICIAR PRÓXIMA BÍBLIA</button>
   </div>}
-  {game?.status==="active"&&<div className="v2-current">
+  {game?.status==="active"&&<div className="v2-current" id="journey-current-reading">
    {newStage?<div className="v2-start">
     <h2>Etapa 1 pronta</h2>
     <p>Seu prazo de 24 horas começará quando você ativar a etapa. Não será possível pular capítulos.</p>

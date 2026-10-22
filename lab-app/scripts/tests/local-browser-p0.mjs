@@ -19,7 +19,7 @@ let userId,browser;
 try{
  const {data,error}=await admin.auth.admin.createUser({email,password,email_confirm:true});
  assert.ifError(error);userId=data.user?.id;assert.ok(userId);
- browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
+ browser=await chromium.launch({headless:true,executablePath:process.env.LAB_BROWSER_EXECUTABLE_PATH||undefined,args:["--no-sandbox"]});
  const page=await browser.newPage({viewport:{width:1380,height:900}});
  page.setDefaultTimeout(20000);
  await page.goto("http://127.0.0.1:5173/",{waitUntil:"domcontentloaded"});
