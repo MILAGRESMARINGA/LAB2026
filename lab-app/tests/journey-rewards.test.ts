@@ -23,7 +23,8 @@ describe("Trilha de desafios e Talentos",()=>{
   expect(html).toContain("Salmos 1");
   expect(html).toContain("João 1");
   expect(html).toContain("INICIAR LEITURA");
-  expect(html).toContain("Baú de Talentos · 7 dias");
+  expect(html).toContain("Percurso interativo de 1 a 365");
+  expect(html).not.toContain("lab-quest-steps");
   expect(html).toContain("Dons e fruto do Espírito");
   expect(html).not.toContain("Presente devocional");
  });

@@ -1,7 +1,7 @@
 import {useCallback,useEffect,useMemo,useState} from "react";
-import {BookOpen,CheckCircle2,Clock3,Crown,Flame,RotateCcw,ShieldCheck,Trophy} from "lucide-react";
+import {BookOpen,CheckCircle2,Crown,Flame,RotateCcw,ShieldCheck,Trophy} from "lucide-react";
 import {createNextGamePlan} from "../domain/game-plan-next";
-import {LiteraryJourneyOverview} from "./LiteraryJourneyOverview";
+import {JourneyRules} from "./JourneyRules";
 import {BiblicalWorldMap} from "./BiblicalWorldMap";
 import type {BibleProjectResource} from "../domain/bibleproject";
 import {CHAPTERS} from "../domain/canon";
@@ -66,6 +66,13 @@ export function JourneyV2Panel({userId,onState,onVideo}:Props){
   const timer=window.setInterval(()=>setClock(Date.now()),1000);
   return()=>window.clearInterval(timer);
  },[]);
+ useEffect(()=>{
+  if(!game||game.status!=="active")return;
+  const visible=()=>{if(document.visibilityState==='visible')void refresh()};
+  document.addEventListener('visibilitychange',visible);
+  const timer=window.setInterval(visible,30000);
+  return()=>{document.removeEventListener('visibilitychange',visible);window.clearInterval(timer)};
+ },[game?.run_id,game?.status,refresh]);
  const checkedSet=useMemo(()=>new Set(checked),[checked]);
  const currentTotal=chapters.length;
  const confirmedCount=chapters.filter(c=>checkedSet.has(c.chapter_id)).length;
@@ -74,8 +81,6 @@ export function JourneyV2Panel({userId,onState,onVideo}:Props){
  const canChooseLeapPlan=brazilianLeapDayStartAvailable(new Date(now));
  const selectedPlan:JourneyV2Length=canChooseLeapPlan?startPlanLength:365;
  const overviewPlan=useMemo(()=>createNextGamePlan(game?.plan_length??selectedPlan).stages,[game?.plan_length,selectedPlan]);
- const deadline=game?.normal_deadline_at?Date.parse(game.normal_deadline_at):null;
- const grace=game?.grace_deadline_at?Date.parse(game.grace_deadline_at):null;
  const eligible=game?.next_eligible_at?Date.parse(game.next_eligible_at):null;
  const canNext=Boolean(game?.status==="active"&&stageFinished&&eligible!==null&&now>=eligible&&
   (game.stage??0)<(game.plan_length??0));
@@ -105,8 +110,9 @@ export function JourneyV2Panel({userId,onState,onVideo}:Props){
   <h1>Sua Jornada. <em>Um capítulo de cada vez.</em></h1>
   <p className="muted">3 ou 4 capítulos por etapa · 24 horas a partir da ativação · 6 horas de tolerância · 3 vidas mensais.</p>
   <ConsistencyFlame completedDays={game?.completed_stages??0} status={game?.status==="failed"?"failed":game?.status==="completed"?"completed":game?"active":"inactive"} timing={{serverNow:game?.server_at,deadlineAt:game?.normal_deadline_at,graceDeadlineAt:game?.grace_deadline_at}}/>
-  <BiblicalWorldMap stage={game?.stage??null} completedStages={game?.completed_stages??0} chapters={chapters} plan={overviewPlan}/>
-  <LiteraryJourneyOverview plan={overviewPlan} activeDay={game?.stage??1} completedDays={game?.completed_stages??0} checked={checked}/>
+  <JourneyRules mode="v2" game={game} now={now}/>
+  <BiblicalWorldMap stage={game?.stage??null} completedStages={game?.completed_stages??0} chapters={chapters} plan={overviewPlan} readingAvailable={!game||(game.status==="active"&&!stageFinished)} completedMessage={game?.status==="failed"?"Tentativa encerrada. Use Recomeçar para iniciar uma nova jornada.":game?.status==="completed"?"Bíblia concluída. Sua conquista está registrada.":undefined}/>
+
   {error&&<p role="alert" className="feedback-message">{error}</p>}
   {canChooseLeapPlan&&(!game||game.status!=="active")&&
    <fieldset className="v2-consent" aria-label="Escolher a duração do plano">
@@ -117,7 +123,7 @@ export function JourneyV2Panel({userId,onState,onVideo}:Props){
       onChange={()=>setStartPlanLength(366)}/> Calendário bissexto — 366 etapas</label>
     <small>A opção de 366 etapas só pode ser iniciada em 1º de janeiro de um ano bissexto. O servidor valida essa data.</small>
    </fieldset>}
-  {!game&&<div className="v2-start" aria-label="Iniciar Jornada V2">
+  {!game&&<div id="journey-current-reading" className="v2-start" aria-label="Iniciar Jornada V2">
    <h2><BookOpen size={23}/> Começar em Gênesis</h2>
    <p>O plano contém {selectedPlan} etapas e os 1.189 capítulos da Bíblia. A primeira etapa só começa quando você clicar em ativar.</p>
    <p className="muted">Se você possui uma tentativa anterior em andamento, ela será encerrada e arquivada. Seu recorde e suas conquistas permanecem no histórico, sem transferir XP à nova sequência.</p>
@@ -130,12 +136,12 @@ export function JourneyV2Panel({userId,onState,onVideo}:Props){
    <div><ShieldCheck size={22}/><strong>{game.remaining_lives_this_month}</strong><span>Vidas deste mês</span></div>
    <div><Crown size={22}/><strong>{game.completed_bibles_historical??0}</strong><span>Bíblias concluídas</span></div>
   </div><p className="v2-run-xp"><strong>{game.run_xp.toLocaleString("pt-BR")} XP</strong> nesta tentativa · os pontos antigos não são somados.</p></>}
-  {game?.status==="failed"&&<div className="v2-start" role="status">
+  {game?.status==="failed"&&<div id="journey-current-reading" className="v2-start" role="status">
    <h2>Essa tentativa terminou.</h2>
    <p>O relógio e as vidas se esgotaram. O seu recorde continua guardado como uma marca a superar.</p>
    <button type="button" className="primary-cta" disabled={busy} onClick={()=>void process(()=>startJourneyV2(selectedPlan))}><RotateCcw size={18}/> RECOMEÇAR EM GÊNESIS 1</button>
   </div>}
-  {game?.status==="completed"&&<div className="v2-start" role="status">
+  {game?.status==="completed"&&<div id="journey-current-reading" className="v2-start" role="status">
    <h2><Crown size={27}/> Bíblia completa!</h2>
    <p>Você concluiu todas as etapas e leu os 1.189 capítulos. O próximo ciclo começará com zero XP, sem apagar esta conquista.</p>
    {game.cycle_award&&<p><strong>Coroa {game.cycle_award.cycle_number}</strong> · bônus +{game.cycle_award.bonus_xp.toLocaleString("pt-BR")} XP{game.cycle_award.perfect_constancy?" · Constância perfeita":""}</p>}
@@ -151,13 +157,6 @@ export function JourneyV2Panel({userId,onState,onVideo}:Props){
     <div className="v2-progress" role="progressbar" aria-label="Capítulos confirmados" aria-valuemin={0} aria-valuemax={currentTotal||4} aria-valuenow={confirmedCount}>
      <div style={{width:(currentTotal?confirmedCount/currentTotal*100:0)+"%"}}/>
     </div>
-    {deadline&&grace&&<div className="v2-clock" role="status">
-     <Clock3 size={21}/>
-     <div><strong>{now<=deadline?"Prazo normal":now<=grace?"Carência com desconto de XP":"Recuperação com vidas"}</strong>
-      <span>{now<=deadline?duration(deadline-now):now<=grace?duration(grace-now):"Consulte o saldo de vidas e o servidor"}</span>
-      <small>Prazo normal: {dateBR(game.normal_deadline_at!)} · Carência: {dateBR(game.grace_deadline_at!)}</small>
-     </div>
-    </div>}
     <div className="v2-chapters" aria-label="Capítulos obrigatórios desta etapa">
      {chapters.map(ch=><button key={ch.chapter_id} type="button"
       className={checkedSet.has(ch.chapter_id)?"v2-read":selected===ch.chapter_id?"v2-selected":""}
