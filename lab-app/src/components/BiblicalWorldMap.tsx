@@ -36,7 +36,7 @@ export function BiblicalWorldMap({stage,completedStages,chapters,plan,onRead}:Pr
   <header><span className="eyebrow">A JORNADA · MUNDO BÍBLICO</span><h2>Uma história. Muitos caminhos.</h2><p>Etapa {stage??1} · {completedStages} concluídas. Explore o cenário da leitura.</p></header>
   <div className="atlas-tools"><button onClick={()=>setZoom(z=>Math.max(1,z-.25))} disabled={zoom===1} aria-label="Diminuir mapa">−</button><output>{Math.round(zoom*100)}%</output><button onClick={()=>setZoom(z=>Math.min(2,z+.25))} disabled={zoom===2} aria-label="Ampliar mapa">+</button><button onClick={()=>setZoom(1)}>Visão geral</button></div>
   <div className="atlas-viewport" tabIndex={0} aria-label="Mapa com rolagem horizontal e vertical ao ampliar">
-   <svg viewBox="0 0 1000 600" style={{width:`${zoom*100}%`}} className="atlas-scene" role="img" aria-label="Mapa esquemático do Mediterrâneo, norte da África e Oriente Médio">
+   <svg viewBox="0 0 1000 600" style={{width:`${zoom*100}%`}} className="atlas-scene" role="group" aria-label="Mapa esquemático do Mediterrâneo, norte da África e Oriente Médio">
     <defs><linearGradient id="atlas-sea" x2="0" y2="1"><stop stopColor="#285967"/><stop offset="1" stopColor="#112f3c"/></linearGradient><linearGradient id="atlas-land" x2="0" y2="1"><stop stopColor="#c6c69b"/><stop offset="1" stopColor="#9a8057"/></linearGradient><filter id="atlas-shadow"><feDropShadow dx="0" dy="12" stdDeviation="3" floodOpacity=".45"/></filter></defs>
     <rect width="1000" height="600" rx="24" fill="url(#atlas-sea)"/>
     <g fill="url(#atlas-land)" stroke="#e2d4a5" strokeWidth="2" filter="url(#atlas-shadow)">
@@ -45,7 +45,7 @@ export function BiblicalWorldMap({stage,completedStages,chapters,plan,onRead}:Pr
      <path d="M430 305l60 -8 10 12 -48 12Z"/><path d="M260 265l14 -8 8 28 -14 10Z"/>
     </g>
     <g fill="#f0dfae" opacity=".7">{[[110,75],[695,140],[720,170],[680,190],[600,255],[820,235],[500,490]].map(([x,y])=><path key={`${x}-${y}`} d={`M${x-13} ${y+10}l13 -26 14 26 -12 -7Z`}/>)}</g>
-    <g fill="#f0e7c9" fontSize="15" letterSpacing="4"><text x="80" y="65">EUROPE</text><text x="90" y="500">NORTE DA ÁFRICA</text><text x="655" y="90">ORIENTE MÉDIO</text></g>
+    <g fill="#f0e7c9" fontSize="15" letterSpacing="4"><text x="80" y="65">EUROPA</text><text x="90" y="500">NORTE DA ÁFRICA</text><text x="655" y="90">ORIENTE MÉDIO</text></g>
     <text x="260" y="320" fill="#9ccad0" fontSize="16" letterSpacing="3">MAR MEDITERRÂNEO</text>
     {places.map(p=><g key={p.id} role="button" tabIndex={0} aria-label={`Explorar ${p.name}${active.has(p.id)?", relacionado à etapa":""}`} onClick={()=>setSelected(p.id)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setSelected(p.id)}}} className="atlas-pin" transform={`translate(${p.x} ${p.y})`}>
      <ellipse cy="13" rx="19" ry="8" fill="#102b31" opacity=".6"/><circle r="16" fill={active.has(p.id)?"#b4e44d":"#efdfb4"} stroke={selected===p.id?"#fff":"#6e5b3c"} strokeWidth="4"/><text textAnchor="middle" y="5" fill="#243a31" fontSize="16">{active.has(p.id)?"●":"·"}</text><rect x="-51" y="24" width="102" height="23" rx="6" fill="#102f39"/><text textAnchor="middle" y="40" fill="#f8efdc" fontSize="14">{p.name}</text>

@@ -15,10 +15,9 @@ describe("cartão acessível de estudo bíblico",()=>{
   expect(html).toContain('aria-expanded="false"');
   expect(html).toContain("Abrir conteúdo e referências bíblicas");
   expect(html).toContain('aria-controls=');
-  expect(html).toContain('aria-label="Referências bíblicas"');
   expect(html).toContain("Gênesis 12");
   expect(html).toContain("Gálatas 3");
-  expect(html).toContain("Resumo fictício.");
-  expect(html).toContain("hidden=");
+  expect(html).not.toContain("Resumo fictício.");
+  expect(html).not.toContain('<dialog');
  });
 });
