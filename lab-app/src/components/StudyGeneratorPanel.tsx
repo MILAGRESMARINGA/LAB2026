@@ -1,4 +1,4 @@
-import {BookOpen,CheckCircle2,Clock3,Loader2,MessageCircleHeart,Sparkles,X} from "lucide-react";
+import {BookOpen,CheckCircle2,Clock3,Loader2,MessageCircleHeart,Sparkles} from "lucide-react";
 import {useEffect,useId,useRef,useState} from "react";
 import {loadDayStudies,type GeneratedStudy} from "../features/study-generate";
 import {StudyReadingScreen} from "./StudyReadingScreen";
@@ -45,7 +45,7 @@ export function GeneratedStudyCard({study,index=0}:{study:GeneratedStudy;index?:
     <BookOpen size={19} aria-hidden="true"/><span className="sr-only">{open?"Recolher estudo":"Abrir conteúdo e referências bíblicas"}</span>
    </button>
   </article>
-  <StudyReadingScreen title={study.title} open={open} onClose={()=>setOpen(false)}>
+  <StudyReadingScreen id={contentId} title={study.title} open={open} onClose={()=>setOpen(false)}>
     <div className="study-screen-content">
      <section className="generated-study-references" aria-label="Referências bíblicas"><h4>Referências bíblicas</h4><ul>{study.chapter_refs.map(reference=><li key={reference}>{reference}</li>)}</ul></section>
      <StudySection title="Panorama" text={study.content.summary}/><StudySection title="Contexto" text={study.content.context}/><StudySection title="Exegese" text={study.content.exegesis}/>

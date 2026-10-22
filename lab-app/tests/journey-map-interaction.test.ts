@@ -13,7 +13,7 @@ describe('Jornada explorável e tela de estudo',()=>{
    await act(async()=>root.render(React.createElement(BiblicalWorldMap,{stage:1,completedStages:0,chapters:[],plan:createNextGamePlan(365).stages,onRead:read})));
    const range=host.querySelector('input')!;
    await act(async()=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!.call(range,'365');range.dispatchEvent(new Event('change',{bubbles:true}));range.dispatchEvent(new Event('input',{bubbles:true}))});
-   expect(read).not.toHaveBeenCalled();
+   expect(host.textContent).toContain('Explorar etapa 365');expect(read).not.toHaveBeenCalled();
    const zoom=[...host.querySelectorAll('button')].find(b=>b.getAttribute('aria-label')==='Ampliar mapa')!;
    await act(async()=>zoom.click());expect(host.querySelector('output')?.textContent).toBe('125%');
    const city=host.querySelector('[aria-label="Explorar Éfeso"]')!;
