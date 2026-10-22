@@ -49,7 +49,7 @@ jobs:
         working-directory: lab-app
     steps:
       - name: Checkout exact commit
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Set up Node 20 LTS
@@ -128,7 +128,7 @@ jobs:
           --health-retries 5
     steps:
       - name: Checkout exact commit
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Install PostgreSQL client
@@ -154,7 +154,7 @@ jobs:
         working-directory: lab-app
     steps:
       - name: Checkout test commit (no production secrets)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Set up Node 20
@@ -279,7 +279,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout exact commit
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Set up Node 20
@@ -306,7 +306,7 @@ jobs:
     if: always()
     steps:
       - name: Checkout exact commit
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Set up Node 20
