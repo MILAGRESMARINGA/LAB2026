@@ -2,7 +2,7 @@
 
 ## Fonte de verdade e escopo
 
-O texto aprovado é [`prompts/GUIA-BIBLICO-POR-CAPITULO.md`](prompts/GUIA-BIBLICO-POR-CAPITULO.md), versão `chapter-guide-1.0.0`. Aplica-se a novos estudos, guias e regenerações. Variações de profundidade não removem as obrigações de contexto, referências, cobertura e distinção de interpretações. Estudos existentes não recebem esse selo retroativamente.
+O texto aprovado é [`prompts/GUIA-BIBLICO-POR-CAPITULO.md`](prompts/GUIA-BIBLICO-POR-CAPITULO.md), com o adendo normativo [`prompts/ADENDO-GUIAS-1189-VERSICULOS.md`](prompts/ADENDO-GUIAS-1189-VERSICULOS.md), versão `chapter-guide-1.1.0`. Aplica-se a novos estudos, guias e regenerações. Variações de profundidade não removem as obrigações de contexto, referências, cobertura e distinção de interpretações. Estudos existentes não recebem esse selo retroativamente.
 
 Este marco registra a diretriz e adapta a prévia de produto. Não altera a Edge Function ou o banco em produção. O gerador legado ainda tem schema resumido, saída limitada a 1.200 tokens, cache por dia/camada e filtros de palavras doutrinárias. Esses contratos não comportam automaticamente um guia de 800–1.200 palavras com 14 seções. O filtro lexical também precisa ser substituído por avaliação contextual: mencionar respeitosamente outra interpretação não equivale a adotá-la.
 
