@@ -1,3 +1,5 @@
+import {MainNavigation,navigationTabFromSearch} from "./components/MainNavigation";
+import {HelpCenter} from "./components/HelpCenter";
 import {TypologyReferenceIndex} from "./components/TypologyReferenceIndex";
 import {useCallback,useEffect,useMemo,useState} from "react";
 import {ArrowLeft,ArrowRight,Award,BookOpen,CalendarDays,Check,CheckCircle2,Compass,Flame,Library,LockKeyhole,BookMarked,LogIn,LogOut,Play,ExternalLink,Sparkles,Target,Trophy,Crown,Users,UserRound,Video} from "lucide-react";
@@ -33,8 +35,8 @@ import {DailyInAppPopup} from "./components/DailyInAppPopup";
 import {AgentVoiceConsole} from "./components/AgentVoiceConsole";
 import {earnedTalentMilestones} from "./domain/journey-rewards";
 import {chooseJourneyVersion} from "./domain/journey-version";
-type Tab="today"|"bible"|"journey"|"studies"|"groups"|"profile";
-const tabs=[{id:"journey",label:"Jornada",icon:Compass},{id:"studies",label:"Estudos",icon:Library},{id:"bible",label:"Bíblia",icon:BookMarked},{id:"groups",label:"GCs",icon:Users},{id:"profile",label:"Perfil",icon:UserRound}] as const;
+type Tab="today"|"bible"|"journey"|"studies"|"groups"|"profile"|"help";
+
 const plan=createGamePlan();
 const validPlan=verifyGamePlan(plan);
 const v2FeatureEnabled=import.meta.env.VITE_LAB_V2_READY==="true";
@@ -42,7 +44,7 @@ const describeError=(e:unknown)=>e instanceof Error?e.message:"Não foi possíve
 export default function App(){
  const authQuery=typeof window==="undefined"?null:new URLSearchParams(window.location.search).get("auth");
  const authRoute=typeof window==="undefined"?"none":authRouteFromPath(window.location.pathname);
- const [tab,setTab]=useState<Tab>(()=>authQuery?"profile":"journey");
+ const [tab,setTab]=useState<Tab>(()=>authQuery?"profile":navigationTabFromSearch(typeof window==="undefined"?"":window.location.search));
  const [user,setUser]=useState<{id:string;email:string;agentAdmin:boolean}|null>(null);
  const [variantDecision,setVariantDecision]=useState<{userId:string;mode:"v1"|"v2"}|null>(null);
  const journeyVariant: "loading"|"v1"|"v2" = !v2FeatureEnabled?"v1":user&&variantDecision?.userId===user.id?variantDecision.mode:"loading";
@@ -240,6 +242,7 @@ export default function App(){
      </section>:<>{journeyVariant==="loading"?<section className="game-panel"><p role="status" className="muted">Verificando a versão da sua Jornada...</p></section>:v2Enabled?<JourneyV2Panel key={user.id+"-"+v2Epoch} userId={user.id} onVideo={openVideo} onState={handleV2State}/>:game?<ChallengeJourney plan={plan} game={game} totalXP={totalXP} onUpgrade={v2FeatureEnabled?()=>setVariantDecision({userId:user.id,mode:"v2"}):undefined} onStart={()=>{setLastConfirmed(null);setTab("today");setLessonOpen(true)}} onRestart={()=>void restartChallenge()} onExploreBible={()=>goTab("bible")}/>:<section className="game-panel"><p className="muted" role="status">{loading?"Carregando seu desafio...":message||"Aguardando a sincronização da leitura."}</p></section>}{message&&game&&<p role="status" className="feedback-message">{message}</p>}
 </>}
    </div>}
+   {tab==="help"&&<HelpCenter mode={user?(v2Enabled?"v2":"legacy"):"overview"} onNavigate={goTab} onUpgrade={user&&v2FeatureEnabled&&!v2Enabled?()=>{setVariantDecision({userId:user.id,mode:"v2"});goTab("journey")}:undefined}/>}
    {tab==="bible"&&<BibleLibrary key={user?.id??"public"} signedIn={Boolean(user)} onVideo={openVideo}/>}
    {tab==="studies"&&<section className="game-panel"><span className="eyebrow">BIBLIOTECA LAB</span><h1>Estudos e <em>conexões.</em></h1><p className="muted">Aprofunde a leitura em três camadas, com conexão bíblica somente quando houver chave textual demonstrável.</p><StudyLayerRoadmap completedDays={activeDays} selectedLayer={studyLayer}/><StudyGeneratorPanel enabled={v2Enabled} journeyDay={studyDay} layer={studyLayer} resolveChapterRefs={resolveStudyRefs}/><div className="study-grid">{STUDY_BLOCKS.map(b=><button key={b.id} className={"study-tile "+(selectedStudy===b.id?"selected":"")} onClick={()=>{setSelectedStudy(b.id);setStudyOpened(true);setStudyAcknowledged(false)}}><Library size={24}/><strong>{b.title}</strong><small>{b.type==="conexão"?"Conexão bíblica":"Tema de estudo separado"}</small></button>)}</div><StudyReadingScreen title={selectedBlock.title} open={studyOpened} onClose={()=>setStudyOpened(false)}><article className="study-detail"><span className="eyebrow">APROFUNDAMENTO · {selectedBlock.type==="conexão"?"CHAVE CONECTADA":"LEITURAS SEPARADAS"}</span><h2>{selectedBlock.title}</h2><p>{selectedBlock.intro}</p><h3>Leia e compare</h3><div className="reference-list">{selectedBlock.references.map(ref=><span key={ref}><BookOpen size={15}/>{ref}</span>)}</div><div className={"study-connection-rule "+selectedBlock.type}><strong>{selectedBlock.type==="conexão"?"Conexão textual/canônica":"Exegese independente"}</strong><p>{selectedBlock.type==="conexão"?"As referências são estudadas em seus próprios contextos e unificadas somente quando a relação bíblica é demonstrável.":"As referências permanecem separadas, sem forçar uma harmonização ou um tema único."}</p></div><p className="small-caption">Roteiro inicial; conteúdo gerado e publicado passa pelos limites do servidor, cache e revisão editorial.</p>{v2Enabled&&<div className="v2-study-check" aria-label="Pontuação opcional do estudo">
   <h3>Conclusão de estudo · +15 XP</h3>
@@ -302,7 +305,7 @@ export default function App(){
  <h2>Meus marcos</h2><div className="milestone-list">{[1,7,30,100,180,365].map(goal=><div className={"milestone "+(bestDays>=goal?"earned":"")} key={goal}><Award size={19}/><span>{goal===365?"Bíblia completa":goal+" dias seguidos"}</span><strong>{bestDays>=goal?"CONQUISTADO":"BLOQUEADO"}</strong></div>)}</div><form className="profile-form" onSubmit={e=>{e.preventDefault();void saveProfile()}}><h2>Identidade no GC</h2><label htmlFor="display-name">Nome exibido</label><input id="display-name" value={profileName} minLength={2} maxLength={60} required onChange={e=>setProfileName(e.target.value)}/><label className="toggle-rank"><input type="checkbox" checked={optIn} onChange={e=>setOptIn(e.target.checked)}/> Quero aparecer nos rankings privados dos meus GCs.</label><button className="secondary-cta" disabled={busy} type="submit">SALVAR PERFIL</button></form><section className="account-security"><h2><LockKeyhole size={21}/> Segurança da conta</h2><p className="muted">Encerre sua sessão neste dispositivo. Seus dados e pontos serão preservados.</p><button className="logout-cta" type="button" disabled={busy} onClick={()=>void logout()}><LogOut size={18}/> {busy?"SAINDO...":"SAIR DA CONTA"}</button></section>
 {import.meta.env.VITE_AGENT_CONSOLE_ENABLED==="true"&&user.agentAdmin&&<AgentVoiceConsole/>}<ProfileSettings accountEmail={user.email} onReset={async()=>{if(v2Enabled){setV2Game(null);setV2Epoch(n=>n+1)}else{await refreshGame();await refreshScorecard()}setLessonOpen(false);setLastConfirmed(null);setTab("journey")}} onDeleted={()=>{setUser(null);setGame(null);setV2Game(null);setScorecard(null);setGroups([]);setInvites({});setLessonOpen(false);setTab("profile");setMessage("Conta excluída. Você pode criar uma nova conta quando quiser.")}}/>{message&&<p role="status" className="feedback-message">{message}</p>}</>}<InstallApp/></section>}
   </main>
-  <nav className="game-bottom-nav" aria-label="Menu LABGAME">{tabs.map(t=><button key={t.id} type="button" className={tab===t.id?"active":""} onClick={()=>goTab(t.id)} aria-current={tab===t.id?"page":undefined}><t.icon size={21}/><span>{t.label}</span></button>)}</nav>
+  <MainNavigation activeTab={tab==="today"?"journey":tab} onNavigate={goTab}/>
   {activeVideo&&<BibleProjectPlayer key={activeVideo.resource.url} resource={activeVideo.resource} book={activeVideo.book} signedIn={Boolean(user)} runId={v2Enabled?v2Game?.status==="active"?v2Game.run_id:null:null} onClose={()=>setActiveVideo(null)} onBonus={total=>{
     if(v2Enabled){if(v2Game)void syncJourneyV2(v2Game.run_id).then(next=>setV2Game(next)).catch(e=>setMessage(describeError(e)))}
     else {setGame(prev=>prev?{...prev,total_xp:total}:prev);void refreshScorecard()}

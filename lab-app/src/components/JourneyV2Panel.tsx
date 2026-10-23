@@ -1,7 +1,6 @@
 import {useCallback,useEffect,useMemo,useState} from "react";
 import {BookOpen,CheckCircle2,Crown,Flame,RotateCcw,ShieldCheck,Trophy} from "lucide-react";
 import {createNextGamePlan} from "../domain/game-plan-next";
-import {JourneyRules} from "./JourneyRules";
 import {BiblicalWorldMap} from "./BiblicalWorldMap";
 import type {BibleProjectResource} from "../domain/bibleproject";
 import {CHAPTERS} from "../domain/canon";
@@ -113,9 +112,9 @@ export function JourneyV2Panel({userId,onState,onVideo}:Props){
  },[game?.run_id,game?.stage]);
  if(loading)return <section className="game-panel" aria-live="polite"><p className="muted">Carregando Jornada V2 protegida...</p></section>;
  return <section className="game-panel journey-v2" aria-label="Jornada Bíblica V2">
-  <header className="journey-clean-hud"><h1>Etapa {mapStage}</h1><p>{todayChapters.map(c=>`${c.book} ${c.chapter}`).join(' · ')}</p><div><span>{canNext?0:confirmedCount}/{todayChapters.length} capítulos</span><span>{stageFinished?'Próxima etapa':'Tempo restante'}: <strong>{canNext?'liberada':countdown??'não iniciado'}</strong></span><span>♥ {game?.remaining_lives_this_month??3} vidas</span></div></header>
+  <header className="journey-clean-hud"><div className="journey-clean-title"><h1>Etapa {mapStage}</h1><ConsistencyFlame compact completedDays={game?.completed_stages??0} status={game?.status==="failed"?"failed":game?.status==="completed"?"completed":game?"active":"inactive"} timing={{serverNow:game?.server_at,deadlineAt:game?.normal_deadline_at,graceDeadlineAt:game?.grace_deadline_at}}/></div><p>{todayChapters.map(c=>`${c.book} ${c.chapter}`).join(' · ')}</p><div><span>{canNext?0:confirmedCount}/{todayChapters.length} capítulos</span><span>{stageFinished?'Próxima etapa':'Tempo restante'}: <strong>{canNext?'liberada':countdown??'não iniciado'}</strong></span><span>♥ {game?.remaining_lives_this_month??3} vidas</span></div></header>
   {!readerOpened&&<><BiblicalWorldMap stage={mapStage} completedStages={game?.completed_stages??0} chapters={chapters} plan={overviewPlan} onRead={()=>{setReaderOpened(true);if(newStage)void process(()=>activateJourneyV2(game!.run_id,1));else if(canNext)next()}} readingAvailable={!game||(game.status==="active"&&(!stageFinished||canNext))} completedMessage="Etapa concluída. Aguarde o relógio para continuar."/>
-  <details className="journey-clean-help"><summary>Como jogar</summary><JourneyRules mode="v2" game={game} now={now}/></details></>}
+  <a className="journey-help-link" href="/?tab=help">Preciso de ajuda</a></>}
   {readerOpened&&<button className="secondary-cta" onClick={()=>setReaderOpened(false)}>← Voltar ao mapa</button>}
   {error&&<p role="alert" className="feedback-message">{error}</p>}
   {canChooseLeapPlan&&(!game||game.status!=="active")&&
