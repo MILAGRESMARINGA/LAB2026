@@ -22,26 +22,25 @@ describe("Trilha de desafios e Talentos",()=>{
   expect(html).toContain("Gênesis 1");
   expect(html).toContain("Salmos 1");
   expect(html).toContain("João 1");
-  expect(html).toContain("INICIAR LEITURA");
+  expect(html).toContain("Etapa 1, Atual");
   expect(html).toContain("Percurso interativo de 1 a 365");
   expect(html).not.toContain("lab-quest-steps");
-  expect(html).toContain("Dons e fruto do Espírito");
+  expect(html).not.toContain("lab-quest-feature");
   expect(html).not.toContain("Presente devocional");
  });
  it("mostra tela de demonstração com acesso ao cadastro, sem inventar XP",()=>{
   const html=renderToStaticMarkup(createElement(ChallengeJourney,{
    plan,game:null,totalXP:0,preview:true,onStart:()=>{}
   }));
-  expect(html).toContain("CRIAR CONTA E COMEÇAR");
-  expect(html).toContain("0 <span>/ 365 dias");
+  expect(html).toContain("Etapa 1");
+  expect(html).toContain("0/3 capítulos");
  });
  it("indica conclusão confirmada e não permite antecipar a etapa",()=>{
   const completedGame={...game,checked:plan[0].chapters.map(ch=>ch.id),completed_days:1,best_days:1,total_xp:30};
   const html=renderToStaticMarkup(createElement(ChallengeJourney,{
    plan,game:completedGame,totalXP:30,onStart:()=>{}
   }));
-  expect(html).toContain("Seu desafio de hoje está completo");
-  expect(html).toContain("Próxima etapa amanhã");
+  expect(html).toContain("Próxima etapa: amanhã");
   expect(html).not.toContain("INICIAR LEITURA");
  });
  it("na conclusão de 365 dias a coroa não libera nova leitura sem ação voluntária",()=>{
@@ -49,11 +48,10 @@ describe("Trilha de desafios e Talentos",()=>{
   const html=renderToStaticMarkup(createElement(ChallengeJourney,{
    plan,game:completedGame,totalXP:11900,onStart:()=>{},onRestart:()=>{}
   }));
-  expect(html).toContain("Toda a Bíblia");
-  expect(html).toContain("O Galardão");
+  expect(html).toContain("Etapa 365");
   expect(html).toContain("INICIAR NOVO CICLO");
   expect(html).not.toContain("INICIAR LEITURA");
-  expect(html).toContain("ETAPA 365");
+  expect(html).toContain("Etapa 365");
  });
  it("converte somente sequência confirmada em marcos visuais, sem XP extra",()=>{
   expect(earnedTalentMilestones(0)).toBe(0);

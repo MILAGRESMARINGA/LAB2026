@@ -32,6 +32,7 @@ const chapterName=(id:string)=>{
  return c?c.book+" "+c.chapter:id;
 };
 export function JourneyV2Panel({userId,onState,onVideo}:Props){
+ const [readerOpened,setReaderOpened]=useState(false);
  const [game,setGame]=useState<JourneyV2State|null>(null);
  const [chapters,setChapters]=useState<JourneyV2Chapter[]>([]);
  const [checked,setChecked]=useState<string[]>([]);
@@ -85,6 +86,12 @@ export function JourneyV2Panel({userId,onState,onVideo}:Props){
  const canNext=Boolean(game?.status==="active"&&stageFinished&&eligible!==null&&now>=eligible&&
   (game.stage??0)<(game.plan_length??0));
  const newStage=game?.status==="active"&&game.stage===null;
+ const mapStage=canNext?(game?.stage??0)+1:game?.stage??1;
+ const todayChapters=overviewPlan[mapStage-1]?.chapters??[];
+ const normal=game?.normal_deadline_at?Date.parse(game.normal_deadline_at):null;
+ const grace=game?.grace_deadline_at?Date.parse(game.grace_deadline_at):null;
+ const countdown=stageFinished&&eligible!==null&&now<eligible?duration(eligible-now):normal!==null&&now<normal?duration(normal-now):grace!==null&&now<grace?duration(grace-now):null;
+ useEffect(()=>{if(stageFinished)setReaderOpened(false)},[stageFinished]);
  const process=async(fn:()=>Promise<JourneyV2State>)=>{
   setBusy(true);setError("");
   try{update(await fn());await refresh()}
@@ -106,13 +113,10 @@ export function JourneyV2Panel({userId,onState,onVideo}:Props){
  },[game?.run_id,game?.stage]);
  if(loading)return <section className="game-panel" aria-live="polite"><p className="muted">Carregando Jornada V2 protegida...</p></section>;
  return <section className="game-panel journey-v2" aria-label="Jornada Bíblica V2">
-  <span className="eyebrow">LEITURA ANUAL · NOVO REGULAMENTO</span>
-  <h1>Sua Jornada. <em>Um capítulo de cada vez.</em></h1>
-  <p className="muted">3 ou 4 capítulos por etapa · 24 horas a partir da ativação · 6 horas de tolerância · 3 vidas mensais.</p>
-  <ConsistencyFlame completedDays={game?.completed_stages??0} status={game?.status==="failed"?"failed":game?.status==="completed"?"completed":game?"active":"inactive"} timing={{serverNow:game?.server_at,deadlineAt:game?.normal_deadline_at,graceDeadlineAt:game?.grace_deadline_at}}/>
-  <JourneyRules mode="v2" game={game} now={now}/>
-  <BiblicalWorldMap stage={game?.stage??null} completedStages={game?.completed_stages??0} chapters={chapters} plan={overviewPlan} readingAvailable={!game||(game.status==="active"&&!stageFinished)} completedMessage={game?.status==="failed"?"Tentativa encerrada. Use Recomeçar para iniciar uma nova jornada.":game?.status==="completed"?"Bíblia concluída. Sua conquista está registrada.":undefined}/>
-
+  <header className="journey-clean-hud"><h1>Etapa {mapStage}</h1><p>{todayChapters.map(c=>`${c.book} ${c.chapter}`).join(' · ')}</p><div><span>{canNext?0:confirmedCount}/{todayChapters.length} capítulos</span><span>{stageFinished?'Próxima etapa':'Tempo restante'}: <strong>{canNext?'liberada':countdown??'não iniciado'}</strong></span><span>♥ {game?.remaining_lives_this_month??3} vidas</span></div></header>
+  {!readerOpened&&<><BiblicalWorldMap stage={mapStage} completedStages={game?.completed_stages??0} chapters={chapters} plan={overviewPlan} onRead={()=>{setReaderOpened(true);if(newStage)void process(()=>activateJourneyV2(game!.run_id,1));else if(canNext)next()}} readingAvailable={!game||(game.status==="active"&&(!stageFinished||canNext))} completedMessage="Etapa concluída. Aguarde o relógio para continuar."/>
+  <details className="journey-clean-help"><summary>Como jogar</summary><JourneyRules mode="v2" game={game} now={now}/></details></>}
+  {readerOpened&&<button className="secondary-cta" onClick={()=>setReaderOpened(false)}>← Voltar ao mapa</button>}
   {error&&<p role="alert" className="feedback-message">{error}</p>}
   {canChooseLeapPlan&&(!game||game.status!=="active")&&
    <fieldset className="v2-consent" aria-label="Escolher a duração do plano">
@@ -123,19 +127,13 @@ export function JourneyV2Panel({userId,onState,onVideo}:Props){
       onChange={()=>setStartPlanLength(366)}/> Calendário bissexto — 366 etapas</label>
     <small>A opção de 366 etapas só pode ser iniciada em 1º de janeiro de um ano bissexto. O servidor valida essa data.</small>
    </fieldset>}
-  {!game&&<div id="journey-current-reading" className="v2-start" aria-label="Iniciar Jornada V2">
+  {readerOpened&&!game&&<div id="journey-current-reading" className="v2-start" aria-label="Iniciar Jornada V2">
    <h2><BookOpen size={23}/> Começar em Gênesis</h2>
    <p>O plano contém {selectedPlan} etapas e os 1.189 capítulos da Bíblia. A primeira etapa só começa quando você clicar em ativar.</p>
    <p className="muted">Se você possui uma tentativa anterior em andamento, ela será encerrada e arquivada. Seu recorde e suas conquistas permanecem no histórico, sem transferir XP à nova sequência.</p>
    <label className="v2-consent"><input type="checkbox" checked={accept} onChange={e=>setAccept(e.target.checked)}/> Entendo que a Jornada V2 começa em zero XP e substitui minha tentativa em andamento.</label>
    <button className="primary-cta" disabled={!accept||busy} type="button" onClick={begin}>COMEÇAR NOVA JORNADA</button>
   </div>}
-  {game&&<><div className="v2-scorecards">
-   <div><Flame size={22}/><strong>{game.completed_stages??0}</strong><span>Etapas nesta tentativa</span></div>
-   <div><Trophy size={22}/><strong>{game.best_completed_stages}</strong><span>Recorde a superar</span></div>
-   <div><ShieldCheck size={22}/><strong>{game.remaining_lives_this_month}</strong><span>Vidas deste mês</span></div>
-   <div><Crown size={22}/><strong>{game.completed_bibles_historical??0}</strong><span>Bíblias concluídas</span></div>
-  </div><p className="v2-run-xp"><strong>{game.run_xp.toLocaleString("pt-BR")} XP</strong> nesta tentativa · os pontos antigos não são somados.</p></>}
   {game?.status==="failed"&&<div id="journey-current-reading" className="v2-start" role="status">
    <h2>Essa tentativa terminou.</h2>
    <p>O relógio e as vidas se esgotaram. O seu recorde continua guardado como uma marca a superar.</p>
@@ -147,7 +145,7 @@ export function JourneyV2Panel({userId,onState,onVideo}:Props){
    {game.cycle_award&&<p><strong>Coroa {game.cycle_award.cycle_number}</strong> · bônus +{game.cycle_award.bonus_xp.toLocaleString("pt-BR")} XP{game.cycle_award.perfect_constancy?" · Constância perfeita":""}</p>}
    <button type="button" className="primary-cta" disabled={busy} onClick={()=>void process(()=>startJourneyV2(selectedPlan))}><RotateCcw size={18}/> INICIAR PRÓXIMA BÍBLIA</button>
   </div>}
-  {game?.status==="active"&&<div className="v2-current" id="journey-current-reading">
+  {readerOpened&&game?.status==="active"&&<div className="v2-current" id="journey-current-reading">
    {newStage?<div className="v2-start">
     <h2>Etapa 1 pronta</h2>
     <p>Seu prazo de 24 horas começará quando você ativar a etapa. Não será possível pular capítulos.</p>
