@@ -1,7 +1,7 @@
 import {useEffect,useId,useMemo,useRef,useState} from 'react';
 import {CHAPTERS} from '../domain/canon';
 import type {GameDay} from '../domain/game-plan';
-import {journeyCalendarLabel,journeyPoint,stageJourneyContexts} from '../domain/journey-geography';
+import {journeyPoint,stageJourneyContexts} from '../domain/journey-geography';
 import './biblical-world-map.css';
 
 type Props={stage:number|null;completedStages:number;chapters:readonly {chapter_id:string}[];plan?:ReadonlyArray<GameDay>;onRead?:()=>void;readingAvailable?:boolean;readLabel?:string;completedMessage?:string};
@@ -12,20 +12,23 @@ export function BiblicalWorldMap({stage,completedStages,chapters,plan,onRead,rea
  const current=Math.max(1,Math.min(days.length,stage??1));
  const viewed=days[Math.max(0,Math.min(days.length-1,selected-1))];
  const contexts=stageJourneyContexts(viewed);
- const height=overview?Math.ceil(days.length/16)*54+160:days.length*145+230;
- const points=useMemo(()=>days.map((day,i)=>journeyPoint(day,i,overview)),[days,overview]);
+ const [notice,setNotice]=useState('');
+ const weekStart=Math.floor((current-1)/7)*7;
+ const visibleDays=overview?days:days.slice(weekStart,weekStart+7);
+ const height=overview?Math.ceil(days.length/16)*54+160:visibleDays.length*145+230;
+ const points=useMemo(()=>visibleDays.map((day,i)=>journeyPoint(day,i,overview)),[visibleDays,overview]);
  const path=points.map((p,i)=>i===0?`M${p.x} ${p.y}`:overview?`L${p.x} ${p.y}`:`C${points[i-1].x} ${points[i-1].y+65} ${p.x} ${p.y-65} ${p.x} ${p.y}`).join(' ');
  const panTo=(day:number)=>{const container=viewport.current,node=nodes.current.get(day);if(container&&node){const box=node.getBoundingClientRect(),parent=container.getBoundingClientRect();container.scrollTop+=box.top-parent.top-container.clientHeight*.38;container.scrollLeft+=box.left-parent.left-container.clientWidth*.5}};
  useEffect(()=>{setSelected(current)},[current]);
  useEffect(()=>{if(overview){if(viewport.current){viewport.current.scrollTop=0;viewport.current.scrollLeft=0}}else panTo(current)},[current,overview]);
- const choose=(day:number)=>setSelected(day);
+ const choose=(day:number)=>{setSelected(day);if(day===current&&readingAvailable){setNotice('');onRead?.()}else setNotice(day<=completedStages?'Etapa já concluída.':day===current?(completedMessage??'Aguarde a próxima liberação.'):'Esta etapa ainda está bloqueada.')};
  const status=(day:number)=>day<=completedStages?'Concluída':day===current?'Atual':'Bloqueada';
  return <section className="journey-world" aria-label="Mapa das etapas da Jornada">
-  <header className="journey-world-heading"><span className="eyebrow">A TRILHA · {days.length} ETAPAS</span><h2>A sua Jornada está no mapa.</h2><p>Toque em um marco para conhecer a leitura e seus lugares. O ponto aceso mostra onde você está.</p></header>
+  <header className="journey-world-heading"><h2>{overview?"Toda a Jornada":`Semana ${Math.floor((current-1)/7)+1}`}</h2></header>
   <div className="journey-map-tools" aria-label="Controles do mapa">
    <button onClick={()=>setZoom(z=>Math.max(.5,z-.25))} disabled={zoom<=.5} aria-label="Diminuir mapa">−</button><output aria-label="Zoom do mapa">{Math.round(zoom*100)}%</output><button onClick={()=>setZoom(z=>Math.min(2,z+.25))} disabled={zoom>=2} aria-label="Ampliar mapa">+</button>
-   <button aria-pressed={overview} onClick={()=>{setOverview(v=>!v);setZoom(1)}}>{overview?'Mapa de perto':'Ver jornada inteira'}</button>
-   <button onClick={()=>{setSelected(current);panTo(current)}}>Minha etapa</button>
+   <button aria-pressed={overview} onClick={()=>{setOverview(v=>!v);setZoom(1)}}>{overview?'Ver semana':'Ver jornada inteira'}</button>
+   
   </div>
   <div ref={viewport} className={'journey-map-viewport '+(overview?'is-overview':'')} tabIndex={0} aria-label="Mapa vertical com todas as etapas; arraste para explorar">
    <svg viewBox={`0 0 720 ${height}`} style={overview?{height:`${zoom*100}%`,width:"auto"}:{width:`${zoom*100}%`}} className="journey-map-scene" role="group" aria-label={`Percurso interativo de 1 a ${days.length}`}>
@@ -44,9 +47,9 @@ export function BiblicalWorldMap({stage,completedStages,chapters,plan,onRead,rea
      </pattern>
     </defs>
     <rect width="720" height={height} fill={`url(#${id}-terrain)`}/>
-    <g fill="#273e33" fontSize="18" fontWeight="700" aria-hidden="true">{!overview&&days.filter((_,i)=>i%12===0).map(day=>{const p=points[day.day-1];return <text key={day.day} x="230" y={p.y-85}>{stageJourneyContexts(day)[0].region}</text>})}</g>
+    <g fill="#273e33" fontSize="18" fontWeight="700" aria-hidden="true">{!overview&&visibleDays.filter((_,i)=>i%12===0).map(day=>{const p=points[visibleDays.indexOf(day)];return <text key={day.day} x="230" y={p.y-85}>{stageJourneyContexts(day)[0].region}</text>})}</g>
     <g fill="none" strokeLinecap="round" aria-hidden="true"><path d={path} stroke="#394b39" strokeWidth={overview?14:36} transform="translate(0 8)" opacity=".45"/><path d={path} stroke="#8d7047" strokeWidth={overview?12:34}/><path d={path} stroke="#ecd39b" strokeWidth={overview?8:25}/>{!overview&&<path d={path} stroke="#af925e" strokeWidth="2" strokeDasharray="2 12"/>}</g>
-    {days.map((day,i)=>{const p=points[i],state=status(day.day),isCurrent=day.day===current,isSelected=day.day===selected,context=stageJourneyContexts(day)[0];return <g key={day.day} ref={el=>{if(el)nodes.current.set(day.day,el);else nodes.current.delete(day.day)}} role="button" tabIndex={0} aria-pressed={isSelected} aria-label={`Etapa ${day.day}, ${state}, ${context.name}`} transform={`translate(${p.x} ${p.y})`} className="journey-map-node" onClick={()=>choose(day.day)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose(day.day)}}}>
+    {visibleDays.map((day,i)=>{const p=points[i],state=status(day.day),isCurrent=day.day===current,isSelected=day.day===selected,context=stageJourneyContexts(day)[0];return <g key={day.day} ref={el=>{if(el)nodes.current.set(day.day,el);else nodes.current.delete(day.day)}} role="button" tabIndex={0} aria-pressed={isSelected} aria-label={`Etapa ${day.day}, ${state}, ${context.name}`} transform={`translate(${p.x} ${p.y})`} className="journey-map-node" onClick={()=>choose(day.day)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose(day.day)}}}>
      <title>{`Etapa ${day.day} · ${state} · ${day.chapters.map(c=>`${c.book} ${c.chapter}`).join(' · ')}`}</title>
      <circle r={overview?21:44} fill="transparent"/>
      <ellipse cy={overview?5:13} rx={overview?17:32} ry={overview?7:14} fill="#243a31" opacity=".7"/>
@@ -56,18 +59,10 @@ export function BiblicalWorldMap({stage,completedStages,chapters,plan,onRead,rea
      {day.day<=completedStages&&<text x={overview?11:23} y={overview?-10:-20} fontSize={overview?10:16} fill="#f3edc9">✓</text>}
      {!overview&&<><path d="M-10 -46V-65H-3V-58H4V-69H10V-46" stroke="#6e613e" strokeWidth="2" fill="#e4ce97"/><rect x="-112" y="43" width="224" height="43" rx="10" fill="#132f36"/><text y="61" textAnchor="middle" fill="#eef2dc" fontSize="14" fontWeight="700">{context.name}</text><text y="78" textAnchor="middle" fill="#c3d7bc" fontSize="12">{state} · {day.chapters.length} capítulos</text></>}
     </g>})}
-    <text x="360" y={height-40} textAnchor="middle" fill="#f4e6ba" fontSize="20" fontWeight="700">{completedStages>=days.length?'✓ Jornada concluída':'✧ O Galardão · final da Jornada'}</text>
+    <text x="360" y={height-40} textAnchor="middle" fill="#f4e6ba" fontSize="20" fontWeight="700">{overview?'✧ O Galardão':`Etapas ${weekStart+1} a ${Math.min(weekStart+7,days.length)}`}</text>
    </svg>
   </div>
-  <div className="journey-map-key"><span>● Atual</span><span>✓ Concluída</span><span>○ Bloqueada</span><span>1–{days.length}</span></div>
-  <section className="journey-map-detail" aria-live="polite" aria-label="Detalhes da etapa selecionada">
-   <div className="journey-map-detail-title"><h3>Etapa {viewed.day} · {status(viewed.day)}</h3><label>Ir à etapa <select aria-label="Escolher etapa no mapa" value={selected} onChange={e=>{const day=Number(e.target.value);setSelected(day);panTo(day)}}>{days.map(day=><option key={day.day} value={day.day}>{day.day}</option>)}</select></label></div>
-   <p className="journey-map-refs">{viewed.chapters.map(c=>`${c.book} ${c.chapter}`).join(' · ')}</p>
-   <small>Calendário de referência: {journeyCalendarLabel(viewed.day,days.length)}. O prazo real começa na ativação da etapa.</small>
-   {contexts.map(context=><article className="journey-place-context" key={context.name}><span>{context.kind==='destinatários'?'DESTINO DA CARTA':context.kind==='simbólico'?'MARCO SIMBÓLICO':'CONTEXTO DA LEITURA'}</span><h4>{context.name}</h4><small>{context.region}</small><p>{context.detail}</p><small>{context.reference}</small></article>)}
-   {viewed.day%7===0&&<article className="journey-place-context"><h4>{viewed.day<=completedStages?`Baú de Talentos · ${viewed.day} dias`:'Marco futuro · recompensa a descobrir'}</h4><p>{viewed.day<=completedStages?'Marco de constância confirmado. Reflita sobre o cuidado com o tempo e os talentos recebidos (Mt 25.14–30). Este marco não concede XP adicional.':'Continue a leitura para conhecer este marco. Vídeos e estudos permanecem opcionais.'}</p></article>}
-   {viewed.day===current?(readingAvailable?(onRead?<button className="primary-cta" onClick={onRead}>{readLabel??`ABRIR LEITURA DA ETAPA ${current}`}</button>:<a className="primary-cta" href="#journey-current-reading">{readLabel??`ABRIR LEITURA DA ETAPA ${current}`}</a>):<p role="status">{completedMessage??"Etapa concluída. Confira o relógio de liberação da próxima leitura."}</p>):<><p>Você está explorando {viewed.day<current?'uma etapa anterior':'uma etapa futura'}. Esta consulta não inicia o relógio nem registra XP.</p><button onClick={()=>{setSelected(current);panTo(current)}}>Voltar à minha etapa {current}</button></>}
-   <details><summary>Como usar o mapa e o calendário</summary><p>Arraste o mapa na vertical. Use + e − para aproximar ou afastar. “Ver jornada inteira” reúne todos os {days.length} marcos na mesma visão; toque em um número para consultar o contexto. Apenas sua leitura liberada pode ser iniciada.</p><p>O relevo é uma arte de jogo, sem escala geográfica. Cada marco é um encontro de leitura, e uma etapa pode reunir capítulos de lugares distintos. Os nomes e as referências abaixo situam o texto; a estrada liga etapas, não afirma uma rota histórica única.</p><p>365 etapas no plano anual comum; 366 no plano bissexto, com 29 de fevereiro. Os 1.189 capítulos permanecem completos, sem repetição. O calendário não autoriza antecipar leituras.</p></details>
-  </section>
+  {notice&&<p className="journey-map-notice" role="status">{notice}</p>}
+  <details className="journey-map-help"><summary>Ajuda e contexto</summary><p>Toque no número aceso para ler. As etapas com ✓ já foram concluídas; as demais aguardam liberação. Use + e − para ajustar o mapa.</p><p>{viewed.chapters.map(c=>`${c.book} ${c.chapter}`).join(' · ')}</p>{contexts.map(context=><p key={context.name}><strong>{context.name}</strong> · {context.region}<br/>{context.detail}<br/><small>{context.reference}</small></p>)}<p>O caminho é uma representação de jogo, sem escala geográfica.</p></details>
  </section>;
 }
