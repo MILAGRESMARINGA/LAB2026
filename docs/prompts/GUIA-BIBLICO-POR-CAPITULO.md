@@ -2,7 +2,7 @@
 
 Versão editorial: `chapter-guide-1.0.0` · Diretriz aprovada pelo responsável pelo projeto em 23/10/2026.
 
-Este documento é a fonte canônica de instruções editoriais para novos guias. Seu registro não certifica que o gerador legado, o acervo ou os estudos já publicados foram migrados. O plano de integração está em `../CHAPTER-GUIDE-IMPLEMENTATION.md`.
+Este documento é a base de instruções editoriais para novos guias. O adendo normativo `ADENDO-GUIAS-1189-VERSICULOS.md`, versão `chapter-guide-1.1.0`, amplia o escopo aos 1.189 capítulos, exige comentário individual por versículo e define aprofundamentos linguísticos, culturais e textuais; nos pontos de conflito, o adendo prevalece. Seu registro não certifica que o gerador legado, o acervo ou os estudos já publicados foram migrados. O plano de integração está em `../CHAPTER-GUIDE-IMPLEMENTATION.md`.
 
 ## PAPEL E OBJETIVO
 

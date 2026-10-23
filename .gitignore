@@ -1,3 +1,0 @@
-# Real quiz answer keys are provisioned into the private database, never Git.
-/docs/seeds/video-comprehension*.json
-/lab-app/supabase/.temp/
