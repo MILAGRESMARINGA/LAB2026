@@ -1,9 +1,0 @@
-.book-introduction{padding:1rem;border:1px solid #526c75;border-radius:1rem;margin:1rem 0;background:#193039;color:#e5eef1;font-size:1rem;line-height:1.6}
-.book-introduction summary{cursor:pointer;font-weight:700;display:flex;align-items:center;gap:.5rem}
-.book-introduction dl{display:grid;gap:.8rem}.book-introduction dd{margin:.2rem 0 0}
-.book-video-chest{border-top:1px solid #526c75;padding-top:.6rem;margin-top:.8rem}
-.book-video-chest .secondary-cta{margin:.25rem .5rem .25rem 0;display:inline-flex;gap:.5rem;align-items:center}
-.book-introduction a:focus-visible,.book-introduction button:focus-visible,.book-introduction summary:focus-visible{outline:3px solid #f0e442;outline-offset:4px}
-.reader-editions{display:flex;gap:.75rem;flex-wrap:wrap;align-items:end;padding:.8rem 0}.reader-editions label{display:grid;gap:.3rem}.reader-editions select{font:inherit;max-width:100%;background:#193039;color:#e5eef1;border:1px solid #78909a;padding:.6rem;border-radius:.5rem}
-.bible-comparison-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}.bible-comparison-row>div{min-width:0}.bible-jesus-words{color:#ffb4ad;font-weight:600}
-@media(max-width:640px){.bible-comparison-row{grid-template-columns:1fr}.bible-comparison-row>div+div{padding-left:.75rem;border-left:2px solid #78909a}}
