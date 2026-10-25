@@ -1,1 +1,42 @@
-import { readFile } from 'node:fs/promises';\nimport { fileURLToPath } from 'node:url';\nimport path from 'node:path';\nimport test from 'node:test';\nimport assert from 'node:assert/strict';\n\nconst migrationPath = path.resolve(\n  path.dirname(fileURLToPath(import.meta.url)),\n  '../../supabase/migrations/20261024020616_lab_strong_canonical_study_foundation.sql',\n);\nconst sql = await readFile(migrationPath, 'utf8');\nconst normalized = sql.toLowerCase();\n\ntest('Strong foundation is reproducible and protected by RLS', () => {\n  for (const table of [\n    'strong_lexicon_releases',\n    'strong_hebrew',\n    'strong_greek',\n    'strong_tagging_releases',\n    'verse_strong_links',\n  ]) {\n    assert.match(normalized, new RegExp('create table if not exists public\\\\.' + table));\n    assert.match(normalized, new RegExp('alter table public\\\\.' + table + ' enable row level security'));\n  }\n  assert.match(normalized, /references public\\\\.lab_bible_verses/);\n  assert.match(normalized, /review_status = 'approved'/);\n  assert.match(normalized, /publication_status = 'published'/);\n  assert.match(normalized, /rights_status in \\(\\'approved\\', \\'public_domain\\'\\)/);\n});\n\ntest('Strong data is readable only by authenticated users after publication gates', () => {\n  assert.match(normalized, /revoke all on table[\\s\\S]+from public, anon, authenticated/);\n  assert.match(normalized, /grant select on table[\\s\\S]+to authenticated/);\n  assert.doesNotMatch(normalized, /grant[\\s\\S]+to anon/);\n  assert.match(normalized, /for select to authenticated/);\n});\n\ntest('trusted ingestion permissions are explicit and do not touch secrets', () => {\n  assert.match(normalized, /grant select, insert, update on table[\\s\\S]+to service_role/);\n  assert.doesNotMatch(normalized, /alter role|create secret|vault\\./);\n  assert.doesNotMatch(normalized, /grant[\\s\\S]+delete[\\s\\S]+to service_role/);\n});
+import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
+const migrationPath = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../supabase/migrations/20261024020616_lab_strong_canonical_study_foundation.sql',
+);
+const sql = await readFile(migrationPath, 'utf8');
+const normalized = sql.toLowerCase();
+
+test('Strong foundation is reproducible and protected by RLS', () => {
+  for (const table of [
+    'strong_lexicon_releases',
+    'strong_hebrew',
+    'strong_greek',
+    'strong_tagging_releases',
+    'verse_strong_links',
+  ]) {
+    assert.ok(normalized.includes(`create table if not exists public.${table}`));
+    assert.ok(normalized.includes(`alter table public.${table} enable row level security`));
+  }
+  assert.ok(normalized.includes('references public.lab_bible_verses'));
+  assert.ok(normalized.includes("review_status = 'approved'"));
+  assert.ok(normalized.includes("publication_status = 'published'"));
+  assert.ok(normalized.includes("rights_status in ('approved', 'public_domain')"));
+});
+
+test('Strong data is readable only by authenticated users after publication gates', () => {
+  assert.match(normalized, /revoke all on table[\s\S]+from public, anon, authenticated/);
+  assert.match(normalized, /grant select on table[\s\S]+to authenticated/);
+  assert.doesNotMatch(normalized, /grant[\s\S]+to anon/);
+  assert.match(normalized, /for select to authenticated/);
+});
+
+test('trusted ingestion permissions are explicit and do not touch secrets', () => {
+  assert.match(normalized, /grant select, insert, update on table[\s\S]+to service_role/);
+  assert.doesNotMatch(normalized, /alter role|create secret|vault\./);
+  assert.doesNotMatch(normalized, /grant[\s\S]+delete[\s\S]+to service_role/);
+});
