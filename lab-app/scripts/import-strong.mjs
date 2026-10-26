@@ -30,16 +30,16 @@ const sources = [
     name: "STEPBible TBESH",
     language: "hebrew",
     sourceUrl:
-      "https://raw.githubusercontent.com/STEPBible/STEPBible-Data/a64990a674d13245ae1e9ed426bc69197c2fbad5/Lexicons/TBESH%20-%20Translators%20Brief%20lexicon%20of%20Extended%20Strongs%20for%20Hebrew%20-%20STEPBible.org%20CC%20BY.txt",
-    revision: "a64990a674d13245ae1e9ed426bc69197c2fbad5",
+      "https://raw.githubusercontent.com/STEPBible/STEPBible-Data/48b7cfbda441adb6445ea565b4ed23dd98dfdf2e/Lexicons/TBESH%20-%20Translators%20Brief%20lexicon%20of%20Extended%20Strongs%20for%20Hebrew%20-%20STEPBible.org%20CC%20BY.txt",
+    revision: "48b7cfbda441adb6445ea565b4ed23dd98dfdf2e",
     table: "strong_hebrew",
   },
   {
     name: "STEPBible TBESG",
     language: "greek",
     sourceUrl:
-      "https://raw.githubusercontent.com/STEPBible/STEPBible-Data/efe271a1dbb73fa01f8fa6e0f164c6687757a9ae/Lexicons/TBESG%20-%20Translators%20Brief%20lexicon%20of%20Extended%20Strongs%20for%20Greek%20-%20STEPBible.org%20CC%20BY.txt",
-    revision: "efe271a1dbb73fa01f8fa6e0f164c6687757a9ae",
+      "https://raw.githubusercontent.com/STEPBible/STEPBible-Data/805360e477f2668119806241fb2eea07544b765e/Lexicons/TBESG%20-%20Translators%20Brief%20lexicon%20of%20Extended%20Strongs%20for%20Greek%20-%20STEPBible.org%20CC%20BY.txt",
+    revision: "805360e477f2668119806241fb2eea07544b765e",
     table: "strong_greek",
   },
 ];
