@@ -46,9 +46,8 @@ const sources = [
 
 function parseLines(text, language) {
   const rows = [];
-  for (const line of text.split(/?
-/)) {
-    const match = line.match(/([HG]d{1,4})/);
+  for (const line of text.split(/\r?\n/)) {
+    const match = line.match(/\b([HG]\d{1,4})\b/);
     if (!match) continue;
 
     const number = match[1];
