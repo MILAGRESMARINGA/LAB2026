@@ -1,0 +1,15 @@
+{
+  "commit": "be4191f0082aeedddb0eff0c02c966292b2bd641",
+  "bundles": {
+    "TAHOT": "1ac5d58521521f62ada6528b953c42fb35875e5952af8d5dc494c6141b1f0620",
+    "TAGNT": "ebf7d752faf67dc62883e54b8e82038eef5b48f54453849f872be2450c90005f"
+  },
+  "releases": {
+    "TAHOT": { "id": "f5504852-1985-4005-ad25-88183adf16d2", "rights_status": "approved", "publication_status": "draft" },
+    "TAGNT": { "id": "7570012d-9f22-420d-8499-e2b08d71c29e", "rights_status": "approved", "publication_status": "draft" }
+  },
+  "counts": { "links": 392330, "chapters": 1189, "verse_coordinates": 31102, "orphans": 0, "pending": 392330 },
+  "by_edition": { "TAHOT": 251135, "TAGNT": 141195 },
+  "editorial_qc": { "passed": 8, "total": 9, "blocked": ["Genesis 1.1 H1254 absent from existing Hebrew lexicon"] },
+  "tests": { "engineering": 134, "full": 245, "build": "passed" }
+}
