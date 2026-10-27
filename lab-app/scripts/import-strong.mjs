@@ -31,7 +31,7 @@ const sources = [
     language: "hebrew",
     sourceUrl:
       "https://raw.githubusercontent.com/STEPBible/STEPBible-Data/48b7cfbda441adb6445ea565b4ed23dd98dfdf2e/Lexicons/TBESH%20-%20Translators%20Brief%20lexicon%20of%20Extended%20Strongs%20for%20Hebrew%20-%20STEPBible.org%20CC%20BY.txt",
-    revision: "48b7cfbda441adb6445ea565b4ed23dd98dfdf2e",
+    revision: "48b7cfbda441adb6445ea565b4ed23dd98dfdf2e; canonical-fields-v2",
     table: "strong_hebrew",
   },
   {
@@ -39,36 +39,41 @@ const sources = [
     language: "greek",
     sourceUrl:
       "https://raw.githubusercontent.com/STEPBible/STEPBible-Data/805360e477f2668119806241fb2eea07544b765e/Lexicons/TBESG%20-%20Translators%20Brief%20lexicon%20of%20Extended%20Strongs%20for%20Greek%20-%20STEPBible.org%20CC%20BY.txt",
-    revision: "805360e477f2668119806241fb2eea07544b765e",
+    revision: "805360e477f2668119806241fb2eea07544b765e; canonical-fields-v2",
     table: "strong_greek",
   },
 ];
 
-function parseLines(text, language) {
-  const rows = [];
+export function parseLines(text, language) {
+  const candidates = new Map();
   for (const line of text.split(/\r?\n/)) {
-    const match = line.match(/\b([HG]\d{1,4})\b/);
+    const fields = line.split("\t").map((value) => value.trim());
+    const match = fields[0]?.match(/^([HG])(\d{1,4})([a-zA-Z]*)$/);
     if (!match) continue;
 
-    const number = match[1];
+    const number = `${match[1]}${Number(match[2])}`;
     if (language === "hebrew" && !number.startsWith("H")) continue;
     if (language === "greek" && !number.startsWith("G")) continue;
 
-    const fields = line.split("\t").map((value) => value.trim());
-    const lemma = fields[1] || "";
+    const lemma = fields[3] || "";
     if (!lemma) continue;
 
-    rows.push({
+    const suffix = match[3].toLowerCase();
+    const candidate = {
       strong_number: number,
       lemma,
-      transliteration: fields[2] || null,
-      glosses: fields.slice(3).join(" | ") || null,
+      transliteration: fields[4] || null,
+      glosses: fields.slice(6).join(" | ") || null,
       definition: line,
-    });
+      _priority: suffix === "" ? 0 : suffix === "a" ? 1 : 2,
+    };
+    const existing = candidates.get(number);
+    if (!existing || candidate._priority < existing._priority) {
+      candidates.set(number, candidate);
+    }
   }
 
-  const unique = new Map(rows.map((row) => [row.strong_number, row]));
-  return [...unique.values()];
+  return [...candidates.values()].map(({ _priority, ...row }) => row);
 }
 
 function validateRows(rows, language, sourceName) {
@@ -91,6 +96,7 @@ async function getOrCreateRelease(source, sha) {
     .from("strong_lexicon_releases")
     .select("id, rights_status, publication_status")
     .eq("source_url", source.sourceUrl)
+    .eq("source_revision", source.revision)
     .eq("artifact_sha256", sha)
     .maybeSingle();
 
