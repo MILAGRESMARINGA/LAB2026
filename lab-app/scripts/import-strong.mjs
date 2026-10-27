@@ -31,7 +31,7 @@ const sources = [
     language: "hebrew",
     sourceUrl:
       "https://raw.githubusercontent.com/STEPBible/STEPBible-Data/48b7cfbda441adb6445ea565b4ed23dd98dfdf2e/Lexicons/TBESH%20-%20Translators%20Brief%20lexicon%20of%20Extended%20Strongs%20for%20Hebrew%20-%20STEPBible.org%20CC%20BY.txt",
-    revision: "48b7cfbda441adb6445ea565b4ed23dd98dfdf2e",
+    revision: "48b7cfbda441adb6445ea565b4ed23dd98dfdf2e; canonical-fields-v2",
     table: "strong_hebrew",
   },
   {
@@ -39,12 +39,12 @@ const sources = [
     language: "greek",
     sourceUrl:
       "https://raw.githubusercontent.com/STEPBible/STEPBible-Data/805360e477f2668119806241fb2eea07544b765e/Lexicons/TBESG%20-%20Translators%20Brief%20lexicon%20of%20Extended%20Strongs%20for%20Greek%20-%20STEPBible.org%20CC%20BY.txt",
-    revision: "805360e477f2668119806241fb2eea07544b765e",
+    revision: "805360e477f2668119806241fb2eea07544b765e; canonical-fields-v2",
     table: "strong_greek",
   },
 ];
 
-function parseLines(text, language) {
+export function parseLines(text, language) {
   const candidates = new Map();
   for (const line of text.split(/\r?\n/)) {
     const fields = line.split("\t").map((value) => value.trim());
@@ -96,6 +96,7 @@ async function getOrCreateRelease(source, sha) {
     .from("strong_lexicon_releases")
     .select("id, rights_status, publication_status")
     .eq("source_url", source.sourceUrl)
+    .eq("source_revision", source.revision)
     .eq("artifact_sha256", sha)
     .maybeSingle();
 
