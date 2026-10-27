@@ -16,8 +16,8 @@ test('Strong importer uses immutable source revisions and supports secret-free d
   assert.match(source, /if \(!dryRun && \(!url \|\| !key\)\)/);
 });
 
-test('Strong importer validates required lemmas before database writes', () => {
-  assert.match(source, /const lemma = fields\[1\] \|\| ""/);
+test('Strong importer reads canonical lexical columns and validates required lemmas before database writes', () => {
+  assert.match(source, /const lemma = fields\[3\] \|\| ""/);
   assert.match(source, /if \(!lemma\) continue/);
   assert.match(source, /validateRows\(rows, source\.language, source\.name\)/);
 });

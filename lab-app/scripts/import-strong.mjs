@@ -45,30 +45,35 @@ const sources = [
 ];
 
 function parseLines(text, language) {
-  const rows = [];
+  const candidates = new Map();
   for (const line of text.split(/\r?\n/)) {
-    const match = line.match(/\b([HG]\d{1,4})\b/);
+    const fields = line.split("\t").map((value) => value.trim());
+    const match = fields[0]?.match(/^([HG])(\d{1,4})([a-zA-Z]*)$/);
     if (!match) continue;
 
-    const number = match[1];
+    const number = `${match[1]}${Number(match[2])}`;
     if (language === "hebrew" && !number.startsWith("H")) continue;
     if (language === "greek" && !number.startsWith("G")) continue;
 
-    const fields = line.split("\t").map((value) => value.trim());
-    const lemma = fields[1] || "";
+    const lemma = fields[3] || "";
     if (!lemma) continue;
 
-    rows.push({
+    const suffix = match[3].toLowerCase();
+    const candidate = {
       strong_number: number,
       lemma,
-      transliteration: fields[2] || null,
-      glosses: fields.slice(3).join(" | ") || null,
+      transliteration: fields[4] || null,
+      glosses: fields.slice(6).join(" | ") || null,
       definition: line,
-    });
+      _priority: suffix === "" ? 0 : suffix === "a" ? 1 : 2,
+    };
+    const existing = candidates.get(number);
+    if (!existing || candidate._priority < existing._priority) {
+      candidates.set(number, candidate);
+    }
   }
 
-  const unique = new Map(rows.map((row) => [row.strong_number, row]));
-  return [...unique.values()];
+  return [...candidates.values()].map(({ _priority, ...row }) => row);
 }
 
 function validateRows(rows, language, sourceName) {
