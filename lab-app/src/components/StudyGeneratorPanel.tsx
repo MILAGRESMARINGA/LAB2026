@@ -2,6 +2,8 @@ import {BookOpen,CheckCircle2,Clock3,Loader2,MessageCircleHeart,Sparkles} from "
 import {useEffect,useId,useRef,useState} from "react";
 import {loadDayStudies,type GeneratedStudy} from "../features/study-generate";
 import {StudyReadingScreen} from "./StudyReadingScreen";
+import {StrongVerseTool} from "./StrongVerseTool";
+import {STRONG_READER_READY} from "../features/strong-lexicon";
 
 type Props={enabled:boolean;journeyDay:number|null;layer:1|2|3;resolveChapterRefs:()=>Promise<string[]>};
 
@@ -48,6 +50,7 @@ export function GeneratedStudyCard({study,index=0}:{study:GeneratedStudy;index?:
   <StudyReadingScreen id={contentId} title={study.title} open={open} onClose={()=>setOpen(false)}>
     <div className="study-screen-content">
      <section className="generated-study-references" aria-label="Referências bíblicas"><h4>Referências bíblicas</h4><ul>{study.chapter_refs.map(reference=><li key={reference}>{reference}</li>)}</ul></section>
+     {STRONG_READER_READY&&<StrongVerseTool chapterRefs={study.chapter_refs}/>}
      <StudySection title="Panorama" text={study.content.summary}/><StudySection title="Contexto" text={study.content.context}/><StudySection title="Exegese" text={study.content.exegesis}/>
      <div className="generated-study-connection"><strong>{study.content.theological_connection?"Chave bíblica conectada":"Leituras preservadas separadamente"}</strong><p>{study.content.theological_connection??"Não foi identificada uma conexão textual ou canônica direta. Cada referência permanece com sua própria exegese e aplicação."}</p></div>
      <StudySection title="Lente Pentecostal Arminiana" text={study.content.pentecostal_arminian_lens}/><StudySection title="Prática de hoje" text={study.content.application}/>

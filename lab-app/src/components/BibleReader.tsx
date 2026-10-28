@@ -3,6 +3,8 @@ import {BookOpen,CheckCircle2,ChevronDown,Minus,Plus,RefreshCw} from "lucide-rea
 import {readBibleChapter,listBibleEditions,readBibleSpeechSpans,splitVerseSpeech,DEFAULT_EDITION,FALLBACK_BIBLE_EDITIONS,type BibleEdition,type JesusSpeechSpan,type BibleChapter} from "../features/bible";
 import {BookIntroduction} from "./BookIntroduction";
 import {BiblicalContextPanel} from "./BiblicalContextPanel";
+import {StrongLexiconDrawer} from "./StrongLexiconDrawer";
+import {STRONG_READER_READY} from "../features/strong-lexicon";
 import {type BibleProjectResource} from "../domain/bibleproject";
 export function BibleReader({chapterId,onConfirm,onOpen,busy=false,highlightVerse,onVideo}:{chapterId:string;onConfirm?:()=>void;onOpen?:(chapterId:string)=>Promise<unknown>;busy?:boolean;highlightVerse?:number|null;onVideo?:(resource:BibleProjectResource,book:string)=>void}){
  const [editions,setEditions]=useState<readonly BibleEdition[]>(FALLBACK_BIBLE_EDITIONS);
@@ -11,6 +13,8 @@ export function BibleReader({chapterId,onConfirm,onOpen,busy=false,highlightVers
  const [compareEdition,setCompareEdition]=useState("");
  const [compared,setCompared]=useState<BibleChapter|null>(null);
  const [compareError,setCompareError]=useState("");
+ const [strongVerse,setStrongVerse]=useState<number|null>(null);
+ useEffect(()=>{setStrongVerse(null)},[chapterId]);
  const [speech,setSpeech]=useState<Record<number,JesusSpeechSpan[]>>({});
  const [compareSpeech,setCompareSpeech]=useState<Record<number,JesusSpeechSpan[]>>({});
  useEffect(()=>{let live=true;void listBibleEditions().then(data=>{if(live)setEditions(data)}).catch(()=>{});return()=>{live=false}},[]);
@@ -76,12 +80,13 @@ export function BibleReader({chapterId,onConfirm,onOpen,busy=false,highlightVers
   {error&&<div className="bible-reader-status" role="alert"><p>{error}</p><button type="button" className="secondary-cta" onClick={()=>setReload(x=>x+1)}><RefreshCw size={16}/> Tentar novamente</button></div>}
   {chapter&&<>{chapter.chapter_number===1&&<BookIntroduction book={chapter.book_name} onVideo={onVideo}/>}<div id="bible-chapter-text" className="bible-verse-scroll" tabIndex={0} ref={scrollRef} onScroll={observe} style={{fontSize:fontSize+"px"}} aria-label={"Texto de "+chapter.book_name+" capítulo "+chapter.chapter_number}>
    <h2>{chapter.book_name} {chapter.chapter_number}</h2>
-   {chapter.verses.map((verse,index)=>{const second=compared?.verses.find(item=>item.number===verse.number);return <div key={verse.number+"-"+index} data-verse-number={verse.number} className={compare?"bible-comparison-row":""}><div>{compare&&<small>{editionTitle}</small>}<p className={"bible-verse "+(verse.number===highlightVerse?"bible-verse-highlight":"")}><sup>{verse.number}</sup> {renderSpeech(verse.text,speech[verse.number])}</p></div>{compare&&<div><small>{editions.find(item=>item.code===compareEdition)?.title??compareEdition}</small><p className="bible-verse">{second?<><sup>{second.number}</sup> {renderSpeech(second.text,compareSpeech[second.number])}</>:compared?"Sem versículo correspondente nesta edição.":"Carregando comparação…"}</p></div>}</div>})}
+   {chapter.verses.map((verse,index)=>{const second=compared?.verses.find(item=>item.number===verse.number);return <div key={verse.number+"-"+index} data-verse-number={verse.number} className={compare?"bible-comparison-row":""}><div>{compare&&<small>{editionTitle}</small>}<p className={"bible-verse "+(verse.number===highlightVerse?"bible-verse-highlight":"")}><sup>{verse.number}</sup> {renderSpeech(verse.text,speech[verse.number])}</p>{STRONG_READER_READY&&<button type="button" className="strong-open-button" aria-label={`Consultar Strong de ${chapter.book_name} ${chapter.chapter_number} versículo ${verse.number}`} onClick={()=>setStrongVerse(verse.number)}>Strong · v.{verse.number}</button>}</div>{compare&&<div><small>{editions.find(item=>item.code===compareEdition)?.title??compareEdition}</small><p className="bible-verse">{second?<><sup>{second.number}</sup> {renderSpeech(second.text,compareSpeech[second.number])}</>:compared?"Sem versículo correspondente nesta edição.":"Carregando comparação…"}</p></div>}</div>})}
    <p className="chapter-finish"><CheckCircle2 size={20}/> Fim do capítulo</p>
   </div>
   {onConfirm&&!readToEnd&&<p className="reader-scroll-hint"><ChevronDown size={16}/> Role a leitura até o final para liberar a confirmação.</p>}
   {onConfirm&&<button className="primary-cta reader-confirm" type="button" onClick={onConfirm} disabled={busy||!readToEnd}><CheckCircle2 size={20}/>{busy?"REGISTRANDO...":"CONCLUÍ A LEITURA"} </button>}
   <BiblicalContextPanel chapterId={chapterId}/>
+  {STRONG_READER_READY&&strongVerse!==null&&<StrongLexiconDrawer key={`${chapterId}:${strongVerse}`} chapterId={chapterId} verse={strongVerse} onClose={()=>setStrongVerse(null)}/>}
   <p className="reader-attribution">{edition===DEFAULT_EDITION?"Almeida 1911 · Ortografia histórica · Texto de domínio público. Fonte: Projeto Gutenberg nº 62383; transcrição estruturada do projeto biblias.":editions.find(item=>item.code===edition)?.license_label}</p>
   <p className="reader-attribution">Falas de Jesus em vermelho conforme revisão editorial de cada tradução. A ausência de destaque não indica ausência de fala.</p>
   </>}

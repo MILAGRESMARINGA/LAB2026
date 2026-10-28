@@ -740,3 +740,33 @@ body.video-modal-open{overflow:hidden}
 .biblical-context-panel label{display:block;margin:12px 0}.biblical-context-panel input,.biblical-context-panel select{display:block;max-width:100%;width:100%;box-sizing:border-box;min-height:44px;border:1px solid #769097;border-radius:10px;padding:10px;background:#14272f;color:#f1f7f9;font:inherit}
 .biblical-context-panel a{color:#bfe6f6;text-decoration:underline}.p2-reference-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:12px}
 .study-reading-dialog{width:min(850px,calc(100% - 32px));max-height:94dvh;border:1px solid #6b867b;border-radius:22px;background:#182f36;color:#eef4e8;padding:0}.study-reading-dialog::backdrop{background:#06151cee;backdrop-filter:blur(6px)}.study-reading-dialog>header{position:sticky;top:0;background:#1b383e;display:flex;justify-content:space-between;gap:16px;padding:20px;border-bottom:1px solid #4b665f;z-index:1}.study-reading-dialog h2{margin:8px 0}.study-reading-dialog header button{background:#c5e982;color:#142c29;border:0;border-radius:12px;padding:12px;cursor:pointer;font-weight:700}.study-reading-body{padding:24px;line-height:1.8}.study-reading-dialog .study-detail{margin:0;border:0;padding:0}@media(max-width:600px){.study-reading-dialog{width:100%;height:100dvh;max-height:100dvh;border-radius:0}.study-reading-dialog>header{padding:16px;align-items:center}.study-reading-body{padding:18px}}
+
+
+/* Strong original-language reader; visible only when editorial gates are enabled. */
+.strong-open-button{font:inherit;font-size:12px;cursor:pointer;min-height:38px;margin:4px 0 10px;padding:7px 11px;border:1px solid #7f9ba1;border-radius:9px;background:#1c3d42;color:#d8ecf0}
+.strong-open-button:focus-visible,.strong-study-controls button:focus-visible,.strong-drawer button:focus-visible{outline:3px solid #d6ef89;outline-offset:3px}
+.strong-drawer{position:fixed;inset:0 0 0 auto;margin:0;width:min(100%,550px);max-width:100%;height:100dvh;max-height:100dvh;border:0;border-left:1px solid #6b867b;background:#182f36;color:#f2f6ee;padding:0;overflow:auto}
+.strong-drawer::backdrop{background:rgba(0,7,15,.8)}
+.strong-drawer-header{position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:15px;background:#18333a;border-bottom:1px solid #526d73;padding:20px}
+.strong-drawer-header h2{margin:7px 0 0;font-size:23px}
+.strong-drawer-header button{cursor:pointer;display:grid;place-items:center;min-width:44px;min-height:44px;border:1px solid #81959b;border-radius:10px;background:#254049;color:#eff8fc}
+.strong-drawer-body{padding:18px 22px 34px;line-height:1.65}
+.strong-drawer-disclaimer,.strong-drawer-footnote{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:#e0ebed;border:1px solid #647f82;border-radius:12px;padding:12px 14px;background:#244047}
+.strong-drawer-disclaimer svg,.strong-drawer-footnote svg{flex:0 0 auto;margin-top:2px}
+.strong-term-list{list-style:none;padding:0;margin:18px 0}
+.strong-term-list>li{padding:16px 12px;margin-bottom:12px;border:1px solid #547479;border-radius:12px;background:#1d3940}
+.strong-term-title{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+.strong-number{font-weight:800;color:#d5ee9d}
+.strong-original{font-size:24px;line-height:1.5;color:#fff}
+.strong-term-list dl{display:grid;grid-template-columns:minmax(0,128px) 1fr;gap:8px;font-size:14px}
+.strong-term-list dt{font-weight:700;color:#c2d8da}
+.strong-term-list dd{margin:0;overflow-wrap:anywhere}
+.strong-auto-note{font-size:12px;color:#f1d595}
+.strong-study-tool{padding:15px;border:1px solid #759395;border-radius:12px;margin:18px 0;background:#203940}
+.strong-study-tool h4{display:flex;align-items:center;gap:9px}
+.strong-study-controls{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px}
+.strong-study-controls label{display:grid;gap:5px;flex:1 1 145px;font-size:13px}
+.strong-study-controls select,.strong-study-controls input{box-sizing:border-box;width:100%;min-height:44px;padding:8px;background:#12282e;border:1px solid #93a6a8;border-radius:9px;color:#fff;font:inherit}
+.strong-study-controls button{min-height:44px;padding:9px 13px;border:0;border-radius:10px;background:#c6e98c;color:#172b2b;cursor:pointer;font-weight:750}
+.strong-study-controls button:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:600px){.strong-drawer{width:100%;border-left:0}.strong-drawer-header{padding:15px}.strong-term-list dl{grid-template-columns:1fr}.strong-term-list dt{margin-top:6px}}
