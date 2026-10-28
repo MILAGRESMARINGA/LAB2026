@@ -185,6 +185,8 @@ jobs:
             exit 1;
           fi
           npx --yes supabase@latest status -o env > /tmp/labgame-supabase-ci.env
+      - name: Verify Strong reader remains closed until publication (disposable DB)
+        run: cat scripts/tests/strong-reader-rls-smoke.sql | docker exec -i supabase_db_labgame-free-ci psql -U postgres -d postgres -v ON_ERROR_STOP=1
       - name: Exercise two real local Auth sessions and RLS
         env:
           LAB_SUPABASE_LOCAL_ENV_FILE: /tmp/labgame-supabase-ci.env
