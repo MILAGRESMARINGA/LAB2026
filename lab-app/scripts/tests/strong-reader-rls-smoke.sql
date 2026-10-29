@@ -13,7 +13,7 @@ BEGIN
  IF NOT EXISTS (
   SELECT 1 FROM pg_policies WHERE schemaname='public'
    AND tablename='verse_strong_links' AND cmd='SELECT'
-   AND qual LIKE '%review_status = ''approved''%'
+   AND qual LIKE '%source_verified_stepbible%' AND qual LIKE '%editorial_reviewed%'
  ) THEN RAISE EXCEPTION 'FAIL: publication guard was not preserved'; END IF;
 END $$;
 

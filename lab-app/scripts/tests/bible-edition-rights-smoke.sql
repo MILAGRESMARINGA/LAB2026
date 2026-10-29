@@ -32,7 +32,7 @@ DO $test$ BEGIN
   RAISE EXCEPTION 'edition enabled without rights and import';
  EXCEPTION WHEN check_violation THEN NULL; END;
 END $test$;
-UPDATE public.lab_bible_edition_availability SET rights_status='licensed',rights_evidence_url='https://example.org/disposable-license-fixture',content_ready=true,available=true WHERE code='NVI';
+UPDATE public.lab_bible_edition_availability SET rights_status='licensed',license_status='licensed_by_rightsholder',rights_evidence_url='https://example.org/disposable-license-fixture',content_ready=true,available=true WHERE code='NVI';
 SET LOCAL ROLE anon;
 DO $test$ BEGIN
  IF EXISTS(SELECT 1 FROM public.lab_bible_chapters WHERE edition='NVI') THEN RAISE EXCEPTION 'licensed content visible without sign in'; END IF;

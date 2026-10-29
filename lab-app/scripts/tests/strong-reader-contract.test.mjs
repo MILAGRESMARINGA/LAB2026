@@ -46,3 +46,16 @@ test("source verification and editorial review remain distinct",()=>{
  assert.match(rpc,/v\.review_status/);
  assert.match(rpc,/tr\.gloss_status/);
 });
+
+test("rights registry never treats an MIT repository as translation permission",()=>{
+ const rights=readFileSync(new URL("supabase/migrations/202610280002_bible_rights_nonredistribution.sql",dir),"utf8");
+ assert.match(rights,/requires_commercial_contract_or_official_api/);
+ assert.match(rights,/available=false/);
+ assert.match(rights,/CC BY 3\.0 Brasil/);
+ assert.match(rights,/porbrbsl_usfm\.zip/);
+ assert.match(rights,/source_artifact_sha256/);
+ const staged=readFileSync(new URL("scripts/sql/releases/01-strong-source-verification-backfill.sql",dir),"utf8");
+ assert.match(staged,/v_total<>446231/);
+ assert.match(staged,/source_verified_stepbible/);
+ assert.doesNotMatch(staged,/set review_status='editorial_reviewed'/i);
+});
