@@ -66,18 +66,18 @@ values
 on conflict (code) do nothing;
 
 insert into public.lab_bible_edition_availability
- (code,title,display_order,available,requires_auth,license_label,rights_status,rights_evidence_url,content_ready,license_status,source_artifact_url,source_version)
+ (code,title,display_order,available,requires_auth,license_label,rights_status,rights_evidence_url,content_ready,license_status,source_artifact_url,source_version,source_artifact_sha256)
 values
  ('BLIVRE','Bíblia Livre (TR, 2018)',6,false,false,
   'CC BY 3.0 Brasil: © Diego Santos, Mario Sérgio e Marco Teles; versão fevereiro 2018.',
   'open_license','https://github.com/blivre/BibliaLivre/blob/master/LICENCA.md',
   false,'open_license_verified',
-  'https://github.com/blivre/BibliaLivre/releases','2018-02 (TR)'),
+  'https://github.com/blivre/BibliaLivre/releases/download/2018.2.0/usfm-s-blivre-tr.zip','2018.2.0-TR','9dc839d8c0dc6c2d732e5b56455fda11c6743d4f7c7c39dd5d25bb822ec7aff4'),
  ('BPM','Bíblia Portuguesa Mundial',7,false,false,
   'Domínio público: eBible.org; tradução em revisão.',
   'public_domain','https://ebible.org/find/details.php?id=porbrbsl',
   false,'public_domain_verified',
-  'https://ebible.org/Scriptures/porbrbsl_usfm.zip','2026-10-08')
+  'https://ebible.org/Scriptures/porbrbsl_usfm.zip','2026-10-08','16375fb06fff9186a8db06353743fe8075dc77d976cc1629263dbb4497630749')
 on conflict (code) do nothing;
 
 alter table public.lab_bible_edition_availability
