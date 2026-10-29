@@ -40,7 +40,12 @@ def verses_of_chapter(text:str)->list[dict]:
   chunk=MARKUP_RE.sub(" ",chunk)
   chunk=re.sub(r"<[^>]+>"," ",chunk)
   chunk=" ".join(chunk.replace("\u00a0"," ").split())
-  if not chunk or len(chunk)>5000:raise ValueError(f"Empty or enormous verse {verse}")
+  if not chunk:
+   # Some critical-text editions retain a verse number solely to indicate
+   # textual omission in manuscripts; never fabricate missing Scripture.
+   print(f"  Source has no verse text at verse {verse}; record omission in review log",flush=True)
+   continue
+  if len(chunk)>5000:raise ValueError(f"Enormous verse {verse}")
   result.append({"number":verse,"text":chunk})
  if not result or len({row["number"] for row in result})!=len(result):
   raise ValueError("Duplicate or missing verse within chapter")
