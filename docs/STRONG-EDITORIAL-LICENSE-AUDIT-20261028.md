@@ -62,3 +62,17 @@ Há **uma advertência de interpretação**: página histórica oficial de STEP 
 - Exigir status `human-reviewed` **somente após revisão real por pessoa**; revisão gerada por IA deve continuar marcada como máquina.
 - Comprovar backup restaurável de produção e ensaio de rollback antes das migrações ou de alterar releases globais.
 - **Nunca** publicar a totalidade de um conjunto apenas porque todos os registros têm proveniência técnica.
+
+## 6. Alerta crítico sobre traduções modernas (issue #83)
+
+A auditoria do Supabase encontrou `rights_status=licensed` e `available=true` para NVI, NAA, ARA e NTLH, mas `rights_evidence_url` aponta exclusivamente a `https://github.com/damarals/biblias/releases/tag/v1.0.0`. Esta é a **proveniência técnica** da importação, não uma autorização emitida pelos titulares.
+
+O próprio `damarals/biblias/src/catalog.py` declara NVI/NAA/ARA/NTLH como `copyright`. As regras da Biblica para NVI exigem permissão escrita para texto integral em apps: https://www.biblica.com/permissions/. A licença MIT que cobre o código-fonte do repositório de terceiros não confere automaticamente direitos sobre a tradução protegida. A autorização de app e a licença de dados STEPBible CC BY 4.0 são assuntos distintos.
+
+**Decisão de risco:** NÃO aprovar o lançamento público dessas quatro edições sem documento de autorização do titular para a modalidade do LABGame (uso digital, IA, cache/offline e eventual monetização). Registrar prova privada de direitos e manter a alternativa de domínio público. Evitar qualquer migração destrutiva ou troca de `available` durante esta revisão, até confirmação de backup e aprovação de mudança operacional.
+
+Registro: https://github.com/MILAGRESMARINGA/LAB2026/issues/83
+
+## 7. Limite de delegação editorial
+
+Este trabalho fez a verificação de licença de dados **STEPBible**, a auditoria estrutural e a proposta editorial de traduções, mas **não fez uma revisão filológica humana de 446.231 ocorrências**. Como o banco exige `human-reviewed` para `translation_status='reviewed'`, nenhuma IA deve declarar esse estado. A publicação global permanece **não aprovada**, enquanto partes previamente verificadas podem ser submetidas a revisão efetiva com rastreabilidade.
