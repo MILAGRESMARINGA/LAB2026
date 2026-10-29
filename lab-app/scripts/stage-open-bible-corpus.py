@@ -65,7 +65,10 @@ def parse_source(code:str,raw:bytes):
    for j,mark in enumerate(spans):
     chapter=int(mark.group(1))
     next_pos=spans[j+1].start() if j+1<len(spans) else len(text)
-    verses=verses_of_chapter(text[mark.end():next_pos])
+    try:
+     verses=verses_of_chapter(text[mark.end():next_pos])
+    except ValueError as exc:
+     raise ValueError(f"{code} {usfm} {chapter}: {exc}") from exc
     chapters.append({
      "edition":code,"chapter_id":f"{index}:{chapter}","book_name":name,
      "chapter_number":chapter,"verses":verses
