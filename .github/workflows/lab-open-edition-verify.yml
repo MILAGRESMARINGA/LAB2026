@@ -21,6 +21,8 @@ jobs:
           python-version: '3.12'
       - name: Validate independent licensed archive content, format and SHA-256
         run: python lab-app/scripts/verify-open-bible-sources.py
+      - name: Stage all 66 canonical books and validate individual Portuguese verses
+        run: python lab-app/scripts/stage-open-bible-corpus.py
       - name: Upload public-domain/CC source hashes only
         if: always()
         uses: actions/upload-artifact@v4
