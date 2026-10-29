@@ -12,7 +12,7 @@ describe("Bible edition availability",()=>{
  it("keeps only the historical edition available when metadata cannot be loaded",async()=>{
   mocks.order.mockResolvedValue({data:null,error:{message:"table not yet deployed"}});
   expect((await listBibleEditions()).filter(v=>v.available).map(v=>v.code)).toEqual(["ALM1911"]);
-  expect(FALLBACK_BIBLE_EDITIONS.map(v=>v.code)).toEqual(["ALM1911","NVI","NAA","ARA","NTLH"]);
+  expect(FALLBACK_BIBLE_EDITIONS.map(v=>v.code)).toEqual(["ALM1911","NVI","NAA","ARA","NTLH","BLIVRE","BPM"]);
  });
  it("uses the chosen edition and rejects noncanonical chapters before querying",async()=>{
   mocks.single.mockResolvedValue({data:{edition:"NAA",chapter_id:"43:1",book_name:"João",chapter_number:1,verses:[{number:1,text:"fixture"}]},error:null});

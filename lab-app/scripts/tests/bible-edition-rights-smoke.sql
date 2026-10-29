@@ -11,7 +11,7 @@ INSERT INTO public.lab_bible_jesus_speech(edition,chapter_id,verse_number,start_
  ('NVI','40:1',1,0,5,'Private licensed fixture only','https://example.org/editorial-fixture','published');
 SET LOCAL ROLE anon;
 DO $test$ BEGIN
- IF (SELECT count(*) FROM public.lab_bible_edition_availability)<>5 THEN RAISE EXCEPTION 'edition metadata unavailable'; END IF;
+ IF (SELECT count(*) FROM public.lab_bible_edition_availability)<>7 THEN RAISE EXCEPTION 'edition metadata unavailable'; END IF;
  IF (SELECT count(*) FROM public.lab_bible_chapters)<>1 THEN RAISE EXCEPTION 'pending licensed chapter leaked'; END IF;
  IF (SELECT count(*) FROM public.lab_bible_verses)<>1 THEN RAISE EXCEPTION 'pending licensed verse leaked'; END IF;
  IF (SELECT count(*) FROM public.lab_bible_jesus_speech)<>1 THEN RAISE EXCEPTION 'unreviewed or pending annotation leaked'; END IF;

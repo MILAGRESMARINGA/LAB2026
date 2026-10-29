@@ -32,5 +32,6 @@ CREATE POLICY "Public available Bible editions" ON public.lab_bible_editions FOR
 CREATE POLICY "Public available canonical chapters" ON public.lab_bible_chapters FOR SELECT TO anon,authenticated USING(true);
 CREATE POLICY "Search public-domain Bible verses" ON public.lab_bible_verses FOR SELECT TO anon,authenticated USING(true);
 \i supabase/migrations/20261020040924_bible_edition_rights_and_speech.sql
+\i supabase/migrations/202610280002_bible_rights_nonredistribution.sql
 \i scripts/tests/bible-edition-rights-smoke.sql
 SELECT 'BIBLE EDITION RIGHTS AND CURATED JESUS SPEECH RLS PASSED' AS result;
