@@ -56,7 +56,9 @@ as $$
  left join public.strong_lexicon_translations tr
    on tr.release_id=v.lexicon_release_id
    and tr.strong_number=v.strong_number and tr.locale='pt-BR'
-   and tr.translation_status in ('machine','reviewed')
+   and tr.translation_status='reviewed'
+   and tr.translation_method='human-reviewed'
+   and tr.reviewed_at is not null
  where (select auth.uid()) is not null
    and v.edition='KJV' -- alignment to original-language tagging, NOT Portuguese word mapping
    and v.review_status='approved'
@@ -67,6 +69,26 @@ as $$
  order by v.token_ordinal,v.strong_number
  limit least(greatest(coalesce(p_limit,48),1),48)
 $$;
+
+-- Do not expose machine-generated interpretations as approved Portuguese.
+-- Existing translation policy permitted any machine gloss once a release was
+-- published. This replacement makes editorial review a hard data-access gate.
+drop policy if exists strong_lexicon_translations_public_read
+ on public.strong_lexicon_translations;
+create policy strong_lexicon_translations_public_read
+ on public.strong_lexicon_translations
+ for select to authenticated
+ using (
+  translation_status='reviewed'
+  and translation_method='human-reviewed'
+  and reviewed_at is not null
+  and exists (
+   select 1 from public.strong_lexicon_releases r
+   where r.id=strong_lexicon_translations.release_id
+     and r.rights_status='approved'
+     and r.publication_status='published'
+  )
+ );
 
 revoke all on function public.lab_strong_verse_lookup(text,integer,integer)
  from public,anon,authenticated;

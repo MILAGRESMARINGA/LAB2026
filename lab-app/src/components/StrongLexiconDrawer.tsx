@@ -38,7 +38,7 @@ export function StrongLexiconDrawer({chapterId,verse,onClose}:Props){
   </header>
   <div className="strong-drawer-body">
    <p className="strong-drawer-disclaimer"><Info size={18} aria-hidden="true"/>
-    As palavras originais são vinculadas ao texto de referência KJV. A associação não representa uma tradução palavra por palavra do versículo em português.
+    As palavras hebraicas, aramaicas e gregas vêm dos conjuntos TAHOT/TAGNT e são indexadas pelas coordenadas usadas na KJV. Não representam tradução palavra por palavra das versões brasileiras.
    </p>
    {loading&&<p role="status">Consultando os termos disponíveis…</p>}
    {error&&<p role="alert">{error} <button type="button" onClick={()=>{setError("");setLoading(true);void getStrongTerms(chapterId,verse).then(setItems).catch(()=>setError("Consulta indisponível.")).finally(()=>setLoading(false))}}>Tentar novamente</button></p>}
@@ -47,19 +47,20 @@ export function StrongLexiconDrawer({chapterId,verse,onClose}:Props){
     {items.map((term,i)=><li key={term.strong_number+"-"+term.token_ordinal+"-"+i}>
      <div className="strong-term-title">
       <span className="strong-number">{term.strong_number}</span>
-      <span className="strong-original" lang={term.language==="greek"?"el":"he"} dir={term.language==="greek"?"ltr":"rtl"}>{term.lemma}</span>
+      <span className="strong-original" lang={term.language==="greek"?"el":term.language==="aramaic"?"arc":"he"} dir={term.language==="greek"?"ltr":"rtl"}>{term.lemma}</span>
      </div>
      <dl>
       <dt>Idioma original</dt><dd>{readableLanguage(term.language)}</dd>
       {term.transliteration&&<><dt>Transliteração</dt><dd>{term.transliteration}</dd></>}
-      <dt>Significado em português</dt><dd>{term.translated_gloss?.trim()||"Tradução portuguesa ainda não liberada."}</dd>
+      <dt>Significado em português</dt><dd>{term.translation_status==="reviewed"&&term.translated_gloss?.trim()?term.translated_gloss:"Glosa portuguesa aguardando revisão editorial."}</dd>
       {term.translated_definition&&<><dt>Definição revisada</dt><dd>{term.translated_definition}</dd></>}
-      {term.token_text&&<><dt>Forma na referência KJV</dt><dd lang="en">{term.token_text}</dd></>}
+      {term.token_text&&<><dt>Forma no texto bíblico original (TAHOT/TAGNT)</dt><dd lang={term.language==="greek"?"el":term.language==="aramaic"?"arc":"he"} dir={term.language==="greek"?"ltr":"rtl"}>{term.token_text}</dd></>}
      </dl>
-     {term.translation_status==="machine"&&<p className="strong-auto-note">Tradução automática em revisão. Não utilize a glosa isoladamente como interpretação definitiva.</p>}
+     {term.translation_status==="machine"&&<p className="strong-auto-note">Tradução automática em revisão editorial. Até a revisão, nenhuma equivalência portuguesa é considerada aprovada.</p>}
     </li>)}
    </ol>}
    <p className="strong-drawer-footnote"><BookOpen size={16}/> O sentido de uma palavra é determinado pelo contexto do versículo, pela gramática e pelo conjunto das Escrituras. O número Strong não é uma interpretação teológica automática.</p>
+   <p className="strong-drawer-attribution">Dados lexicais e marcação de versículos: <a href="https://www.stepbible.org/" target="_blank" rel="noopener noreferrer">STEP Bible</a> / Tyndale House, Cambridge. <a href="https://github.com/STEPBible/STEPBible-Data" target="_blank" rel="noopener noreferrer">Dados e histórico das fontes</a> sob <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>. O LABGame normalizou números Strong, vinculou coordenadas à KJV e produziu glosas automáticas para revisão em português. A STEPBible não endossa este aplicativo.</p>
   </div>
  </dialog>;
 }
