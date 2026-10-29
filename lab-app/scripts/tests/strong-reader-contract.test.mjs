@@ -22,7 +22,7 @@ test("RPC is a pure SECURITY INVOKER published-only reader",()=>{
 test("Strong feature opt-in and no exposure of KJV definition in Portuguese",()=>{
  assert.match(read,/VITE_LAB_STRONG_READY==="true"/);
  assert.match(read,/supabase\.rpc\("lab_strong_verse_lookup"/);
- assert.match(drawer,/Tradução automática em revisão/);
+ assert.match(drawer,/tradução automática assistida/);
  assert.match(drawer,/STEP Bible/);
  assert.match(drawer,/creativecommons\.org\/licenses\/by\/4\.0/);
  assert.match(drawer,/Forma no texto bíblico original/);
