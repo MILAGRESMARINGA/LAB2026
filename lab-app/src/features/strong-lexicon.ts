@@ -7,7 +7,8 @@ export type StrongTerm={
  language:"hebrew"|"greek"|"aramaic";lemma:string;
  transliteration:string|null;translated_gloss:string|null;
  translated_definition:string|null;translation_status:"machine"|"reviewed"|null;
- source_name:string;
+ gloss_status?:"editorial_reviewed_pt"|"stepbible_auto_translated_pt"|null;
+ source_name:string;link_review_status?:"source_verified_stepbible"|"editorial_reviewed";
 };
 export const STRONG_READER_READY=import.meta.env.VITE_LAB_STRONG_READY==="true";
 export function validateStrongReference(chapterId:string,verse:number){

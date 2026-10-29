@@ -9,7 +9,9 @@ export const DEFAULT_EDITION="ALM1911";
 export type BibleEdition={code:string;title:string;available:boolean;requires_auth:boolean;license_label:string};
 export const FALLBACK_BIBLE_EDITIONS:readonly BibleEdition[]=[
  {code:"ALM1911",title:"Almeida 1911",available:true,requires_auth:false,license_label:"Domínio público: edição histórica de 1911"},
- ...["NVI","NAA","ARA","NTLH"].map(code=>({code,title:code,available:false,requires_auth:true,license_label:"Disponível após autorização e importação licenciada"})),
+ ...["NVI","NAA","ARA","NTLH"].map(code=>({code,title:code,available:false,requires_auth:true,license_label:"Direitos reservados: contrato de distribuição ou API oficial necessária."})),
+ {code:"BLIVRE",title:"Bíblia Livre (TR, 2018)",available:false,requires_auth:false,license_label:"CC BY 3.0 Brasil — importação e atribuição em homologação."},
+ {code:"BPM",title:"Bíblia Portuguesa Mundial",available:false,requires_auth:false,license_label:"Domínio público (eBible.org) — importação em homologação."},
 ];
 function validateReference(chapterId:string){try{bibleReferenceById(chapterId)}catch{throw Error("Referência inválida")}}
 function validateEdition(edition:string){if(!/^[A-Z0-9]{2,12}$/.test(edition))throw Error("Versão bíblica inválida")}

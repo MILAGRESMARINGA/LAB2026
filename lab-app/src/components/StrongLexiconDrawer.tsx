@@ -52,11 +52,18 @@ export function StrongLexiconDrawer({chapterId,verse,onClose}:Props){
      <dl>
       <dt>Idioma original</dt><dd>{readableLanguage(term.language)}</dd>
       {term.transliteration&&<><dt>Transliteração</dt><dd>{term.transliteration}</dd></>}
-      <dt>Significado em português</dt><dd>{term.translation_status==="reviewed"&&term.translated_gloss?.trim()?term.translated_gloss:"Glosa portuguesa aguardando revisão editorial."}</dd>
+      <dt>Significado em português</dt><dd>{term.translated_gloss?.trim()||"Glosa portuguesa ainda não disponível; aguarda verificação da qualidade."}</dd>
+      <dt>Camada editorial</dt><dd>{term.gloss_status==="editorial_reviewed_pt"?
+       "Português revisado por editor humano":term.gloss_status==="stepbible_auto_translated_pt"?
+       "Tradução assistida de STEPBible (ainda não revisada por humano)":
+       "Aguardando revisão editorial"}</dd>
+      <dt>Vínculo bíblico</dt><dd>{term.link_review_status==="editorial_reviewed"?
+       "Vínculo com revisão exegética documentada":
+       "Fonte STEPBible verificada; não é revisão exegética individual"}</dd>
       {term.translated_definition&&<><dt>Definição revisada</dt><dd>{term.translated_definition}</dd></>}
       {term.token_text&&<><dt>Forma no texto bíblico original (TAHOT/TAGNT)</dt><dd lang={term.language==="greek"?"el":term.language==="aramaic"?"arc":"he"} dir={term.language==="greek"?"ltr":"rtl"}>{term.token_text}</dd></>}
      </dl>
-     {term.translation_status==="machine"&&<p className="strong-auto-note">Tradução automática em revisão editorial. Até a revisão, nenhuma equivalência portuguesa é considerada aprovada.</p>}
+     {term.translation_status==="machine"&&<p className="strong-auto-note">Glosa lexical derivada de STEPBible (CC BY 4.0), apresentada como tradução automática assistida. Consulte sempre o sentido no contexto do versículo.</p>}
     </li>)}
    </ol>}
    <p className="strong-drawer-footnote"><BookOpen size={16}/> O sentido de uma palavra é determinado pelo contexto do versículo, pela gramática e pelo conjunto das Escrituras. O número Strong não é uma interpretação teológica automática.</p>
