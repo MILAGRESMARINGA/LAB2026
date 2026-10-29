@@ -1,0 +1,31 @@
+name: LABGame open Bible archive provenance audit
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'lab-app/scripts/verify-open-bible-sources.py'
+      - '.github/workflows/lab-open-edition-verify.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify-open-archives:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate independent licensed archive content, format and SHA-256
+        run: python lab-app/scripts/verify-open-bible-sources.py
+      - name: Upload public-domain/CC source hashes only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: open-edition-source-manifest
+          path: open-edition-source-manifest.json
+          if-no-files-found: ignore
+          retention-days: 14
