@@ -1,5 +1,6 @@
 -- Post-202610280003 replace Strong reader with two-tier source/translation gates.
 -- Output signature unchanged; no scoring, content mutation or bypass RLS.
+drop function if exists public.lab_strong_verse_lookup(text,integer,integer);
 create or replace function public.lab_strong_verse_lookup(
  p_chapter_id text,
  p_verse_number integer,
@@ -15,7 +16,9 @@ returns table (
  translated_gloss text,
  translated_definition text,
  translation_status text,
- source_name text
+ gloss_status text,
+ source_name text,
+ link_review_status text
 )
 language sql
 stable
@@ -29,7 +32,9 @@ as $$
         case when tr.translation_status = 'reviewed'
           then tr.translated_definition else null end as translated_definition,
         tr.translation_status,
-        lr.source_name
+        tr.gloss_status,
+        lr.source_name,
+        v.review_status
  from public.verse_strong_links v
  join public.strong_lexicon_releases lr
    on lr.id=v.lexicon_release_id

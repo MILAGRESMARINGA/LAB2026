@@ -34,3 +34,15 @@ test("Strong feature opt-in and no exposure of KJV definition in Portuguese",()=
  assert.match(drawer,/O sentido de uma palavra é determinado pelo contexto/);
  assert.match(reader,/STRONG_READER_READY&&/);
 });
+
+test("source verification and editorial review remain distinct",()=>{
+ const newMigration=readFileSync(new URL("supabase/migrations/202610280003_strong_two_tier_status.sql",dir),"utf8");
+ const rpc=readFileSync(new URL("supabase/migrations/202610280004_strong_two_tier_read_rpc.sql",dir),"utf8");
+ assert.match(newMigration,/source_verified_stepbible/);
+ assert.match(newMigration,/editorial_reviewed/);
+ assert.match(newMigration,/auto_qa_passed=true/);
+ assert.match(rpc,/v\.review_status in \('source_verified_stepbible','editorial_reviewed'\)/);
+ assert.match(rpc,/tr\.auto_qa_passed=true/);
+ assert.match(rpc,/v\.review_status/);
+ assert.match(rpc,/tr\.gloss_status/);
+});
