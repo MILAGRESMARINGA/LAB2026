@@ -25,11 +25,12 @@ describe('Mapa único, contexto e calendário',()=>{
   expect(chapterJourneyContext({book:'Efésios',chapter:1})).toMatchObject({name:'Éfeso',kind:'destinatários'});
   expect(chapterJourneyContext({book:'Efésios',chapter:1}).detail).toContain('não indica necessariamente');
  });
- it('substitui a lista antiga em vez de duplicar a trilha',()=>{
+ it('mantém a trilha como padrão e o mapa como exploração opcional',()=>{
   const html=renderToStaticMarkup(createElement(ChallengeJourney,{plan:createGamePlan(),game:null,totalXP:0,preview:true,onStart:()=>{}}));
-  expect(html).toContain('Mapa das etapas da Jornada');
-  expect(html).not.toContain('lab-quest-steps');
-  expect(html).not.toContain('VER MAPA COMPLETO');
+  expect(html).toContain('lab-quest-steps');
+  expect(html).toContain('EXPLORAR MAPA ILUSTRADO');
+  expect(html).toContain('VER MAPA COMPLETO');
+  expect(html).not.toContain('Mapa das etapas da Jornada');
  });
  it('separa a regra anterior da nova e não apresenta um relógio inventado',()=>{
   const old=renderToStaticMarkup(createElement(JourneyRules,{mode:'legacy'}));
