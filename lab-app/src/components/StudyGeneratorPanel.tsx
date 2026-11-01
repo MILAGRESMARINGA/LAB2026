@@ -55,7 +55,7 @@ export function GeneratedStudyCard({study,index=0}:{study:GeneratedStudy;index?:
     onClick={()=>{setUnit(0);setOpen(true)}}>
     <span className="generated-study-point-number">{index+1}</span>
     <span><strong>{study.title}</strong><small>Camada {study.layer} · {study.chapter_refs.map(id=>{const ch=CHAPTERS.find(c=>c.id===id);return ch?ch.book+" "+ch.chapter:id}).join(" · ")}</small></span>
-    <BookOpen size={19} aria-hidden="true"/><span className="sr-only">Abrir guia em cinco unidades</span>
+    <BookOpen size={19} aria-hidden="true"/><span className="sr-only">Abrir conteúdo e referências bíblicas · guia em cinco unidades</span>
    </button>
   </article>
   <StudyReadingScreen id={contentId} title={study.title} open={open} onClose={()=>setOpen(false)}>
