@@ -25,13 +25,26 @@ export function BiblicalWorldMap({stage,completedStages,chapters,plan,onRead,rea
  const status=(day:number)=>day<=completedStages?'Concluída':day===current?'Atual':'Bloqueada';
  return <section className="journey-world" aria-label="Mapa das etapas da Jornada">
   <header className="journey-world-heading"><h2>{overview?"Toda a Jornada":`Semana ${Math.floor((current-1)/7)+1}`}</h2></header>
+  {!overview&&<div className="journey-primary-action">
+   <div><strong>Etapa {current} · hoje</strong><span>{days[current-1]?.chapters.map(c=>`${c.book} ${c.chapter}`).join(" · ")}</span></div>
+   <button type="button" className="primary-cta" disabled={!readingAvailable}
+    onClick={()=>choose(current)} aria-label={`Iniciar leitura da etapa ${current}`}>
+    {readingAvailable?"INICIAR LEITURA":"AGUARDANDO LIBERAÇÃO"}
+   </button>
+  </div>}
   <div className="journey-map-tools" aria-label="Controles do mapa">
-   <button onClick={()=>setZoom(z=>Math.max(.5,z-.25))} disabled={zoom<=.5} aria-label="Diminuir mapa">−</button><output aria-label="Zoom do mapa">{Math.round(zoom*100)}%</output><button onClick={()=>setZoom(z=>Math.min(2,z+.25))} disabled={zoom>=2} aria-label="Ampliar mapa">+</button>
-   <button aria-pressed={overview} onClick={()=>{setOverview(v=>!v);setZoom(1)}}>{overview?'Ver semana':'Ver jornada inteira'}</button>
-   
+   <button type="button" aria-pressed={overview} onClick={()=>{setOverview(v=>!v);setZoom(1)}}>{overview?'Ver semana':'Ver jornada inteira'}</button>
+   <details className="journey-map-settings">
+    <summary>Ajustar mapa</summary>
+    <div className="journey-map-zoom-controls">
+     <button type="button" onClick={()=>setZoom(z=>Math.max(.5,z-.25))} disabled={zoom<=.5} aria-label="Diminuir mapa">−</button>
+     <output aria-label="Zoom do mapa">{Math.round(zoom*100)}%</output>
+     <button type="button" onClick={()=>setZoom(z=>Math.min(2,z+.25))} disabled={zoom>=2} aria-label="Ampliar mapa">+</button>
+    </div>
+   </details>
   </div>
-  <div ref={viewport} className={'journey-map-viewport '+(overview?'is-overview':'')} tabIndex={0} aria-label="Mapa vertical com todas as etapas; arraste para explorar">
-   <svg viewBox={`0 0 720 ${height}`} style={overview?{height:`${zoom*100}%`,width:"auto"}:{width:`${zoom*100}%`}} className="journey-map-scene" role="group" aria-label={`Percurso interativo de 1 a ${days.length}`}>
+  <div ref={viewport} className={'journey-map-viewport '+(overview?'is-overview':'')} tabIndex={0} aria-label={`Mapa da Jornada: etapa ${current} em destaque. Arraste para explorar.`}>
+   <svg viewBox={`0 0 720 ${height}`} style={overview?{height:`${zoom*100}%`,width:"auto"}:{width:`${Math.round(720*zoom)}px`,maxWidth:"none"}} className="journey-map-scene" role="group" aria-label={`Percurso interativo de 1 a ${days.length}`}>
     <defs>
      <linearGradient id={`${id}-sea`} x2="1" y2="1"><stop stopColor="#164955"/><stop offset="1" stopColor="#0c2c3c"/></linearGradient>
      <linearGradient id={`${id}-land`} x2="1" y2="0"><stop stopColor="#a58c5b"/><stop offset=".4" stopColor="#d5c38b"/><stop offset="1" stopColor="#7f966b"/></linearGradient>
@@ -63,6 +76,6 @@ export function BiblicalWorldMap({stage,completedStages,chapters,plan,onRead,rea
    </svg>
   </div>
   {notice&&<p className="journey-map-notice" role="status">{notice}</p>}
-  <details className="journey-map-help"><summary>Ajuda e contexto</summary><p>Toque no número aceso para ler. As etapas com ✓ já foram concluídas; as demais aguardam liberação. Use + e − para ajustar o mapa.</p><p>{viewed.chapters.map(c=>`${c.book} ${c.chapter}`).join(' · ')}</p>{contexts.map(context=><p key={context.name}><strong>{context.name}</strong> · {context.region}<br/>{context.detail}<br/><small>{context.reference}</small></p>)}<p>O caminho é uma representação de jogo, sem escala geográfica.</p></details>
+  <details className="journey-map-help"><summary>Ajuda e contexto</summary><p>Toque no número aceso para ler. As etapas com ✓ já foram concluídas; as demais aguardam liberação. Use Ajustar mapa para mudar a escala; deslize para navegar. A etapa atual fica destacada no centro da trilha.</p><p>{viewed.chapters.map(c=>`${c.book} ${c.chapter}`).join(' · ')}</p>{contexts.map(context=><p key={context.name}><strong>{context.name}</strong> · {context.region}<br/>{context.detail}<br/><small>{context.reference}</small></p>)}<p>O caminho é uma representação de jogo, sem escala geográfica.</p></details>
  </section>;
 }

@@ -13,15 +13,21 @@ describe('Jornada explorável e tela de estudo',()=>{
    await act(async()=>root.render(React.createElement(BiblicalWorldMap,{stage:1,completedStages:0,chapters:[],plan:createNextGamePlan(365).stages,onRead:read})));
    expect(host.querySelectorAll('svg [role="button"]')).toHaveLength(7);
    expect(host.querySelector('.journey-map-detail')).toBeNull();
+   expect(host.querySelector('.journey-primary-action')?.textContent).toContain('Etapa 1');
+   expect(host.querySelector('.journey-primary-action')?.textContent).toContain('INICIAR LEITURA');
+   expect((host.querySelector('svg.journey-map-scene') as SVGSVGElement).style.width).toBe('720px');
+   expect(host.querySelector('.journey-map-settings')).not.toBeNull();
    const current=host.querySelector('svg [aria-label^="Etapa 1,"]')!;
    await act(async()=>current.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true})));
-   expect(read).toHaveBeenCalledOnce();
+   expect(read).toHaveBeenCalledTimes(2);
+   await act(async()=>{(host.querySelector('.journey-primary-action button') as HTMLButtonElement).click()});
+   expect(read).toHaveBeenCalledTimes(2);
    await act(async()=>host.querySelector('svg [aria-label^="Etapa 2,"]')!.dispatchEvent(new MouseEvent('click',{bubbles:true})));
-   expect(read).toHaveBeenCalledOnce();expect(host.querySelector('[role="status"]')?.textContent).toContain('bloqueada');
+   expect(read).toHaveBeenCalledTimes(2);expect(host.querySelector('[role="status"]')?.textContent).toContain('bloqueada');
    await act(async()=>{[...host.querySelectorAll('button')].find(b=>b.textContent==='Ver jornada inteira')!.click()});
    expect(host.querySelectorAll('svg [role="button"]')).toHaveLength(365);
    await act(async()=>host.querySelector('svg [aria-label^="Etapa 365,"]')!.dispatchEvent(new MouseEvent('click',{bubbles:true})));
-   expect(read).toHaveBeenCalledOnce();
+   expect(read).toHaveBeenCalledTimes(2);
    await act(async()=>{[...host.querySelectorAll('button')].find(b=>b.textContent==='Ver semana')!.click()});
    expect(host.querySelectorAll('svg [role="button"]')).toHaveLength(7);
   }finally{await act(async()=>root.unmount());host.remove()}
