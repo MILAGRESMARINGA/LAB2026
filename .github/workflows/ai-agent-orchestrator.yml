@@ -42,7 +42,7 @@ jobs:
       patch_ready: ${{ steps.generate.outputs.patch_ready }}
     steps:
       - name: Checkout exact trusted source without persisted credentials
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
@@ -94,7 +94,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout exact trusted source without persisted credentials
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
@@ -139,7 +139,7 @@ jobs:
       actions: write
     steps:
       - name: Checkout trusted publisher code without persisted credentials
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
@@ -177,7 +177,7 @@ jobs:
       contents: read
       actions: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: main
           persist-credentials: false
