@@ -1,5 +1,6 @@
 import {useEffect,useRef} from 'react';
 import * as THREE from 'three';
+import {SVGObject,SVGRenderer} from 'three/examples/jsm/renderers/SVGRenderer.js';
 import {disposeObject,geographicPoint,makeAncientWorld} from './journey3d/terrain';
 
 export type JourneySceneNode={day:number;lon:number;lat:number;color:string;status:'current'|'completed'|'locked';name?:string};
@@ -11,6 +12,7 @@ export type JourneyScene3DProps={
  onTransition?:(moving:boolean)=>void;
  reducedMotion?:boolean;
  onUnavailable?:()=>void;
+ onRenderMode?:(mode:'webgl'|'software')=>void;
  onProject?:(points:ReadonlyArray<ProjectedJourneyNode>)=>void;
 };
 type Flag={node:JourneySceneNode;group:THREE.Group;anchor:THREE.Vector3;label:THREE.Vector3;hit:THREE.Object3D};
@@ -39,17 +41,23 @@ export function JourneyScene3D(props:JourneyScene3DProps){
  const host=useRef<HTMLDivElement>(null),controller=useRef<SceneController|null>(null),latest=useRef(props);latest.current=props;
  useEffect(()=>{
   const element=host.current;if(!element)return;
-  // Probe before constructing Three's renderer. In jsdom, this remains a real fallback.
-  if(typeof window.WebGL2RenderingContext==='undefined'){latest.current.onUnavailable?.();return}
-  let renderer:THREE.WebGLRenderer;
-  try{renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'low-power'});if(!renderer.capabilities.isWebGL2){renderer.dispose();latest.current.onUnavailable?.();return}}catch{latest.current.onUnavailable?.();return}
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));renderer.setClearColor('#163c4e');renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.27;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-  renderer.domElement.setAttribute('aria-hidden','true');renderer.domElement.style.cssText='display:block;width:100%;height:100%;touch-action:pan-y';element.append(renderer.domElement);
+  type Renderer={domElement:HTMLCanvasElement|SVGElement;setSize:(width:number,height:number,updateStyle?:boolean)=>void;render:(scene:THREE.Scene,camera:THREE.Camera)=>void;dispose:()=>void};
+  let renderer:Renderer,webgl:THREE.WebGLRenderer|null=null,software=false;
+  const makeSoftware=():Renderer=>{const svg=new SVGRenderer();svg.setQuality('low');svg.setPrecision(2);svg.setClearColor(new THREE.Color('#163c4e'),1);svg.overdraw=.3;return {domElement:svg.domElement,setSize:(w,h)=>svg.setSize(w,h),render:(scene,camera)=>svg.render(scene,camera),dispose:()=>{svg.clear()}}};
+  if(typeof window.WebGL2RenderingContext!=='undefined')try{
+   webgl=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'low-power'});
+   if(!webgl.capabilities.isWebGL2){webgl.dispose();webgl=null}
+  }catch{webgl=null}
+  try{if(webgl){renderer=webgl;webgl.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));webgl.setClearColor('#163c4e');webgl.outputColorSpace=THREE.SRGBColorSpace;webgl.toneMapping=THREE.ACESFilmicToneMapping;webgl.toneMappingExposure=1.27;webgl.shadowMap.enabled=true;webgl.shadowMap.type=THREE.PCFSoftShadowMap}else{software=true;renderer=makeSoftware()}}catch{latest.current.onUnavailable?.();return}
+  const mountRenderer=()=>{renderer.domElement.setAttribute('aria-hidden','true');renderer.domElement.setAttribute('data-renderer',software?'three-software-3d':'three-webgl2');renderer.domElement.style.cssText='display:block;width:100%;height:100%;touch-action:pan-y';element.append(renderer.domElement);latest.current.onRenderMode?.(software?'software':'webgl')};mountRenderer();
   const scene=new THREE.Scene();scene.background=new THREE.Color('#163c4e');scene.fog=new THREE.Fog('#163c4e',70,150);
   const camera=new THREE.OrthographicCamera(-8,8,8,-8,.1,180);
   const light=new THREE.DirectionalLight('#fff0cc',3.3);light.position.set(-16,34,18);light.castShadow=true;light.shadow.mapSize.set(1024,1024);light.shadow.camera.left=-36;light.shadow.camera.right=36;light.shadow.camera.top=28;light.shadow.camera.bottom=-28;light.shadow.camera.near=1;light.shadow.camera.far=90;light.shadow.normalBias=.04;light.shadow.bias=-.00015;scene.add(light,new THREE.HemisphereLight('#d9fbff','#92834f',2.4));
-  const world=makeAncientWorld();scene.add(world);let route=new THREE.Group();scene.add(route);
-  let flags:Flag[]=[],width=1,height=1,raf=0,disposed=false,moving=false,initialized=false,activeNodes=latest.current.nodes,activeFocus=latest.current.focus,reduced=Boolean(latest.current.reducedMotion);
+  const world=makeAncientWorld();scene.add(world);
+  const compatibleLabels=()=>{const replacements:THREE.Object3D[]=[];world.traverse(object=>{if(object instanceof THREE.Sprite){object.visible=false;if(object.userData.atlasLabel){const ns='http://www.w3.org/2000/svg',group=document.createElementNS(ns,'g'),rect=document.createElementNS(ns,'rect'),text=document.createElementNS(ns,'text');rect.setAttribute('x','-51');rect.setAttribute('y','-10');rect.setAttribute('width','102');rect.setAttribute('height','20');rect.setAttribute('rx','6');rect.setAttribute('fill','#173c47');rect.setAttribute('fill-opacity','.85');text.setAttribute('text-anchor','middle');text.setAttribute('y','4');text.setAttribute('fill','#fff4ce');text.setAttribute('font-family','system-ui,sans-serif');text.setAttribute('font-size','9');text.setAttribute('font-weight','800');text.textContent=object.userData.atlasLabel;group.append(rect,text);const label=new SVGObject(group);label.position.copy(object.position);replacements.push(label)}}});replacements.forEach(label=>world.add(label))};
+  if(software){compatibleLabels();light.intensity=.65;scene.add(new THREE.AmbientLight('#fff7df',.34));const hemisphere=scene.children.find(object=>object instanceof THREE.HemisphereLight) as THREE.HemisphereLight|undefined;if(hemisphere)hemisphere.intensity=.8}
+  let route=new THREE.Group();scene.add(route);
+  let flags:Flag[]=[],width=1,height=1,raf=0,disposed=false,moving=false,initialized=false,activeNodes=latest.current.nodes,activeFocus=latest.current.focus,reduced=Boolean(latest.current.reducedMotion)||software;
   let fromTarget=new THREE.Vector3(),toTarget=new THREE.Vector3(),currentTarget=new THREE.Vector3(),fromSpan=12,toSpan=12,currentSpan=12,startedAt=0;
   const cameraOffset=new THREE.Vector3(24,35,28),raycaster=new THREE.Raycaster();
   const applyCamera=(target:THREE.Vector3,span:number)=>{const aspect=width/height;camera.left=-span*aspect/2;camera.right=span*aspect/2;camera.top=span/2;camera.bottom=-span/2;camera.position.copy(target).add(cameraOffset);camera.lookAt(target);camera.updateProjectionMatrix();camera.updateMatrixWorld()};
@@ -101,14 +109,14 @@ export function JourneyScene3D(props:JourneyScene3DProps){
    if(!initialized||reduced||(currentTarget.distanceTo(toTarget)<.08&&Math.abs(currentSpan-toSpan)<.08)){cancelAnimationFrame(raf);raf=0;initialized=true;currentTarget.copy(toTarget);currentSpan=toSpan;applyCamera(currentTarget,currentSpan);setMoving(false);render()}else{fromTarget.copy(currentTarget);fromSpan=currentSpan;startedAt=performance.now();setMoving(true);cancelAnimationFrame(raf);raf=requestAnimationFrame(animate)}
   };
   const resize=()=>{const box=element.getBoundingClientRect();width=Math.max(1,box.width);height=Math.max(1,box.height);renderer.setSize(width,height,false);rebuild()};
-  const observer=new ResizeObserver(resize);observer.observe(element);
-  const onPointer=(event:PointerEvent)=>{if(moving)return;const rect=renderer.domElement.getBoundingClientRect();raycaster.setFromCamera(new THREE.Vector2((event.clientX-rect.left)/rect.width*2-1,1-(event.clientY-rect.top)/rect.height*2),camera);const hits=raycaster.intersectObjects(flags.map(flag=>flag.group),true);if(hits.length){let object:THREE.Object3D|null=hits[0].object;while(object&&!object.userData.day)object=object.parent;if(object?.userData.day)latest.current.onSelect(object.userData.day)}};
-  const contextLost=(event:Event)=>{event.preventDefault();setMoving(false);cancelAnimationFrame(raf);latest.current.onUnavailable?.()};renderer.domElement.addEventListener('pointerup',onPointer);renderer.domElement.addEventListener('webglcontextlost',contextLost);
+  const observer=typeof ResizeObserver==='undefined'?null:new ResizeObserver(resize);observer?.observe(element);if(!observer)window.addEventListener('resize',resize);
+  const onPointer=(input:Event)=>{const event=input as PointerEvent;if(moving)return;const rect=renderer.domElement.getBoundingClientRect();raycaster.setFromCamera(new THREE.Vector2((event.clientX-rect.left)/rect.width*2-1,1-(event.clientY-rect.top)/rect.height*2),camera);const hits=raycaster.intersectObjects(flags.map(flag=>flag.group),true);if(hits.length){let object:THREE.Object3D|null=hits[0].object;while(object&&!object.userData.day)object=object.parent;if(object?.userData.day)latest.current.onSelect(object.userData.day)}};
+  const contextLost=(event:Event)=>{event.preventDefault();setMoving(false);cancelAnimationFrame(raf);try{renderer.domElement.removeEventListener('pointerup',onPointer);renderer.domElement.removeEventListener('webglcontextlost',contextLost);renderer.domElement.remove();renderer.dispose();renderer=makeSoftware();software=true;reduced=true;compatibleLabels();light.intensity=.65;scene.add(new THREE.AmbientLight('#fff7df',.34));mountRenderer();renderer.domElement.addEventListener('pointerup',onPointer);resize()}catch{latest.current.onUnavailable?.()}};renderer.domElement.addEventListener('pointerup',onPointer);renderer.domElement.addEventListener('webglcontextlost',contextLost);
   const visibility=()=>{if(document.hidden){cancelAnimationFrame(raf);raf=0;setMoving(false)}else{currentTarget.copy(toTarget);currentSpan=toSpan;applyCamera(currentTarget,currentSpan);render()}};document.addEventListener('visibilitychange',visibility);
-  const api:SceneController={update:(nodes,focus,nextReduced)=>{activeNodes=nodes;activeFocus=focus;reduced=nextReduced;rebuild()},dispose:()=>{disposed=true;cancelAnimationFrame(raf);observer.disconnect();renderer.domElement.removeEventListener('pointerup',onPointer);renderer.domElement.removeEventListener('webglcontextlost',contextLost);document.removeEventListener('visibilitychange',visibility);disposeObject(scene);renderer.dispose();renderer.domElement.remove();latest.current.onTransition?.(false)}};
+  const api:SceneController={update:(nodes,focus,nextReduced)=>{activeNodes=nodes;activeFocus=focus;reduced=nextReduced||software;rebuild()},dispose:()=>{disposed=true;cancelAnimationFrame(raf);observer?.disconnect();if(!observer)window.removeEventListener('resize',resize);renderer.domElement.removeEventListener('pointerup',onPointer);renderer.domElement.removeEventListener('webglcontextlost',contextLost);document.removeEventListener('visibilitychange',visibility);disposeObject(scene);renderer.dispose();renderer.domElement.remove();latest.current.onTransition?.(false)}};
   controller.current=api;resize();
   return()=>{controller.current=null;api.dispose()};
  },[]);
  useEffect(()=>{controller.current?.update(props.nodes,props.focus,Boolean(props.reducedMotion))},[props.nodes,props.focus.lon,props.focus.lat,props.reducedMotion]);
- return <div className="journey-webgl-scene" ref={host} data-renderer="three-webgl2" style={{position:'absolute',inset:0}}/>;
+ return <div className="journey-webgl-scene" ref={host} data-renderer="three-scene" style={{position:'absolute',inset:0}}/>;
 }
