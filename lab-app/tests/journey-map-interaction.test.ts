@@ -5,6 +5,7 @@ import {describe,it,expect,vi} from 'vitest';
 import {BiblicalWorldMap} from '../src/components/BiblicalWorldMap';
 import {createNextGamePlan} from '../src/domain/game-plan-next';
 import {StudyReadingScreen} from '../src/components/StudyReadingScreen';
+vi.mock('../src/components/JourneyScene3D',()=>({JourneyScene3D:()=>React.createElement('div',{'data-testid':'scene3d-mock'})}));
 describe('Jornada explorável e tela de estudo',()=>{
  it('abre portões sobre o mapa, mostra só sete etapas e bloqueia o futuro',async()=>{
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT=true;
@@ -13,18 +14,18 @@ describe('Jornada explorável e tela de estudo',()=>{
   const host=document.createElement('div');document.body.append(host);const root=createRoot(host),read=vi.fn();
   try{
    await act(async()=>root.render(React.createElement(BiblicalWorldMap,{stage:1,completedStages:0,chapters:[],plan:createNextGamePlan(365).stages,onRead:read})));
-   expect(host.querySelectorAll('svg [role="button"]')).toHaveLength(7);
+   expect(host.querySelectorAll('button[data-journey-day]')).toHaveLength(7);
    expect(host.querySelector('.journey-map-detail')).toBeNull();
-   const current=host.querySelector('svg [aria-label^="Etapa 1,"]')!;
-   await act(async()=>current.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true})));
+   const current=host.querySelector('button[aria-label^="Etapa 1,"]')!;
+   await act(async()=>(current as HTMLButtonElement).click());
    expect(read).not.toHaveBeenCalled();
    expect(host.querySelector('dialog[open]')?.textContent).toContain('Portão de Gênesis');
    await act(async()=>{[...host.querySelectorAll('button')].find(b=>b.textContent==='Começar a leitura')!.click()});
    expect(read).toHaveBeenCalledOnce();
-   await act(async()=>host.querySelector('svg [aria-label^="Etapa 2,"]')!.dispatchEvent(new MouseEvent('click',{bubbles:true})));
-   expect(read).toHaveBeenCalledOnce();expect(host.querySelector('[role="status"]')?.textContent).toContain('bloqueada');
+   await act(async()=>host.querySelector('button[aria-label^="Etapa 2,"]')!.dispatchEvent(new MouseEvent('click',{bubbles:true})));
+   expect(read).toHaveBeenCalledOnce();expect(host.querySelector('button[data-journey-day="2"]')?.getAttribute('aria-disabled')).toBe('true');
    expect(host.textContent).not.toContain('Ver jornada inteira');
-   expect(host.querySelectorAll('svg [role="button"]')).toHaveLength(7);
+   expect(host.querySelectorAll('button[data-journey-day]')).toHaveLength(7);
   }finally{await act(async()=>root.unmount());host.remove()}
  });
  it('monta o conteúdo somente ao abrir e fecha pelo cancelamento nativo',async()=>{
