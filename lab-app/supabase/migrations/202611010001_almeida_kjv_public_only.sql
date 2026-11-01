@@ -10,10 +10,14 @@ update public.lab_bible_edition_availability
  where code in ('NVI','NAA','ARA','NTLH');
 do $rights$
 begin
- if (select count(*) from public.lab_bible_edition_availability
-      where available=true and rights_status='public_domain'
-        and code in('ALM1911','KJV'))<>2 then
-   raise exception 'FAIL: Almeida 1911 and KJV must remain publicly available';
+ -- A fresh local Supabase may not have the optional KJV import yet.
+ if not exists(select 1 from public.lab_bible_edition_availability
+       where code='ALM1911' and available=true and rights_status='public_domain') then
+   raise exception 'FAIL: Almeida 1911 must remain publicly available';
+ end if;
+ if exists(select 1 from public.lab_bible_edition_availability
+       where code='KJV' and available=true and rights_status<>'public_domain') then
+   raise exception 'FAIL: available KJV must be public domain';
  end if;
  if exists(select 1 from public.lab_bible_edition_availability
        where available=true and code not in('ALM1911','KJV')) then
