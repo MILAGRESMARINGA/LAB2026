@@ -176,7 +176,7 @@ jobs:
               break
             fi
             echo "Local test infrastructure unavailable (attempt $attempt of 3)"
-            grep -Ei 'toomanyrequests|address already in use|failed to start docker' /tmp/labgame-supabase-start.log | tail -8 || true
+            grep -Ei 'toomanyrequests|address already in use|failed to start docker|migration.*failed|ERROR:|invalid.*sql|SQLSTATE' /tmp/labgame-supabase-start.log | cut -c1-210 | tail -12 || true
             npx --yes supabase@latest stop --no-backup >/dev/null 2>&1 || true
             if [ "$attempt" -lt 3 ]; then sleep $((attempt*10)); fi
           done

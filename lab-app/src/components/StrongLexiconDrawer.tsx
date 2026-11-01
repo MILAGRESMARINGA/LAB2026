@@ -38,7 +38,7 @@ export function StrongLexiconDrawer({chapterId,verse,onClose}:Props){
   </header>
   <div className="strong-drawer-body">
    <p className="strong-drawer-disclaimer"><Info size={18} aria-hidden="true"/>
-    As palavras hebraicas, aramaicas e gregas vêm dos conjuntos TAHOT/TAGNT e são indexadas pelas coordenadas usadas na KJV. Não representam tradução palavra por palavra das versões brasileiras.
+    Os vocábulos hebraicos, aramaicos e gregos vêm dos conjuntos STEPBible TAHOT/TAGNT. A KJV é usada como referência das coordenadas; a leitura principal é a Almeida 1911 em português. O alinhamento não é tradução palavra por palavra.
    </p>
    {loading&&<p role="status">Consultando os termos disponíveis…</p>}
    {error&&<p role="alert">{error} <button type="button" onClick={()=>{setError("");setLoading(true);void getStrongTerms(chapterId,verse).then(setItems).catch(()=>setError("Consulta indisponível.")).finally(()=>setLoading(false))}}>Tentar novamente</button></p>}
@@ -52,11 +52,14 @@ export function StrongLexiconDrawer({chapterId,verse,onClose}:Props){
      <dl>
       <dt>Idioma original</dt><dd>{readableLanguage(term.language)}</dd>
       {term.transliteration&&<><dt>Transliteração</dt><dd>{term.transliteration}</dd></>}
-      <dt>Significado em português</dt><dd>{term.translation_status==="reviewed"&&term.translated_gloss?.trim()?term.translated_gloss:"Glosa portuguesa aguardando revisão editorial."}</dd>
+      <dt>Significado em português</dt><dd>{term.translated_gloss?.trim()||"Glosa portuguesa ainda não homologada para este termo."}</dd>
+      <dt>Origem do vínculo</dt><dd>{term.link_review_status==="editorial_reviewed"?
+       "Associação com revisão exegética documentada":
+       "Alinhamento STEPBible verificado; não equivale a revisão exegética individual."}</dd>
       {term.translated_definition&&<><dt>Definição revisada</dt><dd>{term.translated_definition}</dd></>}
       {term.token_text&&<><dt>Forma no texto bíblico original (TAHOT/TAGNT)</dt><dd lang={term.language==="greek"?"el":term.language==="aramaic"?"arc":"he"} dir={term.language==="greek"?"ltr":"rtl"}>{term.token_text}</dd></>}
      </dl>
-     {term.translation_status==="machine"&&<p className="strong-auto-note">Tradução automática em revisão editorial. Até a revisão, nenhuma equivalência portuguesa é considerada aprovada.</p>}
+     {term.translation_status==="machine"&&<p className="strong-auto-note">Glosa lexical automática assistida, derivada do STEPBible (CC BY 4.0). Não revisada por humano; interprete sempre segundo o contexto do versículo.</p>}
     </li>)}
    </ol>}
    <p className="strong-drawer-footnote"><BookOpen size={16}/> O sentido de uma palavra é determinado pelo contexto do versículo, pela gramática e pelo conjunto das Escrituras. O número Strong não é uma interpretação teológica automática.</p>
