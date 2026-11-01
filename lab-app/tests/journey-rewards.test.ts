@@ -23,7 +23,7 @@ describe("Trilha de desafios e Talentos",()=>{
   expect(html).toContain("Salmos 1");
   expect(html).toContain("João 1");
   expect(html).toContain("Etapa 1, Atual");
-  expect(html).toContain("Percurso interativo de 1 a 365");
+  expect(html).toContain("Semana atual: etapas 1 a 7");
   expect(html).not.toContain("lab-quest-steps");
   expect(html).not.toContain("lab-quest-feature");
   expect(html).not.toContain("Presente devocional");

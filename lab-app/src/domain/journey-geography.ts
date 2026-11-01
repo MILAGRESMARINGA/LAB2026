@@ -7,7 +7,7 @@ const place=(name:string,region:string,detail:string,reference:string,x:number,k
 export function chapterJourneyContext(ch:Pick<Chapter,'book'|'chapter'>):JourneyContext{
  const {book:b,chapter:c}=ch;
  if(b==='Gênesis'){
-  if(c<=11)return place('Origens','Mundo bíblico','Criação, humanidade e povos. O marco é simbólico: o texto não permite localizar o Éden em um ponto comprovado.','Gn 1–11',360,'simbólico');
+  if(c<=11)return place('Origens','Mesopotâmia · marco simbólico','Criação, humanidade e povos. O Éden é associado à Mesopotâmia pela menção ao Tigre e ao Eufrates (Gn 2.10–14), mas sua localização exata não é comprovada.','Gn 1–11',360,'simbólico');
   if(c===12)return place('Harã → Canaã','Caminhos patriarcais','Abrão parte de Harã e chega a Canaã; o capítulo também narra sua descida ao Egito.','Gn 12',480);
   if(c>=39&&c<=47)return place('Egito','Vale do Nilo','José, a fome e a chegada da família de Jacó ao Egito.','Gn 39–47',200);
   if(c>=28&&c<=31)return place('Canaã e Padã-Arã','Caminhos de Jacó','A viagem de Jacó passa por Betel e pela região de sua família em Padã-Arã.','Gn 28–31',490);

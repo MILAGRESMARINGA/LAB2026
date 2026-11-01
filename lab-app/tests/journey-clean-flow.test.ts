@@ -7,8 +7,10 @@ const fixtures=vi.hoisted(()=>({game:{run_id:'test-run',status:'active',stage:1,
 vi.mock('../src/features/journey-v2',()=>({loadLatestJourneyV2:vi.fn(async()=>fixtures.game),getJourneyV2Chapters:vi.fn(async()=>fixtures.chapters),getJourneyV2Checks:vi.fn(async()=>[]),activateJourneyV2:vi.fn(),startJourneyV2:vi.fn(),beginJourneyV2Chapter:vi.fn(),confirmJourneyV2Chapter:vi.fn()}));
 vi.mock('../src/components/BibleReader',()=>({BibleReader:({chapterId}:{chapterId:string})=>React.createElement('article',{'data-testid':'reader'},chapterId)}));
 describe('Fluxo direto da Jornada',()=>{
- it('não monta o leitor antes do toque e abre Gênesis 1 sem página intermediária',async()=>{
+ it('não monta o leitor antes do portão e abre Gênesis 1 ao continuar',async()=>{
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT=true;
+  Object.defineProperty(HTMLDialogElement.prototype,'showModal',{configurable:true,value:function(){this.setAttribute('open','')}});
+  Object.defineProperty(HTMLDialogElement.prototype,'close',{configurable:true,value:function(){this.removeAttribute('open')}});
   const host=document.createElement('div');document.body.append(host);const root=createRoot(host);
   try{
    await act(async()=>root.render(React.createElement(JourneyV2Panel,{userId:'test-user'})));
@@ -17,6 +19,9 @@ describe('Fluxo direto da Jornada',()=>{
    await act(async()=>host.querySelector('svg [aria-label^="Etapa 2,"]')!.dispatchEvent(new MouseEvent('click',{bubbles:true})));
    expect(host.querySelector('[data-testid="reader"]')).toBeNull();
    await act(async()=>host.querySelector('svg [aria-label^="Etapa 1,"]')!.dispatchEvent(new MouseEvent('click',{bubbles:true})));
+   expect(host.querySelector('[data-testid="reader"]')).toBeNull();
+   expect(host.querySelector('dialog[open]')?.textContent).toContain('Portão de Gênesis');
+   await act(async()=>{[...host.querySelectorAll('button')].find(b=>b.textContent==='Começar a leitura')!.click()});
    expect(host.querySelector('[data-testid="reader"]')?.textContent).toBe('1:1');
    expect(host.querySelector('.journey-world')).toBeNull();
    expect(host.querySelector('.journey-clean-hud')?.textContent).toContain('3 vidas');

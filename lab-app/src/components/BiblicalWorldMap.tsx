@@ -1,68 +1,62 @@
 import {useEffect,useId,useMemo,useRef,useState} from 'react';
 import {CHAPTERS} from '../domain/canon';
 import type {GameDay} from '../domain/game-plan';
-import {journeyPoint,stageJourneyContexts} from '../domain/journey-geography';
+import {atlasProject,atlasStage,weekWindow} from '../domain/journey-atlas';
+import {literaryBlockFor} from '../domain/literary-blocks';
+import {getBookIntroduction} from '../domain/book-introductions';
+import {getBibleProjectVideoForChapter,type BibleProjectResource} from '../domain/bibleproject';
+import {IsometricTerrain} from './IsometricTerrain';
 import './biblical-world-map.css';
 
-type Props={stage:number|null;completedStages:number;chapters:readonly {chapter_id:string}[];plan?:ReadonlyArray<GameDay>;onRead?:()=>void;readingAvailable?:boolean;readLabel?:string;completedMessage?:string};
-export function BiblicalWorldMap({stage,completedStages,chapters,plan,onRead,readingAvailable=true,readLabel,completedMessage}:Props){
- const id=useId().replace(/:/g,''),viewport=useRef<HTMLDivElement>(null),nodes=useRef(new Map<number,SVGGElement>());
- const [selected,setSelected]=useState(stage??1),[overview,setOverview]=useState(false),[zoom,setZoom]=useState(1);
+type Props={stage:number|null;completedStages:number;chapters:readonly {chapter_id:string}[];plan?:ReadonlyArray<GameDay>;onRead?:()=>void;readingAvailable?:boolean;readLabel?:string;completedMessage?:string;onVideo?:(resource:BibleProjectResource,book:string)=>void};
+export function BiblicalWorldMap({stage,completedStages,chapters,plan,onRead,readingAvailable=true,readLabel,completedMessage,onVideo}:Props){
+ const id=useId().replace(/:/g,''),dialog=useRef<HTMLDialogElement>(null);
+ const [notice,setNotice]=useState(''),[gate,setGate]=useState(false),[moving,setMoving]=useState(false);
  const days=useMemo(()=>plan??[{day:1,old:[],psalms:[],newTestament:[],chapters:chapters.flatMap(item=>{const ch=CHAPTERS.find(c=>c.id===item.chapter_id);return ch?[ch]:[]})}],[plan,chapters]);
- const current=Math.max(1,Math.min(days.length,stage??1));
- const viewed=days[Math.max(0,Math.min(days.length-1,selected-1))];
- const contexts=stageJourneyContexts(viewed);
- const [notice,setNotice]=useState('');
- const weekStart=Math.floor((current-1)/7)*7;
- const visibleDays=overview?days:days.slice(weekStart,weekStart+7);
- const height=overview?Math.ceil(days.length/16)*54+160:visibleDays.length*145+230;
- const points=useMemo(()=>visibleDays.map((day,i)=>journeyPoint(day,i,overview)),[visibleDays,overview]);
- const path=points.map((p,i)=>i===0?`M${p.x} ${p.y}`:overview?`L${p.x} ${p.y}`:`C${points[i-1].x} ${points[i-1].y+65} ${p.x} ${p.y-65} ${p.x} ${p.y}`).join(' ');
- const panTo=(day:number)=>{const container=viewport.current,node=nodes.current.get(day);if(container&&node){const box=node.getBoundingClientRect(),parent=container.getBoundingClientRect();container.scrollTop+=box.top-parent.top-container.clientHeight*.38;container.scrollLeft+=box.left-parent.left-container.clientWidth*.5}};
- useEffect(()=>{setSelected(current)},[current]);
- useEffect(()=>{if(overview){if(viewport.current){viewport.current.scrollTop=0;viewport.current.scrollLeft=0}}else panTo(current)},[current,overview]);
- const choose=(day:number)=>{setSelected(day);if(day===current&&readingAvailable){setNotice('');onRead?.()}else setNotice(day<=completedStages?'Etapa já concluída.':day===current?(completedMessage??'Aguarde a próxima liberação.'):'Esta etapa ainda está bloqueada.')};
- const status=(day:number)=>day<=completedStages?'Concluída':day===current?'Atual':'Bloqueada';
- return <section className="journey-world" aria-label="Mapa das etapas da Jornada">
-  <header className="journey-world-heading"><h2>{overview?"Toda a Jornada":`Semana ${Math.floor((current-1)/7)+1}`}</h2></header>
-  <div className="journey-map-tools" aria-label="Controles do mapa">
-   <button onClick={()=>setZoom(z=>Math.max(.5,z-.25))} disabled={zoom<=.5} aria-label="Diminuir mapa">−</button><output aria-label="Zoom do mapa">{Math.round(zoom*100)}%</output><button onClick={()=>setZoom(z=>Math.min(2,z+.25))} disabled={zoom>=2} aria-label="Ampliar mapa">+</button>
-   <button aria-pressed={overview} onClick={()=>{setOverview(v=>!v);setZoom(1)}}>{overview?'Ver semana':'Ver jornada inteira'}</button>
-   
-  </div>
-  <div ref={viewport} className={'journey-map-viewport '+(overview?'is-overview':'')} tabIndex={0} aria-label="Mapa vertical com todas as etapas; arraste para explorar">
-   <svg viewBox={`0 0 720 ${height}`} style={overview?{height:`${zoom*100}%`,width:"auto"}:{width:`${zoom*100}%`}} className="journey-map-scene" role="group" aria-label={`Percurso interativo de 1 a ${days.length}`}>
-    <defs>
-     <linearGradient id={`${id}-sea`} x2="1" y2="1"><stop stopColor="#164955"/><stop offset="1" stopColor="#0c2c3c"/></linearGradient>
-     <linearGradient id={`${id}-land`} x2="1" y2="0"><stop stopColor="#a58c5b"/><stop offset=".4" stopColor="#d5c38b"/><stop offset="1" stopColor="#7f966b"/></linearGradient>
-     <pattern id={`${id}-terrain`} width="720" height="960" patternUnits="userSpaceOnUse">
-      <rect width="720" height="960" fill={`url(#${id}-sea)`}/>
-      <g stroke="#8cbdc0" strokeWidth="2" opacity=".15" fill="none">{Array.from({length:18},(_,i)=><path key={i} d={`M0 ${i*55}q40 -15 80 0t80 0t80 0t80 0t80 0t80 0t80 0t80 0t80 0`}/>)}</g>
-      <path d="M80 -30L680 -30 700 960 180 990 150 850 210 760 130 650 170 570 80 470 110 360 50 250 120 140Z" fill="#082431" transform="translate(0 14)" opacity=".65"/>
-      <path d="M80 -30L680 -30 700 960 180 990 150 850 210 760 130 650 170 570 80 470 110 360 50 250 120 140Z" fill={`url(#${id}-land)`} stroke="#e1ce98" strokeWidth="3"/>
-      <path d="M625 -10Q530 150 620 300T565 580 630 980" fill="none" stroke="#77b9b4" strokeWidth="9"/>
-      {[[80,280],[615,190],[650,235],[620,680],[660,720],[130,550]].map(([x,y])=><g key={`${x}-${y}`} transform={`translate(${x} ${y})`}><ellipse cy="18" rx="30" ry="9" fill="#424e3c" opacity=".25"/><path d="M-26 15L0 -38 28 15Z" fill="#788069"/><path d="M0 -38L28 15H3Z" fill="#4e6054"/><path d="M-9 -20L0 -38 10 -19 1 -23 -3 -16Z" fill="#f0e5c9"/></g>)}
-      {[[92,170],[120,190],[160,395],[140,420],[640,400],[620,430],[135,900]].map(([x,y])=><g key={`tree-${x}-${y}`} transform={`translate(${x} ${y})`}><path d="M0 12V-12" stroke="#6e5739" strokeWidth="5"/><path d="M-13 2L0 -30 13 2Z" fill="#3e684d"/></g>)}
-      <g transform="translate(35 740)"><path d="M-20 12Q0 30 23 12Z" fill="#bfa16a"/><path d="M0 -28V12" stroke="#f2dfb2" strokeWidth="3"/><path d="M-3 -25L-23 8H-3Z" fill="#e9d7a7"/></g>
-     </pattern>
-    </defs>
-    <rect width="720" height={height} fill={`url(#${id}-terrain)`}/>
-    <g fill="#273e33" fontSize="18" fontWeight="700" aria-hidden="true">{!overview&&visibleDays.filter((_,i)=>i%12===0).map(day=>{const p=points[visibleDays.indexOf(day)];return <text key={day.day} x="230" y={p.y-85}>{stageJourneyContexts(day)[0].region}</text>})}</g>
-    <g fill="none" strokeLinecap="round" aria-hidden="true"><path d={path} stroke="#394b39" strokeWidth={overview?14:36} transform="translate(0 8)" opacity=".45"/><path d={path} stroke="#8d7047" strokeWidth={overview?12:34}/><path d={path} stroke="#ecd39b" strokeWidth={overview?8:25}/>{!overview&&<path d={path} stroke="#af925e" strokeWidth="2" strokeDasharray="2 12"/>}</g>
-    {visibleDays.map((day,i)=>{const p=points[i],state=status(day.day),isCurrent=day.day===current,isSelected=day.day===selected,context=stageJourneyContexts(day)[0];return <g key={day.day} ref={el=>{if(el)nodes.current.set(day.day,el);else nodes.current.delete(day.day)}} role="button" tabIndex={0} aria-pressed={isSelected} aria-label={`Etapa ${day.day}, ${state}, ${context.name}`} transform={`translate(${p.x} ${p.y})`} className="journey-map-node" onClick={()=>choose(day.day)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose(day.day)}}}>
-     <title>{`Etapa ${day.day} · ${state} · ${day.chapters.map(c=>`${c.book} ${c.chapter}`).join(' · ')}`}</title>
-     <circle r={overview?21:44} fill="transparent"/>
-     <ellipse cy={overview?5:13} rx={overview?17:32} ry={overview?7:14} fill="#243a31" opacity=".7"/>
-     {isCurrent&&<circle r={overview?20:39} fill="none" stroke="#c2ed68" strokeWidth="3"/>}
-     <circle r={overview?15:29} fill={day.day<=completedStages?'#88b46a':isCurrent?'#b4e44d':'#344d4e'} stroke={isSelected?'#fff2c8':'#9da788'} strokeWidth={isSelected?4:2}/>
-     <text textAnchor="middle" y={overview?4:6} fontSize={overview?11:19} fontWeight="800" fill={day.day<=completedStages||isCurrent?'#203c30':'#e1e8d8'}>{day.day}</text>
-     {day.day<=completedStages&&<text x={overview?11:23} y={overview?-10:-20} fontSize={overview?10:16} fill="#f3edc9">✓</text>}
-     {!overview&&<><path d="M-10 -46V-65H-3V-58H4V-69H10V-46" stroke="#6e613e" strokeWidth="2" fill="#e4ce97"/><rect x="-112" y="43" width="224" height="43" rx="10" fill="#132f36"/><text y="61" textAnchor="middle" fill="#eef2dc" fontSize="14" fontWeight="700">{context.name}</text><text y="78" textAnchor="middle" fill="#c3d7bc" fontSize="12">{state} · {day.chapters.length} capítulos</text></>}
+ const current=Math.max(1,Math.min(days.length,stage??1)),day=days[current-1];
+ const {start,days:visible}=weekWindow(days,current);
+ const active=day?.chapters.length?atlasStage(day):null;
+ const center=active?atlasProject(active.place.lon,active.place.lat):{x:600,y:430};
+ const region=active?.place.name??'Mundo bíblico';
+ useEffect(()=>{setGate(false);setNotice('')},[current]);
+ const previousRegion=useRef(region);
+ useEffect(()=>{if(previousRegion.current===region)return;previousRegion.current=region;setGate(false);if(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)return;setMoving(true);const timer=window.setTimeout(()=>setMoving(false),850);return()=>{window.clearTimeout(timer);setMoving(false)}},[region]);
+ useEffect(()=>{if(!gate)return;const el=dialog.current,previous=document.activeElement as HTMLElement|null;if(!el)return;el.showModal();return()=>{el.close();previous?.focus()}},[gate]);
+ const openings=day?.chapters.filter(ch=>ch.chapter===1)??[];
+ const canRead=readingAvailable&&current>completedStages;
+ const choose=(n:number)=>{if(moving)return;if(n!==current||!canRead){setNotice(n<=completedStages?'Etapa já concluída.':n===current?(completedMessage??'Aguarde a próxima liberação.'):'Esta etapa ainda está bloqueada.');return}setNotice('');if(openings.length)setGate(true);else onRead?.()};
+ const points=visible.map((d,i)=>{const a=d.chapters.length?atlasStage(d):active,p=a?atlasProject(a.place.lon,a.place.lat):center;return {x:360+(p.x-center.x)*.25+Math.sin(i*1.2)*125,y:140+i*86,day:d}});
+ const path=points.map((p,i)=>i?`C${points[i-1].x} ${points[i-1].y+43} ${p.x} ${p.y-43} ${p.x} ${p.y}`:`M${p.x} ${p.y}`).join(' ');
+ const block=active?literaryBlockFor(active.chapter.book):undefined;
+ if(!day||!active)return <section className="journey-world"><p role="status">O plano de leitura ainda não está disponível.</p></section>;
+ return <section className="journey-world isometric-journey" aria-label="Mapa das etapas da Jornada" aria-busy={moving}>
+  <header className="journey-world-heading"><span className="atlas-eyebrow">LAB · MUNDO DA BÍBLIA</span><h2>Semana {Math.floor(start/7)+1} · {region}</h2><p>{block?.symbol} {block?.name} · Etapa {current} de {days.length}</p></header>
+  <div className="atlas-stage" data-biome={active.place.biome}>
+   <svg viewBox="0 0 720 840" className="atlas-scene" role="group" aria-label={`Semana atual: etapas ${start+1} a ${start+visible.length}`}>
+    <defs><linearGradient id={`${id}-fog`} x2="0" y2="1"><stop stopColor="#e6f7f5" stopOpacity=".95"/><stop offset="1" stopColor="#e6f7f5" stopOpacity="0"/></linearGradient></defs>
+    <g className="atlas-camera" style={{transform:`translate(${360-center.x}px, ${430-center.y}px)`}}><IsometricTerrain id={id}/></g>
+    <g aria-hidden="true" fill="none" strokeLinecap="round">
+     {start>0&&<path d={`M${points[0].x} 85v45`} stroke="#e7e5bd" strokeWidth="4" strokeDasharray="3 9"/>}
+     <path d={path} stroke="#203f40" strokeWidth="22" opacity=".35" transform="translate(0 9)"/><path d={path} stroke="#fff2c7" strokeWidth="15"/>
+     {points.slice(1).map((p,i)=><path key={p.day.day} d={`M${points[i].x} ${points[i].y}C${points[i].x} ${points[i].y+43} ${p.x} ${p.y-43} ${p.x} ${p.y}`} stroke={literaryBlockFor((p.day.old[0]??p.day.chapters[0])?.book)?.color??'#0072B2'} strokeWidth="7"/>)}
+    </g>
+    {points.map(p=>{const n=p.day.day,b= literaryBlock(p.day),isCurrent=n===current,done=n<=completedStages,state=done?'Concluída':isCurrent?'Atual':'Bloqueada';return <g key={n} role="button" tabIndex={moving?-1:0} aria-disabled={moving||n!==current||!canRead} aria-label={`Etapa ${n}, ${state}, ${p.day.chapters.map(ch=>`${ch.book} ${ch.chapter}`).join(' · ')}`} className={`journey-map-node atlas-flag ${isCurrent?'is-current':''}`} transform={`translate(${p.x} ${p.y})`} onClick={()=>choose(n)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose(n)}}}>
+     <title>{`${b?.name} · ${state}`}</title><rect x="-48" y="-72" width="96" height="100" fill="transparent"/>
+     <ellipse cy="12" rx="30" ry="13" fill="#173e42" opacity=".35"/><ellipse cy="6" rx="25" ry="12" fill={isCurrent?'#fff7c0':'#d2d7b2'} stroke="#3b6663" strokeWidth="3"/>
+     {isCurrent&&<ellipse className="atlas-current-ring" cy="6" rx="34" ry="17" fill="none" stroke="#fff8b6" strokeWidth="4"/>}
+     <path d="M-23 4V-68M23 4V-68M-30 -63H30" stroke="#70502d" strokeWidth="5"/><path d="M-20 -61H20V-17L0 -25 -20 -17Z" fill={b?.color??'#0072B2'} stroke="#fff5d2" strokeWidth="2"/>
+     <rect x="-15" y="-54" width="30" height="25" rx="6" fill="#132f3c"/><text y="-36" textAnchor="middle" fill="white" fontSize="16" fontWeight="900">{n}</text>
+     <text x="38" y="-27" fill="#102f39" stroke="#fff9dc" strokeWidth="4" paintOrder="stroke" fontSize="18" fontWeight="900">{done?'✓':isCurrent?'Você':'🔒'}</text>
+     <text textAnchor="middle" y="31" fill="#112f38" stroke="#fff6d5" strokeWidth="4" paintOrder="stroke" fontWeight="800" fontSize="12">{b?.symbol} {state}</text>
     </g>})}
-    <text x="360" y={height-40} textAnchor="middle" fill="#f4e6ba" fontSize="20" fontWeight="700">{overview?'✧ O Galardão':`Etapas ${weekStart+1} a ${Math.min(weekStart+7,days.length)}`}</text>
+    <g aria-hidden="true" pointerEvents="none"><rect width="720" height="85" fill={`url(#${id}-fog)`}/><rect y="765" width="720" height="75" fill="#d7eeed" opacity=".88"/><text x="360" y="805" textAnchor="middle" fill="#254c59" fontSize="17">{current===days.length?'O fim de uma grande jornada':'O próximo trecho se revela a cada semana'}</text></g>
    </svg>
+   {moving&&<p className="atlas-travel" role="status">Viajando para {region}…</p>}
+   <div className="atlas-location"><span>{active.context.kind==='simbólico'?'Marco simbólico':active.context.kind==='destinatários'?'Região dos destinatários':'Panorama regional'}</span><strong>{active.context.name}</strong></div>
   </div>
   {notice&&<p className="journey-map-notice" role="status">{notice}</p>}
-  <details className="journey-map-help"><summary>Ajuda e contexto</summary><p>Toque no número aceso para ler. As etapas com ✓ já foram concluídas; as demais aguardam liberação. Use + e − para ajustar o mapa.</p><p>{viewed.chapters.map(c=>`${c.book} ${c.chapter}`).join(' · ')}</p>{contexts.map(context=><p key={context.name}><strong>{context.name}</strong> · {context.region}<br/>{context.detail}<br/><small>{context.reference}</small></p>)}<p>O caminho é uma representação de jogo, sem escala geográfica.</p></details>
+  <details className="journey-map-help"><summary>Localização e leitura da semana</summary><p>{active.context.detail} {active.context.reference}</p><p>Mapa isométrico ilustrativo, sem escala. As bandeiras organizam sete dias dentro da região; não indicam coordenadas exatas de cada capítulo. O plano intercalado pode reunir várias regiões no mesmo dia.</p>{day.chapters.map(ch=><p key={ch.id}><strong>{ch.book} {ch.chapter}</strong> · {atlasStage({...day,old:[ch],chapters:[ch]}).context.name}</p>)}</details>
+  {gate&&<dialog ref={dialog} className="atlas-book-gate" aria-label="Portão de abertura do livro" onCancel={e=>{e.preventDefault();setGate(false)}}><button className="atlas-close" autoFocus onClick={()=>setGate(false)} aria-label="Fechar portão">✕</button><span className="atlas-eyebrow">NOVO LIVRO · NOVA DESCOBERTA</span>{openings.map(ch=>{const intro=getBookIntroduction(ch.book),context=atlasStage({...day,old:[ch],chapters:[ch]}).context,video=getBibleProjectVideoForChapter(ch.book,1);return <article key={ch.id}><h2>Portão de {ch.book}</h2><p><strong>{context.name}</strong> · {context.region}</p><p>{context.detail}</p>{intro&&<><h3>{intro.theme}</h3><p>{intro.context}</p></>}<div className="atlas-video-chest"><h3>✦ Baú do Vídeo · BibleProject</h3><p>Panorama em português. Assistir é opcional; as recompensas seguem a validação do aplicativo.</p>{video&&(onVideo?<button className="secondary-cta" onClick={()=>{setGate(false);onVideo(video,ch.book)}}>Assistir ao panorama</button>:<a href={video.url} target="_blank" rel="noopener noreferrer">Abrir panorama oficial</a>)}</div></article>})}<button className="primary-cta" disabled={!canRead} onClick={()=>{setGate(false);if(canRead)onRead?.()}}>{readLabel??'Começar a leitura'}</button></dialog>}
  </section>;
 }
+function literaryBlock(day:GameDay){return literaryBlockFor((day.old[0]??day.chapters[0])?.book)}

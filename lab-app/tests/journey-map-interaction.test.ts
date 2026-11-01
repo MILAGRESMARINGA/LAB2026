@@ -6,8 +6,10 @@ import {BiblicalWorldMap} from '../src/components/BiblicalWorldMap';
 import {createNextGamePlan} from '../src/domain/game-plan-next';
 import {StudyReadingScreen} from '../src/components/StudyReadingScreen';
 describe('Jornada explorável e tela de estudo',()=>{
- it('abre a leitura com um toque, mostra só sete etapas e bloqueia o futuro',async()=>{
+ it('abre portões sobre o mapa, mostra só sete etapas e bloqueia o futuro',async()=>{
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT=true;
+  Object.defineProperty(HTMLDialogElement.prototype,'showModal',{configurable:true,value:function(){this.setAttribute('open','')}});
+  Object.defineProperty(HTMLDialogElement.prototype,'close',{configurable:true,value:function(){this.removeAttribute('open')}});
   const host=document.createElement('div');document.body.append(host);const root=createRoot(host),read=vi.fn();
   try{
    await act(async()=>root.render(React.createElement(BiblicalWorldMap,{stage:1,completedStages:0,chapters:[],plan:createNextGamePlan(365).stages,onRead:read})));
@@ -15,14 +17,13 @@ describe('Jornada explorável e tela de estudo',()=>{
    expect(host.querySelector('.journey-map-detail')).toBeNull();
    const current=host.querySelector('svg [aria-label^="Etapa 1,"]')!;
    await act(async()=>current.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true})));
+   expect(read).not.toHaveBeenCalled();
+   expect(host.querySelector('dialog[open]')?.textContent).toContain('Portão de Gênesis');
+   await act(async()=>{[...host.querySelectorAll('button')].find(b=>b.textContent==='Começar a leitura')!.click()});
    expect(read).toHaveBeenCalledOnce();
    await act(async()=>host.querySelector('svg [aria-label^="Etapa 2,"]')!.dispatchEvent(new MouseEvent('click',{bubbles:true})));
    expect(read).toHaveBeenCalledOnce();expect(host.querySelector('[role="status"]')?.textContent).toContain('bloqueada');
-   await act(async()=>{[...host.querySelectorAll('button')].find(b=>b.textContent==='Ver jornada inteira')!.click()});
-   expect(host.querySelectorAll('svg [role="button"]')).toHaveLength(365);
-   await act(async()=>host.querySelector('svg [aria-label^="Etapa 365,"]')!.dispatchEvent(new MouseEvent('click',{bubbles:true})));
-   expect(read).toHaveBeenCalledOnce();
-   await act(async()=>{[...host.querySelectorAll('button')].find(b=>b.textContent==='Ver semana')!.click()});
+   expect(host.textContent).not.toContain('Ver jornada inteira');
    expect(host.querySelectorAll('svg [role="button"]')).toHaveLength(7);
   }finally{await act(async()=>root.unmount());host.remove()}
  });
