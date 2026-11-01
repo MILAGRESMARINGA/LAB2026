@@ -34,7 +34,7 @@ export function BiblicalWorldMap({stage,completedStages,chapters,plan,onRead,rea
   <div className="atlas-stage" data-biome={active.place.biome}>
    <svg viewBox="0 0 720 840" className="atlas-scene" role="group" aria-label={`Semana atual: etapas ${start+1} a ${start+visible.length}`}>
     <defs><linearGradient id={`${id}-fog`} x2="0" y2="1"><stop stopColor="#e6f7f5" stopOpacity=".95"/><stop offset="1" stopColor="#e6f7f5" stopOpacity="0"/></linearGradient></defs>
-    <g className="atlas-camera" style={{transform:`translate(${360-center.x}px, ${430-center.y}px)`}}><IsometricTerrain id={id}/></g>
+    <rect width="720" height="840" fill="#278daa"/><g className="atlas-camera" style={{transform:`translate(${360-center.x*1.65}px, ${430-center.y*1.65}px) scale(1.65)`}}><IsometricTerrain id={id} labels={false}/></g>
     <g aria-hidden="true" fill="none" strokeLinecap="round">
      {start>0&&<path d={`M${points[0].x} 85v45`} stroke="#e7e5bd" strokeWidth="4" strokeDasharray="3 9"/>}
      <path d={path} stroke="#203f40" strokeWidth="22" opacity=".35" transform="translate(0 9)"/><path d={path} stroke="#fff2c7" strokeWidth="15"/>
@@ -50,6 +50,7 @@ export function BiblicalWorldMap({stage,completedStages,chapters,plan,onRead,rea
      <text textAnchor="middle" y="31" fill="#112f38" stroke="#fff6d5" strokeWidth="4" paintOrder="stroke" fontWeight="800" fontSize="12">{b?.symbol} {state}</text>
     </g>})}
     <g aria-hidden="true" pointerEvents="none"><rect width="720" height="85" fill={`url(#${id}-fog)`}/><rect y="765" width="720" height="75" fill="#d7eeed" opacity=".88"/><text x="360" y="805" textAnchor="middle" fill="#254c59" fontSize="17">{current===days.length?'O fim de uma grande jornada':'O próximo trecho se revela a cada semana'}</text></g>
+    <svg x="502" y="16" width="200" height="150" viewBox="0 0 1080 880" aria-label={`Localização regional: ${region}`} role="img"><IsometricTerrain id={`${id}-locator`} labels={false}/><circle cx={center.x} cy={center.y} r="24" fill="#fff4ae" stroke="#173e42" strokeWidth="10"/></svg>
    </svg>
    {moving&&<p className="atlas-travel" role="status">Viajando para {region}…</p>}
    <div className="atlas-location"><span>{active.context.kind==='simbólico'?'Marco simbólico':active.context.kind==='destinatários'?'Região dos destinatários':'Panorama regional'}</span><strong>{active.context.name}</strong></div>
