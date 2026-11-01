@@ -276,6 +276,15 @@ END
 $test$;
 
 RESET ROLE;
+-- This test creates an alternative elapsed-time scenario by rewinding
+-- activated_at. Clear the previous synthetic incident and wallet first:
+-- real production stages are immutable once an incident has been recorded.
+-- Without this reset, month boundaries can transfer prior Nov incidents into
+-- a backdated Oct stage and falsely create a fourth life in one incident.
+DELETE FROM public.lab_v2_incidents
+ WHERE run_id=:'first_run'::uuid AND day_number=2;
+DELETE FROM public.lab_v2_monthly_lives
+ WHERE user_id=(SELECT user_id FROM public.lab_v2_runs WHERE id=:'first_run'::uuid);
 UPDATE public.lab_v2_stages SET activated_at=statement_timestamp()-interval '104 hours'
  WHERE run_id=:'first_run'::uuid AND day_number=2;
 SET ROLE authenticated;
