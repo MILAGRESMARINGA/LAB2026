@@ -9,15 +9,17 @@ export const DEFAULT_EDITION="ALM1911";
 export type BibleEdition={code:string;title:string;available:boolean;requires_auth:boolean;license_label:string};
 export const FALLBACK_BIBLE_EDITIONS:readonly BibleEdition[]=[
  {code:"ALM1911",title:"Almeida 1911",available:true,requires_auth:false,license_label:"Domínio público: edição histórica de 1911"},
- ...["NVI","NAA","ARA","NTLH"].map(code=>({code,title:code,available:false,requires_auth:true,license_label:"Disponível após autorização e importação licenciada"})),
+ {code:"KJV",title:"King James Version (1611/1769)",available:true,requires_auth:false,license_label:"Texto clássico em inglês; alinhamento Strong às fontes STEPBible."},
 ];
 function validateReference(chapterId:string){try{bibleReferenceById(chapterId)}catch{throw Error("Referência inválida")}}
-function validateEdition(edition:string){if(!/^[A-Z0-9]{2,12}$/.test(edition))throw Error("Versão bíblica inválida")}
+export const PUBLIC_BIBLE_EDITIONS=Object.freeze(["ALM1911","KJV"] as const);
+export function isPublicBibleEdition(code:string):boolean{return PUBLIC_BIBLE_EDITIONS.some(edition=>edition===code)}
+function validateEdition(edition:string){if(!isPublicBibleEdition(edition))throw Error("Edição indisponível: use Almeida 1911 ou KJV.")}
 export async function listBibleEditions():Promise<BibleEdition[]>{
  if(!supabase)return FALLBACK_BIBLE_EDITIONS.map(edition=>({...edition}));
  const {data,error}=await supabase.from("lab_bible_edition_availability").select("code,title,available,requires_auth,license_label").order("display_order");
  if(error||!Array.isArray(data)||!data.length)return FALLBACK_BIBLE_EDITIONS.map(edition=>({...edition}));
- return data as BibleEdition[];
+ return (data as BibleEdition[]).filter(e=>isPublicBibleEdition(e.code)&&e.available);
 }
 export async function readBibleChapter(chapterId:string,edition=DEFAULT_EDITION):Promise<BibleChapter>{
  validateReference(chapterId);validateEdition(edition);

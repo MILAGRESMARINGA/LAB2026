@@ -8,6 +8,7 @@ export type StrongTerm={
  transliteration:string|null;translated_gloss:string|null;
  translated_definition:string|null;translation_status:"machine"|"reviewed"|null;
  source_name:string;
+ link_review_status?:"source_verified_stepbible"|"editorial_reviewed";
 };
 export const STRONG_READER_READY=import.meta.env.VITE_LAB_STRONG_READY==="true";
 export function validateStrongReference(chapterId:string,verse:number){
@@ -24,7 +25,8 @@ export function normalizeStrongTerms(rows:unknown):StrongTerm[]{
    &&Number.isInteger(r.token_ordinal)&&(r.token_ordinal as number)>0
    &&typeof r.lemma==="string"&&r.lemma.length>0
    &&["hebrew","greek","aramaic"].includes(String(r.language))
-   &&[null,"machine","reviewed"].includes(r.translation_status as string|null);
+   &&[null,"machine","reviewed"].includes(r.translation_status as string|null)
+   &&[undefined,"source_verified_stepbible","editorial_reviewed"].includes(r.link_review_status as string|undefined);
  }).slice(0,48);
 }
 export async function getStrongTerms(chapterId:string,verse:number):Promise<StrongTerm[]>{

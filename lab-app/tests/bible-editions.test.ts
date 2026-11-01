@@ -11,16 +11,24 @@ beforeEach(()=>{
 describe("Bible edition availability",()=>{
  it("keeps only the historical edition available when metadata cannot be loaded",async()=>{
   mocks.order.mockResolvedValue({data:null,error:{message:"table not yet deployed"}});
-  expect((await listBibleEditions()).filter(v=>v.available).map(v=>v.code)).toEqual(["ALM1911"]);
-  expect(FALLBACK_BIBLE_EDITIONS.map(v=>v.code)).toEqual(["ALM1911","NVI","NAA","ARA","NTLH"]);
+  expect((await listBibleEditions()).filter(v=>v.available).map(v=>v.code)).toEqual(["ALM1911","KJV"]);
+  expect(FALLBACK_BIBLE_EDITIONS.map(v=>v.code)).toEqual(["ALM1911","KJV"]);
  });
  it("uses the chosen edition and rejects noncanonical chapters before querying",async()=>{
-  mocks.single.mockResolvedValue({data:{edition:"NAA",chapter_id:"43:1",book_name:"João",chapter_number:1,verses:[{number:1,text:"fixture"}]},error:null});
-  expect((await readBibleChapter("43:1","NAA")).edition).toBe("NAA");
-  expect(mocks.eq).toHaveBeenCalledWith("edition","NAA");
+  mocks.single.mockResolvedValue({data:{edition:"KJV",chapter_id:"43:1",book_name:"João",chapter_number:1,verses:[{number:1,text:"fixture"}]},error:null});
+  expect((await readBibleChapter("43:1","KJV")).edition).toBe("KJV");
+  expect(mocks.eq).toHaveBeenCalledWith("edition","KJV");
   mocks.from.mockClear();
   await expect(readBibleChapter("1:51")).rejects.toThrow("Referência inválida");
-  await expect(readBibleChapter("43:1","../../secret")).rejects.toThrow("Versão bíblica inválida");
+  await expect(readBibleChapter("43:1","../../secret")).rejects.toThrow("Edição indisponível");
+  expect(mocks.from).not.toHaveBeenCalled();
+ });
+ it("prevents querying licensed translations even with forged edition selection",async()=>{
+  mocks.order.mockResolvedValue({data:[{code:"ALM1911",available:true},{code:"KJV",available:true},{code:"NVI",available:true},{code:"ARA",available:true}],error:null});
+  expect((await listBibleEditions()).map(e=>e.code)).toEqual(["ALM1911","KJV"]);
+  mocks.from.mockClear();
+  await expect(readBibleChapter("1:1","NVI")).rejects.toThrow("Edição indisponível");
+  await expect(readBibleSpeechSpans("1:1","NTLH")).rejects.toThrow("Edição indisponível");
   expect(mocks.from).not.toHaveBeenCalled();
  });
  it("maps curated spans with their exact text snapshot",async()=>{
