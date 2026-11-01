@@ -19,7 +19,7 @@ describe('Jornada explorável e tela de estudo',()=>{
    expect(host.querySelector('.journey-map-settings')).not.toBeNull();
    const current=host.querySelector('svg [aria-label^="Etapa 1,"]')!;
    await act(async()=>current.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true})));
-   expect(read).toHaveBeenCalledTimes(2);
+   expect(read).toHaveBeenCalledOnce();
    await act(async()=>{(host.querySelector('.journey-primary-action button') as HTMLButtonElement).click()});
    expect(read).toHaveBeenCalledTimes(2);
    await act(async()=>host.querySelector('svg [aria-label^="Etapa 2,"]')!.dispatchEvent(new MouseEvent('click',{bubbles:true})));
