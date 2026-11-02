@@ -1,4 +1,5 @@
 import {lazy,Suspense,useCallback,useEffect,useId,useMemo,useRef,useState,type CSSProperties} from 'react';
+import {ConsistencyFlame} from './ConsistencyFlame';
 import {CHAPTERS} from '../domain/canon';
 import type {GameDay} from '../domain/game-plan';
 import {atlasChapter,atlasPlace,weekWindow} from '../domain/journey-atlas';
@@ -66,6 +67,7 @@ export function BiblicalWorldMap({stage,completedStages,chapters,plan,onRead,rea
    <button type="button" className="atlas-guide-link" aria-controls={`${id}-context`} onClick={()=>{const element=guide.current;if(element){element.open=true;element.scrollIntoView({behavior:reducedMotion?'auto':'smooth',block:'start'})}}}><span aria-hidden="true">▤</span> Guia</button>
   </header>
   <div className="atlas-focus-control"><label htmlFor={`${id}-reading`}>Região da leitura</label><select id={`${id}-reading`} aria-label="Região da leitura" value={chapter.id} onChange={event=>{setFocusedChapterId(event.target.value);setNotice('')}}>{day.chapters.map(item=><option value={item.id} key={item.id}>{item.book} {item.chapter} · {atlasPlace(item).name}</option>)}</select></div>
+  <div className="atlas-playfield">
   <div className={`atlas-stage atlas-stage-3d${unavailable?' is-fallback':''}`} data-biome={active.place.biome} role="group" aria-label={`Semana atual: etapas ${week.start+1} a ${week.start+week.days.length}`}>
    {!unavailable&&<Suspense fallback={<div className="atlas-scene-loading" role="status">Preparando o mundo bíblico…</div>}><JourneyScene3D nodes={nodes} focus={focus} onSelect={choose} onProject={handleProject} onTransition={handleTransition} reducedMotion={reducedMotion} onUnavailable={handleUnavailable} onRenderMode={handleRenderMode}/></Suspense>}
    {unavailable&&<div className="atlas-accessible-terrain" aria-hidden="true"><div className="atlas-fallback-river"/><span className="atlas-fallback-label">{active.place.name}</span></div>}
@@ -76,6 +78,8 @@ export function BiblicalWorldMap({stage,completedStages,chapters,plan,onRead,rea
    <div className="atlas-future-fog" aria-hidden="true"><span>{current===days.length?'Uma jornada inteira na Palavra':'A próxima semana se revela no caminho'}</span></div>
    <div className="atlas-location"><span>{active.kind==='symbolic'?'MARCO SIMBÓLICO':active.kind==='recipient'?'COMUNIDADE DESTINATÁRIA':active.kind==='literary'?'CONTEXTO LITERÁRIO':active.kind==='vision'?'CENÁRIO DA VISÃO':'LOCAL DA NARRATIVA'}</span><strong>{currentLabel}</strong><small>{active.confidence==='uncertain'?'Localização incerta · referência regional':active.confidence==='approximate'?'Localização aproximada':'Referência regional'}</small></div>
    {moving&&<div className="atlas-travel" role="status"><span aria-hidden="true">✦</span> Viajando para {active.place.name}…</div>}
+  </div>
+  <aside className="atlas-companion-rail" aria-label="Companheiro da jornada"><ConsistencyFlame compact completedDays={completedStages} status={current===days.length&&completedStages>=days.length?'completed':'active'}/><p>Um dia de cada vez.</p><small>Leia a etapa atual e avance na sua jornada pela Palavra.</small></aside>
   </div>
   {!unavailable&&renderMode==='software'&&<p className="atlas-render-compatibility">Cena 3D em modo de compatibilidade.</p>}
   {unavailable&&<p className="atlas-render-notice" role="status">Visualização 3D indisponível neste dispositivo. A jornada continua acessível no modo simplificado.</p>}

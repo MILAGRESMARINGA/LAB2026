@@ -1,0 +1,19 @@
+/* The six working destinations share a desktop rail and a mobile dock. */
+.main-navigation-brand,.main-navigation-caption{display:none}
+@media(min-width:1000px){
+ .game-main-navigation.game-bottom-nav{inset:0 auto 0 0;width:224px;height:100dvh;box-sizing:border-box;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:10px;padding:30px 15px 24px;border:0;border-right:2px solid #30454d;background:#11232c;backdrop-filter:none;overflow-y:auto;z-index:20}
+ .game-main-navigation .main-navigation-brand{display:flex;flex-direction:column;gap:8px;margin:0 9px 28px;color:#eff4e0}
+ .main-navigation-brand strong{font-size:29px;letter-spacing:-1.4px;line-height:1;font-weight:900}
+ .main-navigation-brand strong span{color:#b4df4b}
+ .main-navigation-brand small{font-size:8px;font-weight:800;letter-spacing:1.3px;color:#aec4c7}
+ .game-main-navigation.game-bottom-nav>button,.game-main-navigation.game-bottom-nav>a{display:flex;flex-direction:row;align-items:center;justify-content:flex-start;flex:0 0 auto;gap:16px;width:100%;min-height:58px;padding:13px 16px;border:2px solid transparent;border-radius:15px;background:transparent;color:#d0e0e3;text-align:left;text-decoration:none;font-family:inherit;font-size:13px;font-weight:850;letter-spacing:.5px;text-transform:uppercase;cursor:pointer}
+ .game-main-navigation.game-bottom-nav>button svg,.game-main-navigation.game-bottom-nav>a svg{width:26px;height:26px;flex-shrink:0;stroke-width:2.3}
+ .game-main-navigation.game-bottom-nav>button.active,.game-main-navigation.game-bottom-nav>a.active{background:#203b46;border-color:#52889a;color:#9bddf1}
+ .game-main-navigation.game-bottom-nav>button:hover,.game-main-navigation.game-bottom-nav>a:hover{background:#1c3540;color:#eff8ec}
+ .game-main-navigation.game-bottom-nav>button:focus-visible,.game-main-navigation.game-bottom-nav>a:focus-visible{outline:3px solid #d2ec8c;outline-offset:2px}
+ .game-main-navigation .main-navigation-caption{display:block;margin:auto 10px 0;padding-top:24px;border-top:1px solid #30454d;color:#9cb8bd;font-size:12px;line-height:1.65}
+ .game-app{box-sizing:border-box;padding-left:224px}
+ .game-app .game-content{padding-bottom:36px}
+ .game-app .game-footer{padding-bottom:30px}
+ main.journey-demo-content{box-sizing:border-box;width:calc(100% - 272px);margin-left:248px!important;margin-right:24px!important;padding-bottom:36px!important}
+}

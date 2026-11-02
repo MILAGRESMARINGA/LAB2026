@@ -43,3 +43,9 @@ Reversão: reverter o commit da cena 3D e suas dependências. Não há migration
 - Inspeção em navegador remoto: prévia carregou, sete bandeiras, seletor regional e portão com BibleProject funcionaram. O navegador não disponibilizou WebGL2; foi necessário verificar a renderização por software. A inspeção encontrou e corrigiu sobreposição da malha do mar, causada pela ordenação por profundidade média do SVGRenderer.
 - As inspeções de layout estreito são simulações em contêiner de 390 px, não benchmark em celular físico nem prova do caminho GPU.
 - CI inicial aprovou testes/build e Auth/RLS descartável, mas PG16/PG17 detectaram fragilidade anterior do teste SQL na virada do mês. O cenário de uma vida e o de esgotamento reescreviam a ativação do mesmo incidente em meses diferentes. Somente a fixture isolada foi corrigida com transação/reversão entre cenários; nenhuma migration ou regra de produção foi alterada. A confirmação dos checks de banco depende do CI do commit final.
+
+## Navegação e personagem lateral
+
+Após a comparação com as telas enviadas, o menu desktop foi movido para a lateral esquerda (224 px), preservando os seis destinos funcionais. No celular mantém-se a navegação inferior. A Chama Viva ocupa uma coluna ao lado da trilha em áreas largas; a trilha recebe todo o espaço em áreas estreitas. O mapa usa consultas de contêiner para adaptar o conteúdo à largura efetiva, inclusive em telas de teste com 390 px.
+
+O CI 41383632510 do commit 3939969baa136e825e77490acdc41c6aba56dfd3 aprovou todos os jobs: contrato dos agentes, testes/build, Auth/RLS com duas contas descartáveis, PostgreSQL16/17 e consolidação P0. O ajuste posterior do menu/personagem passou novamente nos 268 testes e no build local; sua execução remota é acompanhada no PR.
