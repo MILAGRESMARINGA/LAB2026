@@ -49,3 +49,11 @@ Reversão: reverter o commit da cena 3D e suas dependências. Não há migration
 Após a comparação com as telas enviadas, o menu desktop foi movido para a lateral esquerda (224 px), preservando os seis destinos funcionais. No celular mantém-se a navegação inferior. A Chama Viva ocupa uma coluna ao lado da trilha em áreas largas; a trilha recebe todo o espaço em áreas estreitas. O mapa usa consultas de contêiner para adaptar o conteúdo à largura efetiva, inclusive em telas de teste com 390 px.
 
 O CI 41383632510 do commit 3939969baa136e825e77490acdc41c6aba56dfd3 aprovou todos os jobs: contrato dos agentes, testes/build, Auth/RLS com duas contas descartáveis, PostgreSQL16/17 e consolidação P0. O ajuste posterior do menu/personagem passou novamente nos 268 testes e no build local; sua execução remota é acompanhada no PR.
+
+## Episódios e evidências — 2026-11-02
+
+A navegação visual é Mundo → Região → Episódio. Não reorganiza o plano anual intercalado. `journey-stories.ts` cobre os 1.189 capítulos com episódios editoriais e diferencia narrativa, poesia, profecia, carta e visão. Narrativas paralelas não equivalem a deslocamentos históricos sucessivos.
+
+`journey-evidence.ts` oferece recuperação determinística por livro/capítulo de um catálogo inicial de 19 registros: referências bíblicas, fonte, escopo, confiança e cautela. Isso constitui a camada de recuperação para RAG; não existe geração conectada a LLM nem fine-tuning executado. Capítulos ainda sem registro retornam lista vazia. Fontes externas e ilustrações não substituem revisão editorial teológica. Datas disputadas de Joel/Obadias, localização do Éden, rota do Êxodo e reconstruções arquitetônicas devem permanecer qualificadas. Corroboração histórica não é comprovação automática de todos os detalhes da narrativa.
+
+O mapa possui zoom, recentralização e navegação entre escalas. Rótulos HTML mantêm tamanho independente do terreno. O modo de compatibilidade usa os mesmos modelos com projeção SVG; seus movimentos são instantâneos para limitar o custo de processamento. Gestos e WebGL real ainda exigem validação visual em dispositivos físicos. Nenhuma nova publicação em produção ou tarefa de treinamento é implícita nesta atualização.

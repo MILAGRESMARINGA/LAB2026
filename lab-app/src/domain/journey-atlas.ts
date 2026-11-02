@@ -7,7 +7,7 @@ export type AtlasPlace={name:string;lon:number;lat:number;biome:AtlasBiome};
 /** Regional scene anchors, rounded deliberately. Never coordinates of an unproven event. */
 export const ATLAS_PLACES={
  mesopotamia:{name:'Mesopotâmia',lon:45,lat:33,biome:'river'},
- eden:{name:'Éden · marco simbólico',lon:45,lat:33,biome:'river'},
+ eden:{name:'Éden · localização incerta',lon:45,lat:33,biome:'river'},
  egypt:{name:'Egito · Nilo',lon:31,lat:29,biome:'desert'},
  goshen:{name:'Gósen · delta do Nilo',lon:31.9,lat:30.7,biome:'river'},
  midian:{name:'Midiã · região aproximada',lon:35.5,lat:28.5,biome:'desert'},
@@ -105,8 +105,8 @@ const letter=(to:number,place:AtlasPlaceKey,note='Região dos destinatários; n�
  */
 export const ATLAS_RANGES:Readonly<Record<string,readonly Range[]>>={
  'Gênesis':[
-  uncertain(1,5,'eden','Marco simbólico no enquadramento mesopotâmico de Gn 2.10–14. A posição exata do Éden não é conhecida.','symbolic'),
-  uncertain(6,9,'ararat','Gn 8.4 menciona os montes de Ararate; não identifica um pico ou rota verificável.','symbolic'),
+  uncertain(1,5,'eden','Enquadramento regional sugerido pelos rios de Gn 2.10–14. A posição exata do Éden não é conhecida.','narrative'),
+  uncertain(6,9,'ararat','Gn 8.4 menciona os montes de Ararate; não identifica um pico ou rota verificável.','narrative'),
   n(10,11,'babel',['mesopotamia','babel','ur','haran'],'Povos e Babel; a família de Abrão parte de Ur rumo a Harã em Gn 11.'),
   n(12,12,'canaan',['haran','shechem','bethel','egypt']),n(13,14,'hebron',['egypt','bethel','hebron']),n(15,18,'hebron'),n(19,19,'jordan',[],'Sodoma, Gomorra e Zoar: enquadramento no vale, sem identificar sítios debatidos.'),
   n(20,21,'beersheba'),{...n(22,22,'jerusalem',['beersheba','jerusalem'],'Moriá: associação tradicional à região de Jerusalém, não coordenada demonstrada do episódio.'),confidence:'approximate'},n(23,23,'hebron'),n(24,24,'haran',['hebron','haran','beersheba']),n(25,27,'beersheba'),n(28,28,'bethel',['beersheba','bethel','haran']),n(29,30,'haran'),n(31,31,'gilead',['haran','gilead']),n(32,33,'jordan',['gilead','jordan','shechem']),n(34,35,'shechem',['shechem','bethel','bethlehem','hebron']),n(36,36,'edom',[],'Edom e a região de Seir, ao sul de Moabe; marco regional, sem fronteiras exatas.'),n(37,37,'canaan',['hebron','shechem','egypt']),n(38,38,'canaan'),n(39,45,'egypt'),n(46,47,'goshen',['beersheba','egypt','goshen']),n(48,49,'egypt'),n(50,50,'egypt',['egypt','hebron','egypt'])],

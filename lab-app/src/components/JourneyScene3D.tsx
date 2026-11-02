@@ -5,9 +5,17 @@ import {disposeObject,geographicPoint,makeAncientWorld} from './journey3d/terrai
 
 export type JourneySceneNode={day:number;lon:number;lat:number;color:string;status:'current'|'completed'|'locked';name?:string};
 export type ProjectedJourneyNode={day:number;x:number;y:number};
+export type ProjectedJourneyLabel={id:string;label:string;x:number;y:number};
+export type JourneyViewMode='world'|'region'|'episode';
 export type JourneyScene3DProps={
  nodes:readonly JourneySceneNode[];
  focus:{lon:number;lat:number};
+ focusLabel?:string;
+ viewMode?:JourneyViewMode;
+ zoom?:number;
+ resetViewKey?:number;
+ onZoomChange?:(zoom:number)=>void;
+ onLabelsProject?:(labels:ReadonlyArray<ProjectedJourneyLabel>)=>void;
  onSelect:(day:number)=>void;
  onTransition?:(moving:boolean)=>void;
  reducedMotion?:boolean;
@@ -16,7 +24,8 @@ export type JourneyScene3DProps={
  onProject?:(points:ReadonlyArray<ProjectedJourneyNode>)=>void;
 };
 type Flag={node:JourneySceneNode;group:THREE.Group;anchor:THREE.Vector3;label:THREE.Vector3;hit:THREE.Object3D};
-type SceneController={update:(nodes:readonly JourneySceneNode[],focus:{lon:number;lat:number},reduced:boolean)=>void;dispose:()=>void};
+type SceneController={update:(props:JourneyScene3DProps)=>void;dispose:()=>void};
+const clampZoom=(zoom:number)=>THREE.MathUtils.clamp(Number.isFinite(zoom)?zoom:1,.75,3);
 const UP=new THREE.Vector3(0,1,0),GROUND=new THREE.Plane(UP,-.82);
 function mesh(geometry:THREE.BufferGeometry,color:string,roughness=.8){const result=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color,roughness,flatShading:true}));result.castShadow=true;result.receiveShadow=true;return result;}
 function modeledFlag(node:JourneySceneNode,position:THREE.Vector3):Flag{
@@ -49,35 +58,51 @@ export function JourneyScene3D(props:JourneyScene3DProps){
    if(!webgl.capabilities.isWebGL2){webgl.dispose();webgl=null}
   }catch{webgl=null}
   try{if(webgl){renderer=webgl;webgl.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));webgl.setClearColor('#163c4e');webgl.outputColorSpace=THREE.SRGBColorSpace;webgl.toneMapping=THREE.ACESFilmicToneMapping;webgl.toneMappingExposure=1.27;webgl.shadowMap.enabled=true;webgl.shadowMap.type=THREE.PCFSoftShadowMap}else{software=true;renderer=makeSoftware()}}catch{latest.current.onUnavailable?.();return}
-  const mountRenderer=()=>{renderer.domElement.setAttribute('aria-hidden','true');renderer.domElement.setAttribute('data-renderer',software?'three-software-3d':'three-webgl2');renderer.domElement.style.cssText='display:block;width:100%;height:100%;touch-action:pan-y';element.append(renderer.domElement);latest.current.onRenderMode?.(software?'software':'webgl')};mountRenderer();
+  const mountRenderer=()=>{renderer.domElement.setAttribute('aria-hidden','true');renderer.domElement.setAttribute('data-renderer',software?'three-software-3d':'three-webgl2');renderer.domElement.style.cssText='display:block;width:100%;height:100%;touch-action:none';element.append(renderer.domElement);latest.current.onRenderMode?.(software?'software':'webgl')};mountRenderer();
   const scene=new THREE.Scene();scene.background=new THREE.Color('#163c4e');scene.fog=new THREE.Fog('#163c4e',70,150);
   const camera=new THREE.OrthographicCamera(-8,8,8,-8,.1,180);
   const light=new THREE.DirectionalLight('#fff0cc',3.3);light.position.set(-16,34,18);light.castShadow=true;light.shadow.mapSize.set(1024,1024);light.shadow.camera.left=-36;light.shadow.camera.right=36;light.shadow.camera.top=28;light.shadow.camera.bottom=-28;light.shadow.camera.near=1;light.shadow.camera.far=90;light.shadow.normalBias=.04;light.shadow.bias=-.00015;scene.add(light,new THREE.HemisphereLight('#d9fbff','#92834f',2.4));
   const world=makeAncientWorld();scene.add(world);
-  const compatibleLabels=()=>{const replacements:THREE.Object3D[]=[];world.traverse(object=>{if(object.userData.waterSurface)object.renderOrder=-200;else if(object.userData.terrainSurface)object.renderOrder=-100;if(object instanceof THREE.Sprite){object.visible=false;if(object.userData.atlasLabel){const ns='http://www.w3.org/2000/svg',group=document.createElementNS(ns,'g'),rect=document.createElementNS(ns,'rect'),text=document.createElementNS(ns,'text');rect.setAttribute('x','-51');rect.setAttribute('y','-10');rect.setAttribute('width','102');rect.setAttribute('height','20');rect.setAttribute('rx','6');rect.setAttribute('fill','#173c47');rect.setAttribute('fill-opacity','.85');text.setAttribute('text-anchor','middle');text.setAttribute('y','4');text.setAttribute('fill','#fff4ce');text.setAttribute('font-family','system-ui,sans-serif');text.setAttribute('font-size','9');text.setAttribute('font-weight','800');text.textContent=object.userData.atlasLabel;group.append(rect,text);const label=new SVGObject(group);label.position.copy(object.position);replacements.push(label)}}});replacements.forEach(label=>world.add(label))};
+  const compatibleLabels=()=>{const replacements:THREE.Object3D[]=[];world.traverse(object=>{if(object.userData.waterSurface)object.renderOrder=-200;else if(object.userData.terrainSurface)object.renderOrder=-100;if(object instanceof THREE.Sprite){object.visible=false;if(object.userData.atlasLabel&&!latest.current.onLabelsProject){const ns='http://www.w3.org/2000/svg',group=document.createElementNS(ns,'g'),rect=document.createElementNS(ns,'rect'),text=document.createElementNS(ns,'text');rect.setAttribute('x','-51');rect.setAttribute('y','-10');rect.setAttribute('width','102');rect.setAttribute('height','20');rect.setAttribute('rx','6');rect.setAttribute('fill','#173c47');rect.setAttribute('fill-opacity','.85');text.setAttribute('text-anchor','middle');text.setAttribute('y','4');text.setAttribute('fill','#fff4ce');text.setAttribute('font-family','system-ui,sans-serif');text.setAttribute('font-size','9');text.setAttribute('font-weight','800');text.textContent=object.userData.atlasLabel;group.append(rect,text);const label=new SVGObject(group);label.position.copy(object.position);replacements.push(label)}}});replacements.forEach(label=>world.add(label))};
+  if(latest.current.onLabelsProject)world.traverse(object=>{if(object instanceof THREE.Sprite&&object.userData.atlasLabel)object.visible=false});
   if(software){compatibleLabels();light.intensity=.65;scene.add(new THREE.AmbientLight('#fff7df',.34));const hemisphere=scene.children.find(object=>object instanceof THREE.HemisphereLight) as THREE.HemisphereLight|undefined;if(hemisphere)hemisphere.intensity=.8}
   let route=new THREE.Group();scene.add(route);
   let flags:Flag[]=[],width=1,height=1,raf=0,disposed=false,moving=false,initialized=false,activeNodes=latest.current.nodes,activeFocus=latest.current.focus,reduced=Boolean(latest.current.reducedMotion)||software;
+  let viewMode=latest.current.viewMode??'episode',activeZoom=clampZoom(latest.current.zoom??1);
+  const pan=new THREE.Vector3();
   let fromTarget=new THREE.Vector3(),toTarget=new THREE.Vector3(),currentTarget=new THREE.Vector3(),fromSpan=12,toSpan=12,currentSpan=12,startedAt=0;
   const cameraOffset=new THREE.Vector3(24,35,28),raycaster=new THREE.Raycaster();
   const applyCamera=(target:THREE.Vector3,span:number)=>{const aspect=width/height;camera.left=-span*aspect/2;camera.right=span*aspect/2;camera.top=span/2;camera.bottom=-span/2;camera.position.copy(target).add(cameraOffset);camera.lookAt(target);camera.updateProjectionMatrix();camera.updateMatrixWorld()};
-  const publish=()=>{latest.current.onProject?.(flags.map(flag=>({day:flag.node.day,...projected(flag.label,camera,width,height)})))};
+  const publish=()=>{
+   latest.current.onProject?.(viewMode==='episode'?flags.map(flag=>({day:flag.node.day,...projected(flag.label,camera,width,height)})).filter(p=>p.x>24&&p.x<width-24&&p.y>36&&p.y<height-36):[]);
+   const places=viewMode==='world'?[['africa','África',18,22],['europe','Europa',16,46],['asia','Ásia',49,44],['sea','Mar Mediterrâneo',24,35],['egypt','Egito',30,27],['mesopotamia','Mesopotâmia',44,33],['canaan','Canaã',35,31]] as const:[['focus',latest.current.focusLabel??'Região da leitura',activeFocus.lon,activeFocus.lat]] as const;
+   const labels:ProjectedJourneyLabel[]=[];
+   places.forEach(([id,label,lon,lat])=>{const p=projected(geographicPoint(lon,lat,1.1),camera,width,height);if(p.x<35||p.x>width-35||p.y<28||p.y>height-28)return;if(labels.some(other=>Math.abs(other.x-p.x)<105&&Math.abs(other.y-p.y)<30))return;labels.push({id,label,...p})});latest.current.onLabelsProject?.(labels);
+  };
   const setMoving=(next:boolean)=>{if(moving!==next){moving=next;latest.current.onTransition?.(next)}};
   const render=()=>{if(disposed)return;renderer.render(scene,camera);publish()};
   const animate=(now:number)=>{if(disposed)return;const t=reduced?1:Math.min(1,(now-startedAt)/850),ease=t*t*(3-2*t);currentTarget.lerpVectors(fromTarget,toTarget,ease);currentSpan=THREE.MathUtils.lerp(fromSpan,toSpan,ease);applyCamera(currentTarget,currentSpan);render();if(t<1)raf=requestAnimationFrame(animate);else{raf=0;setMoving(false)}};
   const screenGround=(x:number,y:number)=>{raycaster.setFromCamera(new THREE.Vector2(x/width*2-1,1-y/height*2),camera);const point=new THREE.Vector3();return raycaster.ray.intersectPlane(GROUND,point)??geographicPoint(activeFocus.lon,activeFocus.lat,.82)};
   const rebuild=()=>{
    scene.remove(route);disposeObject(route);route=new THREE.Group();scene.add(route);flags=[];
-   if(!activeNodes.length){render();return}
-   const anchors=activeNodes.map(node=>geographicPoint(node.lon,node.lat,.85)),focusPoint=geographicPoint(activeFocus.lon,activeFocus.lat,.85);
-   const box=new THREE.Box3().setFromPoints([...anchors,focusPoint]);toTarget.copy(box.getCenter(new THREE.Vector3()));toTarget.y=.6;
-   // Fit the actual geographic anchors; a minimum span leaves enough landscape at a single site.
-   const orientationCamera=camera.clone();orientationCamera.position.copy(toTarget).add(cameraOffset);orientationCamera.lookAt(toTarget);orientationCamera.updateMatrixWorld();const inverse=orientationCamera.matrixWorldInverse;
-   const projectedBounds=new THREE.Box3().setFromPoints(anchors.map(p=>p.clone().applyMatrix4(inverse)));const extent=projectedBounds.getSize(new THREE.Vector3());toSpan=Math.max(10.7,extent.y+6,(extent.x+6)/(width/height));
+   const focusPoint=geographicPoint(activeFocus.lon,activeFocus.lat,.85);
+   // A week can cross countries: only nearby reading pins influence the local camera.
+   const localNodes=activeNodes.filter(node=>geographicPoint(node.lon,node.lat,.85).distanceTo(focusPoint)<8);
+   const anchors=localNodes.map(node=>geographicPoint(node.lon,node.lat,.85));
+   toTarget.copy(focusPoint);toTarget.y=.6;
+   let fitPoints=[focusPoint,...anchors];
+   if(viewMode==='world'){
+    const bounds=new THREE.Box3().setFromObject(world);toTarget.copy(bounds.getCenter(new THREE.Vector3()));toTarget.y=.6;
+    fitPoints=[];for(const x of [bounds.min.x,bounds.max.x])for(const y of [bounds.min.y,bounds.max.y])for(const z of [bounds.min.z,bounds.max.z])fitPoints.push(new THREE.Vector3(x,y,z));
+   }
+   const orientationCamera=camera.clone();orientationCamera.position.copy(toTarget).add(cameraOffset);orientationCamera.lookAt(toTarget);orientationCamera.updateMatrixWorld();
+   const extent=new THREE.Box3().setFromPoints(fitPoints.map(p=>p.clone().applyMatrix4(orientationCamera.matrixWorldInverse))).getSize(new THREE.Vector3());
+   const baseSpan=viewMode==='region'?Math.max(18,13/(width/height)):viewMode==='world'?Math.max(extent.y+5,(extent.x+5)/(width/height)):Math.max(12,extent.y+6,(extent.x+6)/(width/height));
+   toTarget.add(pan);toSpan=baseSpan/activeZoom;
    applyCamera(toTarget,toSpan);
    // Same-site flags remain nearby, separated in screen space and visibly tethered to the site.
    const minGap=Math.min(76,Math.max(58,height/8.3));
-   const slots=anchors.map((anchor,index)=>{
+   const slots=(viewMode==='episode'?anchors:[]).map((anchor,index)=>{
     const p=projected(anchor,camera,width,height);
     const siblings=anchors.map((candidate,i)=>candidate.distanceTo(anchor)<.28?i:-1).filter(i=>i>=0),ordinal=siblings.indexOf(index);
     // Repeated chapters in the same city make an ordered serpentine, not a pile of pins.
@@ -92,8 +117,8 @@ export function JourneyScene3D(props:JourneyScene3DProps){
    slots.forEach((slot,index)=>{
     // A banner label is 1.25 units above the ground, so compensate before inverse projection.
     const basePoint=screenGround(slot.x,slot.y+Math.max(18,1.25*height/toSpan*.72));
-    const flag=modeledFlag(activeNodes[index],basePoint);flags.push(flag);route.add(flag.group);
-    const anchor=anchors[index];const marker=new THREE.Mesh(new THREE.CylinderGeometry(.10,.14,.045,7),new THREE.MeshBasicMaterial({color:activeNodes[index].color}));marker.position.copy(anchor);route.add(marker);
+    const flag=modeledFlag(localNodes[index],basePoint);flags.push(flag);route.add(flag.group);
+    const anchor=anchors[index];const marker=new THREE.Mesh(new THREE.CylinderGeometry(.10,.14,.045,7),new THREE.MeshBasicMaterial({color:localNodes[index].color}));marker.position.copy(anchor);route.add(marker);
     if(anchor.distanceTo(basePoint)>.45){const tetherCurve=new THREE.LineCurve3(anchor,basePoint);const tether=new THREE.Mesh(new THREE.TubeGeometry(tetherCurve,1,.023,4,false),new THREE.MeshBasicMaterial({color:'#fff3c3',transparent:true,opacity:.55}));route.add(tether)}
    });
    for(let i=1;i<flags.length;i++){
@@ -103,20 +128,30 @@ export function JourneyScene3D(props:JourneyScene3DProps){
     const trace=new THREE.Mesh(new THREE.TubeGeometry(curve,20,.075,5,false),new THREE.MeshStandardMaterial({color:flags[i].node.color,emissive:flags[i].node.color,emissiveIntensity:.3}));trace.position.y=.075;route.add(trace);
    }
    // Past and future are noninteractive hints, never additional stage meshes.
-   const first=flags[0].group.position,last=flags.at(-1)!.group.position;
+   if(flags.length){const first=flags[0].group.position,last=flags.at(-1)!.group.position;
    if(activeNodes[0].day>1){const pastGeometry=new THREE.BufferGeometry().setFromPoints([first.clone().add(new THREE.Vector3(-.6,.1,-1.5)),first.clone().setY(.9)]);route.add(new THREE.Line(pastGeometry,new THREE.LineBasicMaterial({color:'#d7d8b2',transparent:true,opacity:.55})))}
-   const fogGeometry=new THREE.SphereGeometry(1.3,10,5);for(let i=0;i<3;i++){const fog=new THREE.Mesh(fogGeometry,new THREE.MeshBasicMaterial({color:'#cde5dd',transparent:true,opacity:.16,depthWrite:false}));fog.position.copy(last).add(new THREE.Vector3(.5+i*.5,.45,1.5+i*.18));fog.scale.set(1,.36,.7);route.add(fog)}
+   const fogGeometry=new THREE.SphereGeometry(1.3,10,5);for(let i=0;i<3;i++){const fog=new THREE.Mesh(fogGeometry,new THREE.MeshBasicMaterial({color:'#cde5dd',transparent:true,opacity:.16,depthWrite:false}));fog.position.copy(last).add(new THREE.Vector3(.5+i*.5,.45,1.5+i*.18));fog.scale.set(1,.36,.7);route.add(fog)}}
    if(!initialized||reduced||(currentTarget.distanceTo(toTarget)<.08&&Math.abs(currentSpan-toSpan)<.08)){cancelAnimationFrame(raf);raf=0;initialized=true;currentTarget.copy(toTarget);currentSpan=toSpan;applyCamera(currentTarget,currentSpan);setMoving(false);render()}else{fromTarget.copy(currentTarget);fromSpan=currentSpan;startedAt=performance.now();setMoving(true);cancelAnimationFrame(raf);raf=requestAnimationFrame(animate)}
   };
   const resize=()=>{const box=element.getBoundingClientRect();width=Math.max(1,box.width);height=Math.max(1,box.height);renderer.setSize(width,height,false);rebuild()};
   const observer=typeof ResizeObserver==='undefined'?null:new ResizeObserver(resize);observer?.observe(element);if(!observer)window.addEventListener('resize',resize);
-  const onPointer=(input:Event)=>{const event=input as PointerEvent;if(moving)return;const rect=renderer.domElement.getBoundingClientRect();raycaster.setFromCamera(new THREE.Vector2((event.clientX-rect.left)/rect.width*2-1,1-(event.clientY-rect.top)/rect.height*2),camera);const hits=raycaster.intersectObjects(flags.map(flag=>flag.group),true);if(hits.length){let object:THREE.Object3D|null=hits[0].object;while(object&&!object.userData.day)object=object.parent;if(object?.userData.day)latest.current.onSelect(object.userData.day)}};
-  const contextLost=(event:Event)=>{event.preventDefault();setMoving(false);cancelAnimationFrame(raf);try{renderer.domElement.removeEventListener('pointerup',onPointer);renderer.domElement.removeEventListener('webglcontextlost',contextLost);renderer.domElement.remove();renderer.dispose();renderer=makeSoftware();software=true;reduced=true;compatibleLabels();light.intensity=.65;scene.add(new THREE.AmbientLight('#fff7df',.34));mountRenderer();renderer.domElement.addEventListener('pointerup',onPointer);resize()}catch{latest.current.onUnavailable?.()}};renderer.domElement.addEventListener('pointerup',onPointer);renderer.domElement.addEventListener('webglcontextlost',contextLost);
+  const pointers=new Map<number,{x:number;y:number}>();let gestureStart={x:0,y:0},dragged=false,pinchDistance=0;
+  const requestZoom=(value:number)=>{const next=clampZoom(value);if(Math.abs(next-activeZoom)<.001)return;activeZoom=next;latest.current.onZoomChange?.(next);rebuild()};
+  const localPoint=(event:PointerEvent)=>{const rect=element.getBoundingClientRect();return {x:event.clientX-rect.left,y:event.clientY-rect.top}};
+  const distance=()=>{const points=[...pointers.values()];return points.length===2?Math.hypot(points[0].x-points[1].x,points[0].y-points[1].y):0};
+  const down=(event:PointerEvent)=>{if(event.button!==0)return;const point=localPoint(event);pointers.set(event.pointerId,point);if(pointers.size===1){gestureStart=point;dragged=false}else{dragged=true;pinchDistance=distance()}element.setPointerCapture?.(event.pointerId)};
+  const move=(event:PointerEvent)=>{const previous=pointers.get(event.pointerId);if(!previous)return;const point=localPoint(event);pointers.set(event.pointerId,point);if(pointers.size===2){const nextDistance=distance();if(pinchDistance>0)requestZoom(activeZoom*nextDistance/pinchDistance);pinchDistance=nextDistance;return}if(Math.hypot(point.x-gestureStart.x,point.y-gestureStart.y)>6)dragged=true;if(!dragged)return;cancelAnimationFrame(raf);raf=0;setMoving(false);const delta=screenGround(previous.x,previous.y).sub(screenGround(point.x,point.y));const before=pan.clone();pan.add(delta);pan.x=THREE.MathUtils.clamp(pan.x,-30,30);pan.z=THREE.MathUtils.clamp(pan.z,-20,20);currentTarget.add(pan.clone().sub(before));toTarget.copy(currentTarget);applyCamera(currentTarget,currentSpan);render()};
+  const up=(event:PointerEvent)=>{const had=pointers.delete(event.pointerId);if(!had)return;element.releasePointerCapture?.(event.pointerId);if(dragged||moving||viewMode!=='episode')return;const point=localPoint(event);raycaster.setFromCamera(new THREE.Vector2(point.x/width*2-1,1-point.y/height*2),camera);const hits=raycaster.intersectObjects(flags.map(flag=>flag.group),true);if(hits.length){let object:THREE.Object3D|null=hits[0].object;while(object&&!object.userData.day)object=object.parent;if(object?.userData.day)latest.current.onSelect(object.userData.day)}};
+  const cancel=()=>{pointers.clear();dragged=true;pinchDistance=0};
+  const wheel=(event:WheelEvent)=>{event.preventDefault();requestZoom(activeZoom*Math.exp(-event.deltaY*.0015))};
+  element.addEventListener('pointerdown',down);element.addEventListener('pointermove',move);element.addEventListener('pointerup',up);element.addEventListener('pointercancel',cancel);element.addEventListener('wheel',wheel,{passive:false});
+  const contextLost=(event:Event)=>{event.preventDefault();setMoving(false);cancelAnimationFrame(raf);try{renderer.domElement.removeEventListener('webglcontextlost',contextLost);renderer.domElement.remove();renderer.dispose();renderer=makeSoftware();software=true;reduced=true;compatibleLabels();light.intensity=.65;scene.add(new THREE.AmbientLight('#fff7df',.34));mountRenderer();resize()}catch{latest.current.onUnavailable?.()}};renderer.domElement.addEventListener('webglcontextlost',contextLost);
   const visibility=()=>{if(document.hidden){cancelAnimationFrame(raf);raf=0;setMoving(false)}else{currentTarget.copy(toTarget);currentSpan=toSpan;applyCamera(currentTarget,currentSpan);render()}};document.addEventListener('visibilitychange',visibility);
-  const api:SceneController={update:(nodes,focus,nextReduced)=>{activeNodes=nodes;activeFocus=focus;reduced=nextReduced||software;rebuild()},dispose:()=>{disposed=true;cancelAnimationFrame(raf);observer?.disconnect();if(!observer)window.removeEventListener('resize',resize);renderer.domElement.removeEventListener('pointerup',onPointer);renderer.domElement.removeEventListener('webglcontextlost',contextLost);document.removeEventListener('visibilitychange',visibility);disposeObject(scene);renderer.dispose();renderer.domElement.remove();latest.current.onTransition?.(false)}};
+  let lastReset=latest.current.resetViewKey;
+  const api:SceneController={update:(next)=>{if(viewMode!==(next.viewMode??'episode')||activeFocus.lon!==next.focus.lon||activeFocus.lat!==next.focus.lat||next.resetViewKey!==lastReset){pan.set(0,0,0)}lastReset=next.resetViewKey;activeNodes=next.nodes;activeFocus=next.focus;viewMode=next.viewMode??'episode';activeZoom=clampZoom(next.zoom??activeZoom);reduced=Boolean(next.reducedMotion)||software;rebuild()},dispose:()=>{disposed=true;cancelAnimationFrame(raf);observer?.disconnect();if(!observer)window.removeEventListener('resize',resize);element.removeEventListener('pointerdown',down);element.removeEventListener('pointermove',move);element.removeEventListener('pointerup',up);element.removeEventListener('pointercancel',cancel);element.removeEventListener('wheel',wheel);renderer.domElement.removeEventListener('webglcontextlost',contextLost);document.removeEventListener('visibilitychange',visibility);disposeObject(scene);renderer.dispose();renderer.domElement.remove();latest.current.onTransition?.(false)}};
   controller.current=api;resize();
   return()=>{controller.current=null;api.dispose()};
  },[]);
- useEffect(()=>{controller.current?.update(props.nodes,props.focus,Boolean(props.reducedMotion))},[props.nodes,props.focus.lon,props.focus.lat,props.reducedMotion]);
- return <div className="journey-webgl-scene" ref={host} data-renderer="three-scene" style={{position:'absolute',inset:0}}/>;
+ useEffect(()=>{controller.current?.update(props)},[props.nodes,props.focus.lon,props.focus.lat,props.reducedMotion,props.viewMode,props.zoom,props.resetViewKey,props.focusLabel]);
+ return <div className="journey-webgl-scene" ref={host} data-renderer="three-scene" style={{position:'absolute',inset:0,touchAction:'none',cursor:'grab'}}/>;
 }

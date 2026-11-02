@@ -38,7 +38,7 @@ describe('Atlas semanal e cobertura do cânon',()=>{
  });
  it('trata Éden e poemas como contextos incertos ou literários, não sítios comprovados',()=>{
   const eden=atlasChapter({book:'Gênesis',chapter:2});
-  expect(eden.kind).toBe('symbolic');expect(eden.confidence).toBe('uncertain');
+  expect(eden.kind).toBe('narrative');expect(eden.confidence).toBe('uncertain');
   expect(atlasChapter({book:'Salmos',chapter:1}).kind).toBe('literary');
   expect(atlasChapter({book:'Provérbios',chapter:10}).kind).toBe('literary');
  });

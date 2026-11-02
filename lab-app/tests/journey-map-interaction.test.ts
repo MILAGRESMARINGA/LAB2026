@@ -13,8 +13,8 @@ describe('Jornada explorável e tela de estudo',()=>{
   Object.defineProperty(HTMLDialogElement.prototype,'close',{configurable:true,value:function(){this.removeAttribute('open')}});
   const host=document.createElement('div');document.body.append(host);const root=createRoot(host),read=vi.fn();
   try{
-   await act(async()=>root.render(React.createElement(BiblicalWorldMap,{stage:1,completedStages:0,chapters:[],plan:createNextGamePlan(365).stages,onRead:read})));
-   expect(host.querySelectorAll('button[data-journey-day]')).toHaveLength(7);
+   await act(async()=>root.render(React.createElement(BiblicalWorldMap,{stage:1,completedStages:0,chapters:[],plan:createNextGamePlan(365).stages,onRead:read,initialView:'episode'})));
+   expect(host.querySelectorAll('button[data-week-day]')).toHaveLength(7);
    expect(host.querySelector('.journey-map-detail')).toBeNull();
    const current=host.querySelector('button[aria-label^="Etapa 1,"]')!;
    await act(async()=>(current as HTMLButtonElement).click());
@@ -23,9 +23,9 @@ describe('Jornada explorável e tela de estudo',()=>{
    await act(async()=>{[...host.querySelectorAll('button')].find(b=>b.textContent==='Começar a leitura')!.click()});
    expect(read).toHaveBeenCalledOnce();
    await act(async()=>host.querySelector('button[aria-label^="Etapa 2,"]')!.dispatchEvent(new MouseEvent('click',{bubbles:true})));
-   expect(read).toHaveBeenCalledOnce();expect(host.querySelector('button[data-journey-day="2"]')?.getAttribute('aria-disabled')).toBe('true');
+   expect(read).toHaveBeenCalledOnce();expect(host.querySelector('button[data-week-day="2"]')?.getAttribute('aria-disabled')).toBe('true');
    expect(host.textContent).not.toContain('Ver jornada inteira');
-   expect(host.querySelectorAll('button[data-journey-day]')).toHaveLength(7);
+   expect(host.querySelectorAll('button[data-week-day]')).toHaveLength(7);
   }finally{await act(async()=>root.unmount());host.remove()}
  });
  it('monta o conteúdo somente ao abrir e fecha pelo cancelamento nativo',async()=>{

@@ -16,7 +16,11 @@ describe('Fluxo direto da Jornada',()=>{
   try{
    await act(async()=>root.render(React.createElement(JourneyV2Panel,{userId:'test-user'})));
    expect(host.querySelector('[data-testid="reader"]')).toBeNull();
-   expect(host.querySelectorAll('button[data-journey-day]')).toHaveLength(7);
+   expect(host.querySelectorAll('button[data-journey-day],button[data-week-day]')).toHaveLength(0);
+   await act(async()=>{[...host.querySelectorAll('button')].find(b=>b.textContent==='Continuar caminhada')!.click()});
+   expect(host.querySelector('[data-testid="reader"]')).toBeNull();
+   await act(async()=>{[...host.querySelectorAll('button')].find(b=>b.textContent==='Entrar na história')!.click()});
+   expect(host.querySelectorAll('button[data-week-day]')).toHaveLength(7);
    await act(async()=>host.querySelector('button[aria-label^="Etapa 2,"]')!.dispatchEvent(new MouseEvent('click',{bubbles:true})));
    expect(host.querySelector('[data-testid="reader"]')).toBeNull();
    await act(async()=>host.querySelector('button[aria-label^="Etapa 1,"]')!.dispatchEvent(new MouseEvent('click',{bubbles:true})));
