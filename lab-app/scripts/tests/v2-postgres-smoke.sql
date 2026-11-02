@@ -260,6 +260,11 @@ BEGIN
 END
 $test$;
 
+-- Isolate the one-life/idempotency scenario. The next scenario has a different
+-- activation deadline and must not inherit an incident whose month was already
+-- resolved. Rewriting that incident's activation across a month boundary would
+-- manufacture a state that the public reading RPCs cannot produce.
+BEGIN;
 RESET ROLE;
 UPDATE public.lab_v2_stages SET activated_at=statement_timestamp()-interval '31 hours'
  WHERE run_id=:'first_run'::uuid AND day_number=2;
@@ -275,6 +280,9 @@ BEGIN
 END
 $test$;
 
+-- Discard only the isolated fault injection above, retaining the completed
+-- first stage, XP and record set up before BEGIN. Test exhaustion independently.
+ROLLBACK;
 RESET ROLE;
 UPDATE public.lab_v2_stages SET activated_at=statement_timestamp()-interval '104 hours'
  WHERE run_id=:'first_run'::uuid AND day_number=2;

@@ -24,7 +24,7 @@ const COASTS:readonly (readonly [number,number][])[]=[
 function material(color:THREE.ColorRepresentation,extra:THREE.MeshStandardMaterialParameters={}){return new THREE.MeshStandardMaterial({color,roughness:.93,flatShading:true,...extra});}
 function landPolygon(points:readonly (readonly [number,number])[],color:string,top=.7,depth=.65){
  const shape=new THREE.Shape();points.forEach(([lon,lat],i)=>{const p=geographicPoint(lon,lat);i?shape.lineTo(p.x,-p.z):shape.moveTo(p.x,-p.z)});shape.closePath();
- const mesh=new THREE.Mesh(new THREE.ExtrudeGeometry(shape,{depth,bevelEnabled:true,bevelSegments:1,steps:1,bevelSize:.10,bevelThickness:.08}),[material(color),material('#a47142')]);mesh.rotation.x=-Math.PI/2;mesh.position.y=top-depth;mesh.receiveShadow=true;mesh.castShadow=true;return mesh;
+ const mesh=new THREE.Mesh(new THREE.ExtrudeGeometry(shape,{depth,bevelEnabled:true,bevelSegments:1,steps:1,bevelSize:.10,bevelThickness:.08}),[material(color),material('#a47142')]);mesh.userData.terrainSurface=true;mesh.rotation.x=-Math.PI/2;mesh.position.y=top-depth;mesh.receiveShadow=true;mesh.castShadow=true;return mesh;
 }
 function tube(points:readonly (readonly [number,number])[],radius:number,color:string,y=.78){const curve=new THREE.CatmullRomCurve3(points.map(([lon,lat])=>geographicPoint(lon,lat,y)));return new THREE.Mesh(new THREE.TubeGeometry(curve,Math.max(12,points.length*5),radius,5,false),material(color,{roughness:.44}));}
 function tree(lon:number,lat:number,palm=false,scale=1){
@@ -41,15 +41,15 @@ function city(lon:number,lat:number,kind:'city'|'temple'='city'){
  if(kind==='temple'){const slab=new THREE.Mesh(new THREE.BoxGeometry(.8,.12,.5),stone);slab.position.y=.52;group.add(slab);for(let i=0;i<4;i++){const column=new THREE.Mesh(new THREE.CylinderGeometry(.045,.05,.43,6),stone);column.position.set(-.3+i*.2,.27,.18);group.add(column)}const pediment=new THREE.Mesh(new THREE.ConeGeometry(.5,.25,3),roof);pediment.rotation.z=Math.PI/2;pediment.rotation.y=Math.PI/2;pediment.position.y=.69;group.add(pediment)}group.position.copy(geographicPoint(lon,lat,.76));return group;
 }
 function regionLabel(text:string,lon:number,lat:number,scale=1){
- const canvas=document.createElement('canvas');canvas.width=512;canvas.height=112;const ctx=canvas.getContext('2d');if(!ctx)return null;
+ if(typeof window.CanvasRenderingContext2D==='undefined')return null;const canvas=document.createElement('canvas');canvas.width=512;canvas.height=112;const ctx=canvas.getContext('2d');if(!ctx)return null;
  ctx.fillStyle='rgba(20,56,64,.86)';ctx.beginPath();ctx.roundRect(8,8,496,96,24);ctx.fill();ctx.font='bold 43px system-ui, sans-serif';ctx.fillStyle='#fff7dc';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,256,57,470);
  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
- const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthTest:false,depthWrite:false}));sprite.position.copy(geographicPoint(lon,lat,1.05));sprite.scale.set(2.6*scale,.57*scale,1);sprite.renderOrder=3;return sprite;
+ const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthTest:false,depthWrite:false}));sprite.position.copy(geographicPoint(lon,lat,1.05));sprite.scale.set(2.6*scale,.57*scale,1);sprite.renderOrder=3;sprite.userData.atlasLabel=text;return sprite;
 }
 export function makeAncientWorld(){
  const world=new THREE.Group();world.name='Mundo Antigo — terreno 3D original';
- const water=new THREE.Mesh(new THREE.BoxGeometry(66,.38,41),material('#249fb3',{metalness:.08,roughness:.5}));water.position.set(-2,-.45,0);water.receiveShadow=true;world.add(water);
- const underside=new THREE.Mesh(new THREE.BoxGeometry(66,.24,41),material('#177b95'));underside.position.set(-2,-.75,0);world.add(underside);
+ const water=new THREE.Mesh(new THREE.BoxGeometry(66,.38,41),material('#249fb3',{metalness:.08,roughness:.5}));water.userData.waterSurface=true;water.position.set(-2,-.45,0);water.receiveShadow=true;world.add(water);
+ const underside=new THREE.Mesh(new THREE.BoxGeometry(66,.24,41),material('#177b95'));underside.userData.waterSurface=true;underside.position.set(-2,-.75,0);world.add(underside);
  COASTS.forEach((coast,i)=>world.add(landPolygon(coast,i===2?'#e3bd77':i===1?'#a9c96c':'#87ba67')));
  // Climate zones follow broad geography, with no modern political boundaries.
  world.add(landPolygon([[36,28],[38,26],[42,23],[45,27],[48,30],[45,33],[41,32],[37,31],[36,28]],'#dfb778',.79,.025));
