@@ -20,3 +20,10 @@ A migração editorial é aditiva, sem mudanças no progresso: releases, episód
 Esta implementação fornece uma caminhada navegável e uma base editorial auditável, não uma cronologia arqueológica definitiva. Fine-tuning e novas chamadas pagas de LLM não foram executados. O uso de dados revisados, recuperação e revisão humana precede qualquer geração futura.
 
 Publicação de prévia pode ocorrer pela branch `agent/isometric-journey`. A migração em produção depende dos gates já definidos no projeto: backup/restore, ensaio, reconciliação e revisão de segurança. A interface funciona com a base local enquanto o banco editorial não estiver ativado. Rollback da interface: reverter o commit; a camada editorial nova é isolada das tabelas de progresso.
+
+## Evidência desta entrega
+
+- `verify:all`: 298 testes de aplicação, 117 testes de engenharia e build aprovados; a correção posterior de CI adiciona dois contratos (119 de engenharia aprovados).
+- A revisão independente não encontrou bloqueador para a prévia local-first. Para curadoria remota futura com múltiplos escritores, o controle de sobreposição precisa de exclusão/serialização concorrente; a revisão e a imutabilidade de conteúdo publicado ainda dependem do processo editorial de serviço.
+- O primeiro CI remoto aprovou aplicação/build e PostgreSQL16/17 existentes, mas a inicialização do Auth descartável falhou por CLI flutuante que rejeitou `[inbucket]`. A correção fixa a CLI2.121.0 e acrescenta migração/smoke editorial ao banco separado de cada versão PostgreSQL.
+- A Vercel confirmou a prévia do commit `acff01b35315efa5bc2bdeb63844a5191561aedf` como READY. A inspeção visual desta prévia foi bloqueada pela aprovação automática do navegador ao redirecionar para o domínio privado Vercel; não houve contorno nem alegação de revisão visual concluída.

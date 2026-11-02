@@ -144,6 +144,13 @@ jobs:
           createdb -h 127.0.0.1 -p 5432 -U postgres labgame_bible_rights_ci
           psql -h 127.0.0.1 -p 5432 -U postgres -d labgame_bible_rights_ci -v ON_ERROR_STOP=1 -f scripts/tests/bible-edition-postgres-smoke.sql
 
+      - name: Verify versioned journey editorial content and RLS on isolated database
+        env:
+          PGPASSWORD: labv2_ci_local_only
+        run: |
+          createdb -h 127.0.0.1 -p 5432 -U postgres labgame_journey_ci
+          psql -h 127.0.0.1 -p 5432 -U postgres -d labgame_journey_ci -v ON_ERROR_STOP=1 -f supabase/migrations/20261102151833_journey_editorial_atlas.sql
+          psql -h 127.0.0.1 -p 5432 -U postgres -d labgame_journey_ci -v ON_ERROR_STOP=1 -f scripts/tests/journey-editorial-smoke.sql
 
   supabase-local-auth:
     name: Free local Supabase Auth + two-account RLS E2E
@@ -165,26 +172,27 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Boot disposable Supabase locally (Auth, REST, Postgres)
         run: |
+          # Keep the local stack compatible with the reviewed config.toml; never float to CLI v3.
           # The runner is temporary. Remove only containers belonging to this
           # LABGAME test project if an earlier canceled run left them behind.
-          npx --yes supabase@latest stop --no-backup >/dev/null 2>&1 || true
+          npx --yes supabase@2.121.0 stop --no-backup >/dev/null 2>&1 || true
           docker ps -aq --filter 'name=supabase_.*_labgame-free-ci' | xargs -r docker rm -f >/dev/null 2>&1 || true
           success=0
           for attempt in 1 2 3; do
-            if npx --yes supabase@latest start --exclude realtime,storage,functions,studio,analytics,pooler > /tmp/labgame-supabase-start.log 2>&1; then
+            if npx --yes supabase@2.121.0 start --exclude realtime,storage,functions,studio,analytics,pooler > /tmp/labgame-supabase-start.log 2>&1; then
               success=1
               break
             fi
             echo "Local test infrastructure unavailable (attempt $attempt of 3)"
             grep -Ei 'toomanyrequests|address already in use|failed to start docker' /tmp/labgame-supabase-start.log | tail -8 || true
-            npx --yes supabase@latest stop --no-backup >/dev/null 2>&1 || true
+            npx --yes supabase@2.121.0 stop --no-backup >/dev/null 2>&1 || true
             if [ "$attempt" -lt 3 ]; then sleep $((attempt*10)); fi
           done
           if [ "$success" -ne 1 ]; then
             echo "Failed to boot ephemeral Supabase; never fall back to production.";
             exit 1;
           fi
-          npx --yes supabase@latest status -o env > /tmp/labgame-supabase-ci.env
+          npx --yes supabase@2.121.0 status -o env > /tmp/labgame-supabase-ci.env
       - name: Exercise two real local Auth sessions and RLS
         env:
           LAB_SUPABASE_LOCAL_ENV_FILE: /tmp/labgame-supabase-ci.env
@@ -271,7 +279,7 @@ jobs:
           fi
       - name: Tear down ephemeral test stack
         if: always()
-        run: npx --yes supabase@latest stop --no-backup || true
+        run: npx --yes supabase@2.121.0 stop --no-backup || true
 
   agent-contract:
     name: Validate the official twelve-agent contract
