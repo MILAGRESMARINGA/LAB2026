@@ -22,9 +22,9 @@ describe("Trilha de desafios e Talentos",()=>{
   expect(html).toContain("Gênesis 1");
   expect(html).toContain("Salmos 1");
   expect(html).toContain("João 1");
-  expect(html).toContain('data-view-mode="world"');
-  expect(html).toContain("Continuar caminhada");
-  expect(html).not.toContain("data-week-day");
+  expect(html).toContain('data-view-mode="episode"');
+  expect(html).not.toContain("Continuar caminhada");
+  expect(html).toContain("data-week-day");
   expect(html).toContain("Semana atual: etapas 1 a 7");
   expect(html).not.toContain("lab-quest-steps");
   expect(html).not.toContain("lab-quest-feature");
@@ -35,14 +35,16 @@ describe("Trilha de desafios e Talentos",()=>{
    plan,game:null,totalXP:0,preview:true,onStart:()=>{}
   }));
   expect(html).toContain("Etapa 1");
-  expect(html).toContain("0/3 capítulos");
+  expect(html).toContain('data-view-mode="episode"');
+  expect(html).not.toContain("XP extra");
  });
  it("indica conclusão confirmada e não permite antecipar a etapa",()=>{
   const completedGame={...game,checked:plan[0].chapters.map(ch=>ch.id),completed_days:1,best_days:1,total_xp:30};
   const html=renderToStaticMarkup(createElement(ChallengeJourney,{
    plan,game:completedGame,totalXP:30,onStart:()=>{}
   }));
-  expect(html).toContain("Próxima etapa: amanhã");
+  expect(html).toContain('aria-label="Etapa 1, Concluída');
+  expect(html).toContain('aria-disabled="true"');
   expect(html).not.toContain("INICIAR LEITURA");
  });
  it("na conclusão de 365 dias a coroa não libera nova leitura sem ação voluntária",()=>{

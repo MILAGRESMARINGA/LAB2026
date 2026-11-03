@@ -24,21 +24,20 @@ beforeEach(()=>{
  Object.defineProperty(HTMLDialogElement.prototype,'close',{configurable:true,value:function(){this.removeAttribute('open')}});
 });
 describe('Contrato de interação do mapa modelado',()=>{
- it('orienta mundo, região e história sem iniciar leitura nem alterar o plano',async()=>{
-  const snapshot=JSON.stringify(plan),instance=await mount({initialView:'world'});
-  const button=(label:string)=>[...instance.host.querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent===label)!;
+ it('abre diretamente a etapa atual e mantém o mundo como exploração opcional',async()=>{
+  const snapshot=JSON.stringify(plan),instance=await mount();
+  const button=(label:string)=>[...instance.host.querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent===label||b.getAttribute('aria-label')===label)!;
   try{
-   expect(scene.props?.viewMode).toBe('world');
-   expect(instance.host.querySelectorAll('[data-journey-day],[data-week-day]')).toHaveLength(0);
-   await act(async()=>button('Continuar caminhada').click());
-   expect(scene.props?.viewMode).toBe('region');
-   expect(instance.host.querySelectorAll('[data-journey-day],[data-week-day]')).toHaveLength(0);
-   await act(async()=>button('Entrar na história').click());
    expect(scene.props?.viewMode).toBe('episode');
    expect(instance.host.querySelectorAll('[data-week-day]')).toHaveLength(7);
-   expect(instance.read).not.toHaveBeenCalled();expect(JSON.stringify(plan)).toBe(snapshot);
+   expect(instance.host.querySelector('.journey-story-intro')).toBeNull();
+   expect(instance.host.querySelector('.journey-map-breadcrumb')).toBeNull();
+   expect(instance.host.querySelector('dialog[open]')).toBeNull();
    await act(async()=>button('Ver o mundo').click());
-   expect(scene.props?.viewMode).toBe('world');expect(instance.host.querySelectorAll('[data-week-day]')).toHaveLength(0);
+   expect(scene.props?.viewMode).toBe('world');
+   await act(async()=>button('Minha etapa').click());
+   expect(scene.props?.viewMode).toBe('episode');
+   expect(instance.read).not.toHaveBeenCalled();expect(JSON.stringify(plan)).toBe(snapshot);
   }finally{await instance.dispose()}
  });
  it('limita a ampliação e recentraliza a etapa sem conceder progresso',async()=>{
@@ -51,7 +50,7 @@ describe('Contrato de interação do mapa modelado',()=>{
    for(let i=0;i<12;i++)await act(async()=>control('Diminuir zoom').click());
    expect(scene.props?.zoom).toBe(.75);expect(control('Diminuir zoom').disabled).toBe(true);
    const before=scene.props?.resetViewKey;
-   await act(async()=>[...instance.host.querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent==='Minha etapa')!.click());
+   await act(async()=>[...instance.host.querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent==='Minha etapa'||b.getAttribute('aria-label')==='Minha etapa')!.click());
    expect(scene.props?.zoom).toBe(1);expect(scene.props?.viewMode).toBe('episode');expect(scene.props?.resetViewKey).toBeGreaterThan(before);
    expect(instance.read).not.toHaveBeenCalled();expect(instance.host.querySelector('dialog')).toBeNull();
   }finally{await instance.dispose()}
@@ -84,16 +83,14 @@ describe('Contrato de interação do mapa modelado',()=>{
    expect(instance.read).not.toHaveBeenCalled();expect(instance.host.querySelector('dialog[open]')).toBeNull();
   }finally{await instance.dispose()}
  });
- it('fecha o portão pelo cancelamento sem iniciar leitura',async()=>{
+ it('inicia a leitura no primeiro capítulo sem exigir o portão',async()=>{
   const instance=await mount();
   try{
    const current=instance.host.querySelector<HTMLButtonElement>('button[data-week-day="1"]')!;
    expect(current.tagName).toBe('BUTTON');expect(current.tabIndex).toBeGreaterThanOrEqual(0);
    await act(async()=>current.click());
-   const dialog=instance.host.querySelector('dialog[open]')!;
-   expect(dialog.textContent).toContain('Gênesis');expect(dialog.textContent).toContain('João');
-   await act(async()=>dialog.dispatchEvent(new Event('cancel',{cancelable:true})));
-   expect(instance.host.querySelector('dialog[open]')).toBeNull();expect(instance.read).not.toHaveBeenCalled();
+   expect(instance.read).toHaveBeenCalledOnce();
+   expect(instance.host.querySelector('dialog[open]')).toBeNull();
   }finally{await instance.dispose()}
  });
  it('permite leitura direta em capítulo que não inicia um livro',async()=>{
@@ -128,31 +125,27 @@ describe('Contrato de interação do mapa modelado',()=>{
   try{
    expect(scene.props?.onUnavailable).toBeTypeOf('function');
    await act(async()=>scene.props!.onUnavailable());
-   expect(instance.host.textContent).toContain('Visualização 3D indisponível');
+   expect(instance.host.querySelector('[aria-label^="Visualização 3D indisponível"]')).not.toBeNull();
    expect(instance.host.querySelectorAll('button[data-week-day]')).toHaveLength(7);
    await act(async()=>instance.host.querySelector<HTMLButtonElement>('button[data-week-day="1"]')!.click());
-   expect(instance.host.querySelector('dialog[open]')).not.toBeNull();
+   expect(instance.read).toHaveBeenCalledOnce();expect(instance.host.querySelector('dialog[open]')).toBeNull();
   }finally{await instance.dispose()}
  });
- it('abre vídeo opcional e fecha o portão sem confirmar leitura',async()=>{
-  const video=vi.fn(),instance=await mount({onVideo:video});
-  try{
-   await act(async()=>instance.host.querySelector<HTMLButtonElement>('button[data-week-day="1"]')!.click());
-   const button=[...instance.host.querySelectorAll<HTMLButtonElement>('dialog button')].find(item=>item.textContent==='Assistir ao panorama')!;
-   await act(async()=>button.click());
-   expect(video).toHaveBeenCalledOnce();expect(video.mock.calls[0][1]).toBe('Gênesis');
-   expect(instance.read).not.toHaveBeenCalled();expect(instance.host.querySelector('dialog[open]')).toBeNull();
-  }finally{await instance.dispose()}
- });
- it('permite selecionar outra região de uma leitura intercalada sem avançar a jornada',async()=>{
+ it('mantém a geografia e as fontes sob demanda sem iniciar leitura',async()=>{
   const instance=await mount();
   try{
-   const before=scene.props?.focus;
+   expect(instance.host.querySelector('[aria-label="Região da leitura"]')).toBeNull();
+   const guide=instance.host.querySelector<HTMLButtonElement>('.atlas-guide-link')!;
+   await act(async()=>guide.click());
+   const dialog=instance.host.querySelector('dialog[open]')!;
+   expect(dialog).not.toBeNull();
+   expect(dialog.textContent).toContain('Fontes e contexto');
    const select=instance.host.querySelector<HTMLSelectElement>('[aria-label="Região da leitura"]')!;
+   const before=scene.props?.focus;
    await act(async()=>{select.value='43:1';select.dispatchEvent(new Event('change',{bubbles:true}))});
    expect(scene.props?.focus).not.toEqual(before);expect(instance.read).not.toHaveBeenCalled();
-   expect(instance.host.querySelectorAll('button[data-week-day]')).toHaveLength(7);
-   expect(instance.host.textContent).toContain('João 1');
+   await act(async()=>dialog.dispatchEvent(new Event('cancel',{cancelable:true})));
+   expect(instance.host.querySelector('dialog[open]')).toBeNull();expect(instance.read).not.toHaveBeenCalled();
   }finally{await instance.dispose()}
  });
  it('encaminha a preferência de movimento reduzido ao renderizador',async()=>{

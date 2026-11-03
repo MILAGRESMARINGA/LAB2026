@@ -7,7 +7,7 @@ import {createNextGamePlan} from '../src/domain/game-plan-next';
 import {StudyReadingScreen} from '../src/components/StudyReadingScreen';
 vi.mock('../src/components/JourneyScene3D',()=>({JourneyScene3D:()=>React.createElement('div',{'data-testid':'scene3d-mock'})}));
 describe('Jornada explorável e tela de estudo',()=>{
- it('abre portões sobre o mapa, mostra só sete etapas e bloqueia o futuro',async()=>{
+ it('abre a leitura com um toque, mostra só sete etapas e bloqueia o futuro',async()=>{
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT=true;
   Object.defineProperty(HTMLDialogElement.prototype,'showModal',{configurable:true,value:function(){this.setAttribute('open','')}});
   Object.defineProperty(HTMLDialogElement.prototype,'close',{configurable:true,value:function(){this.removeAttribute('open')}});
@@ -18,9 +18,7 @@ describe('Jornada explorável e tela de estudo',()=>{
    expect(host.querySelector('.journey-map-detail')).toBeNull();
    const current=host.querySelector('button[aria-label^="Etapa 1,"]')!;
    await act(async()=>(current as HTMLButtonElement).click());
-   expect(read).not.toHaveBeenCalled();
-   expect(host.querySelector('dialog[open]')?.textContent).toContain('Portão de Gênesis');
-   await act(async()=>{[...host.querySelectorAll('button')].find(b=>b.textContent==='Começar a leitura')!.click()});
+   expect(host.querySelector('dialog[open]')).toBeNull();
    expect(read).toHaveBeenCalledOnce();
    await act(async()=>host.querySelector('button[aria-label^="Etapa 2,"]')!.dispatchEvent(new MouseEvent('click',{bubbles:true})));
    expect(read).toHaveBeenCalledOnce();expect(host.querySelector('button[data-week-day="2"]')?.getAttribute('aria-disabled')).toBe('true');

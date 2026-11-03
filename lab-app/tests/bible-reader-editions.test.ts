@@ -41,4 +41,17 @@ describe("Reader optional introductions and edition isolation",()=>{
   expect(host.textContent).toContain("Tradução nova");expect(host.textContent).not.toContain("Tradução obsoleta");
   expect(host.querySelector('option[value="NVI"]')?.hasAttribute('disabled')).toBe(true);
  });
+ it("keeps journey reading immediate and lets the reader skip the optional panorama",async()=>{
+  const open=vi.fn(),confirm=vi.fn(),begin=vi.fn(async()=>{});
+  await act(async()=>{root.render(React.createElement(BibleReader,{chapterId:'1:1',journeyMode:true,onVideo:open,onConfirm:confirm,onOpen:begin}));await new Promise(resolve=>setTimeout(resolve,0))});
+  expect(begin).toHaveBeenCalledWith('1:1');
+  expect(host.querySelector('.bible-verse-scroll')?.textContent).toContain('Texto principal');
+  expect(host.querySelector('.book-introduction')).toBeNull();
+  expect(host.querySelector('.journey-panorama-offer')).not.toBeNull();
+  await act(async()=>{[...host.querySelectorAll('button')].find(b=>b.textContent==='Agora não')!.click()});
+  expect(open).not.toHaveBeenCalled();expect(confirm).not.toHaveBeenCalled();
+  expect(host.querySelector('.journey-panorama-offer')).toBeNull();
+  expect(host.querySelector('.bible-verse-scroll')?.textContent).toContain('Texto principal');
+ });
+
 });

@@ -1,10 +1,13 @@
 import {useEffect,useRef,useState} from "react";
-import {BookOpen,CheckCircle2,ChevronDown,Minus,Plus,RefreshCw} from "lucide-react";
+import {BookOpen,CheckCircle2,ChevronDown,Minus,Plus,RefreshCw,Settings2,Play} from "lucide-react";
 import {readBibleChapter,listBibleEditions,readBibleSpeechSpans,splitVerseSpeech,DEFAULT_EDITION,FALLBACK_BIBLE_EDITIONS,type BibleEdition,type JesusSpeechSpan,type BibleChapter} from "../features/bible";
 import {BookIntroduction} from "./BookIntroduction";
 import {BiblicalContextPanel} from "./BiblicalContextPanel";
-import {type BibleProjectResource} from "../domain/bibleproject";
-export function BibleReader({chapterId,onConfirm,onOpen,busy=false,highlightVerse,onVideo}:{chapterId:string;onConfirm?:()=>void;onOpen?:(chapterId:string)=>Promise<unknown>;busy?:boolean;highlightVerse?:number|null;onVideo?:(resource:BibleProjectResource,book:string)=>void}){
+import {getBibleProjectVideoForChapter,type BibleProjectResource} from "../domain/bibleproject";
+import "./journey-reader.css";
+export function BibleReader({chapterId,onConfirm,onOpen,busy=false,highlightVerse,onVideo,journeyMode=false}:{chapterId:string;onConfirm?:()=>void;onOpen?:(chapterId:string)=>Promise<unknown>;busy?:boolean;highlightVerse?:number|null;onVideo?:(resource:BibleProjectResource,book:string)=>void;journeyMode?:boolean}){
+ const settings=useRef<HTMLDialogElement>(null);
+ const [videoDismissed,setVideoDismissed]=useState(false);
  const [editions,setEditions]=useState<readonly BibleEdition[]>(FALLBACK_BIBLE_EDITIONS);
  const [edition,setEdition]=useState(DEFAULT_EDITION);
  const [compare,setCompare]=useState(false);
@@ -37,7 +40,7 @@ export function BibleReader({chapterId,onConfirm,onOpen,busy=false,highlightVers
  onOpenRef.current=onOpen;
  useEffect(()=>{
   let current=true;
-  setLoading(true);setChapter(null);setError("");setReadToEnd(false);
+  setLoading(true);setChapter(null);setError("");setReadToEnd(false);setVideoDismissed(false);
   void (async()=>{
    try{
     // The server records the start before the chapter becomes visible; no client clock is submitted.
@@ -64,26 +67,41 @@ export function BibleReader({chapterId,onConfirm,onOpen,busy=false,highlightVers
   const el=scrollRef.current;
   if(el&&(el.scrollTop+el.clientHeight>=el.scrollHeight-65))setReadToEnd(true);
  };
- return <section className="bible-reader" aria-label="Texto bíblico completo">
-  <div className="bible-reader-header"><div><span className="eyebrow">LEIA NA PRÓPRIA PLATAFORMA</span><strong><BookOpen size={17}/> {editionTitle}</strong></div><div className="reader-font-controls"><button type="button" aria-label="Diminuir fonte" disabled={fontSize<=16} onClick={()=>setFontSize(x=>x-1)}><Minus size={17}/></button><span aria-hidden="true">Aa</span><button type="button" aria-label="Aumentar fonte" disabled={fontSize>=27} onClick={()=>setFontSize(x=>x+1)}><Plus size={17}/></button></div></div>
+ const panorama=chapter?getBibleProjectVideoForChapter(chapter.book_name,chapter.chapter_number):null;
+ const offerPanorama=journeyMode&&onVideo&&panorama&&!videoDismissed&&chapter&&(chapter.chapter_number===1||chapter.chapter_number===panorama.fromChapter);
+ return <section className={"bible-reader"+(journeyMode?" journey-reader":"")} aria-label="Texto bíblico completo">
+  <div className="bible-reader-header"><div>{!journeyMode&&<span className="eyebrow">LEIA NA PRÓPRIA PLATAFORMA</span>}<strong><BookOpen size={17}/> {journeyMode&&chapter?`${chapter.book_name} ${chapter.chapter_number}`:editionTitle}</strong></div><div className="reader-font-controls"><button type="button" aria-label="Diminuir fonte" disabled={fontSize<=16} onClick={()=>setFontSize(x=>x-1)}><Minus size={17}/></button><span aria-hidden="true">Aa</span><button type="button" aria-label="Aumentar fonte" disabled={fontSize>=27} onClick={()=>setFontSize(x=>x+1)}><Plus size={17}/></button>{journeyMode&&<button type="button" aria-label="Opções de leitura" onClick={()=>settings.current?.showModal()}><Settings2 size={18}/></button>}</div></div>
+  {!journeyMode&&<>
   <div className="reader-editions"><label>Versão principal<select aria-label="Versão principal" value={edition} onChange={event=>{setEdition(event.target.value);setCompare(false)}}>{editions.map(item=><option key={item.code} value={item.code} disabled={!item.available}>{item.title}{!item.available?" · aguardando licença":""}</option>)}</select></label>
    <button type="button" className="secondary-cta" disabled={!alternatives.length} onClick={()=>{setCompare(value=>!value);if(!compareEdition||compareEdition===edition)setCompareEdition(alternatives[0]?.code??"")}}>{compare?"Fechar comparação":"Comparar 2 versões"}</button>
    {compare&&<label>Segunda versão<select aria-label="Segunda versão" value={compareEdition} onChange={event=>setCompareEdition(event.target.value)}>{alternatives.map(item=><option key={item.code} value={item.code}>{item.title}</option>)}</select></label>}
   </div>
   {!alternatives.length&&<p className="reader-attribution">Comparação disponível quando houver duas traduções autorizadas. NVI, NAA, ARA e NTLH aguardam licença e importação.</p>}
   {compareError&&<p role="status">{compareError}</p>}
+  </>}
   {loading&&<div className="bible-reader-status">Carregando capítulo...</div>}
   {error&&<div className="bible-reader-status" role="alert"><p>{error}</p><button type="button" className="secondary-cta" onClick={()=>setReload(x=>x+1)}><RefreshCw size={16}/> Tentar novamente</button></div>}
-  {chapter&&<>{chapter.chapter_number===1&&<BookIntroduction book={chapter.book_name} onVideo={onVideo}/>}<div id="bible-chapter-text" className="bible-verse-scroll" tabIndex={0} ref={scrollRef} onScroll={observe} style={{fontSize:fontSize+"px"}} aria-label={"Texto de "+chapter.book_name+" capítulo "+chapter.chapter_number}>
-   <h2>{chapter.book_name} {chapter.chapter_number}</h2>
+  {chapter&&<>{!journeyMode&&chapter.chapter_number===1&&<BookIntroduction book={chapter.book_name} onVideo={onVideo}/>}<div id="bible-chapter-text" className="bible-verse-scroll" tabIndex={0} ref={scrollRef} onScroll={observe} style={{fontSize:fontSize+"px"}} aria-label={"Texto de "+chapter.book_name+" capítulo "+chapter.chapter_number}>
+   {!journeyMode&&<h2>{chapter.book_name} {chapter.chapter_number}</h2>}
    {chapter.verses.map((verse,index)=>{const second=compared?.verses.find(item=>item.number===verse.number);return <div key={verse.number+"-"+index} data-verse-number={verse.number} className={compare?"bible-comparison-row":""}><div>{compare&&<small>{editionTitle}</small>}<p className={"bible-verse "+(verse.number===highlightVerse?"bible-verse-highlight":"")}><sup>{verse.number}</sup> {renderSpeech(verse.text,speech[verse.number])}</p></div>{compare&&<div><small>{editions.find(item=>item.code===compareEdition)?.title??compareEdition}</small><p className="bible-verse">{second?<><sup>{second.number}</sup> {renderSpeech(second.text,compareSpeech[second.number])}</>:compared?"Sem versículo correspondente nesta edição.":"Carregando comparação…"}</p></div>}</div>})}
    <p className="chapter-finish"><CheckCircle2 size={20}/> Fim do capítulo</p>
   </div>
-  {onConfirm&&!readToEnd&&<p className="reader-scroll-hint"><ChevronDown size={16}/> Role a leitura até o final para liberar a confirmação.</p>}
+  {offerPanorama&&<aside className="journey-panorama-offer" aria-label="Panorama opcional"><Play size={24} aria-hidden="true"/><div><strong>Ver panorama?</strong><small>Opcional · XP extra após validação</small></div><button type="button" onClick={()=>onVideo?.(panorama,chapter.book_name)}>Assistir</button><button type="button" className="journey-panorama-skip" onClick={()=>setVideoDismissed(true)}>Agora não</button></aside>}
+  {onConfirm&&!readToEnd&&<p className="reader-scroll-hint"><ChevronDown size={16}/> {journeyMode?"Continue a leitura":"Role a leitura até o final para liberar a confirmação."}</p>}
   {onConfirm&&<button className="primary-cta reader-confirm" type="button" onClick={onConfirm} disabled={busy||!readToEnd}><CheckCircle2 size={20}/>{busy?"REGISTRANDO...":"CONCLUÍ A LEITURA"} </button>}
-  <BiblicalContextPanel chapterId={chapterId}/>
-  <p className="reader-attribution">{edition===DEFAULT_EDITION?"Almeida 1911 · Ortografia histórica · Texto de domínio público. Fonte: Projeto Gutenberg nº 62383; transcrição estruturada do projeto biblias.":editions.find(item=>item.code===edition)?.license_label}</p>
-  <p className="reader-attribution">Falas de Jesus em vermelho conforme revisão editorial de cada tradução. A ausência de destaque não indica ausência de fala.</p>
+  {!journeyMode&&<BiblicalContextPanel chapterId={chapterId}/>}
+  {!journeyMode&&<p className="reader-attribution">{edition===DEFAULT_EDITION?"Almeida 1911 · Ortografia histórica · Texto de domínio público. Fonte: Projeto Gutenberg nº 62383; transcrição estruturada do projeto biblias.":editions.find(item=>item.code===edition)?.license_label}</p>}
+  {!journeyMode&&<p className="reader-attribution">Falas de Jesus em vermelho conforme revisão editorial de cada tradução. A ausência de destaque não indica ausência de fala.</p>}
   </>}
+  {journeyMode&&<dialog ref={settings} className="journey-reader-options" aria-label="Opções de leitura"><button type="button" className="journey-options-close" aria-label="Fechar opções" onClick={()=>settings.current?.close()}>✕</button><h2>Opções de leitura</h2>
+  <div className="reader-editions"><label>Versão principal<select aria-label="Versão principal" value={edition} onChange={event=>{setEdition(event.target.value);setCompare(false)}}>{editions.map(item=><option key={item.code} value={item.code} disabled={!item.available}>{item.title}{!item.available?" · aguardando licença":""}</option>)}</select></label>
+   <button type="button" className="secondary-cta" disabled={!alternatives.length} onClick={()=>{setCompare(value=>!value);if(!compareEdition||compareEdition===edition)setCompareEdition(alternatives[0]?.code??"")}}>{compare?"Fechar comparação":"Comparar 2 versões"}</button>
+   {compare&&<label>Segunda versão<select aria-label="Segunda versão" value={compareEdition} onChange={event=>setCompareEdition(event.target.value)}>{alternatives.map(item=><option key={item.code} value={item.code}>{item.title}</option>)}</select></label>}
+  </div>
+  {!alternatives.length&&<p className="reader-attribution">Comparação disponível quando houver duas traduções autorizadas. NVI, NAA, ARA e NTLH aguardam licença e importação.</p>}
+  {compareError&&<p role="status">{compareError}</p>}
+
+   {chapter&&<><BiblicalContextPanel chapterId={chapterId}/><p className="reader-attribution">{edition===DEFAULT_EDITION?"Almeida 1911 · Ortografia histórica · Domínio público. Fonte: Projeto Gutenberg nº 62383; transcrição estruturada do projeto biblias.":editions.find(item=>item.code===edition)?.license_label}</p><p className="reader-attribution">Falas de Jesus em vermelho conforme revisão editorial de cada tradução.</p></>}
+  </dialog>}
  </section>;
 }
