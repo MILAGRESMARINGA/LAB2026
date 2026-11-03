@@ -15,6 +15,14 @@ describe('Trilha básica pública',()=>{
    await act(async()=>host.querySelector<HTMLButtonElement>('[data-week-day="1"]')!.click());expect(read).toHaveBeenCalledTimes(1);
   }finally{await act(async()=>root.unmount());host.remove()}
  });
+ it('libera a última etapa somente com callback explícito de demonstração',async()=>{
+  (globalThis as any).IS_REACT_ACT_ENVIRONMENT=true;
+  const host=document.createElement('div');document.body.append(host);const root=createRoot(host),preview=vi.fn();
+  try{await act(async()=>root.render(React.createElement(BasicJourney,{stage:365,completedStages:0,chapters:[],plan:createNextGamePlan(365).stages,onPreviewStage:preview})));
+   const button=host.querySelector<HTMLButtonElement>('[data-week-day="365"]')!;expect(button.getAttribute('aria-disabled')).toBe('false');
+   await act(async()=>button.click());expect(preview).toHaveBeenCalledWith(365);
+  }finally{await act(async()=>root.unmount());host.remove()}
+ });
  it('inclui os três capítulos completos da primeira leitura, sem credenciais',()=>{
   expect(readings['1:1'].verses).toHaveLength(31);expect(readings['19:1'].verses).toHaveLength(6);expect(readings['43:1'].verses).toHaveLength(51);
   for(const chapter of Object.values(readings))expect(chapter.verses.every((v,i)=>v.number===i+1&&v.text.trim())).toBe(true);
