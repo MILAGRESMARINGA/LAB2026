@@ -14,3 +14,13 @@ Intermediário/avançado são direção de produto para futuras skins e profundi
 
 ## Liberação completa para teste
 Em2026-11-03, navegação livre1–365 adicionada ao projeto público. Aplicativo real preserva trava e validação do servidor.301testes de aplicação e TypeScript aprovados. Navegador verificou salto direto ao dia365, pontos disponíveis e carregamento real de Malaquias3.
+
+## Menu, cor, panorama interno e ranking simulado
+
+A demonstração recupera o menu lateral desktop e inferior mobile, a paleta escura com trilha colorida e um ponto principal iluminado. Jornada, Ranking, Estudos, Bíblia, GCs, Perfil e Ajuda possuem destinos internos. Estudos sinaliza conteúdo em preparação, sem inventar biblioteca concluída.
+
+Panoramas oficiais abrem em diálogo interno com player Mux incorporado. Os IDs públicos previamente curados foram extraídos para módulo compartilhado, preservando os recursos do player real. O jogador escolhe Agora, No final ou Agora não; dispensar o panorama continua a leitura. O botão Simular conclusão concede somente5XP de demonstração, uma vez por URL; leitura concluída concede10XP de demonstração, uma vez por capítulo. Ranking global e individual do GC usam participantes fictícios e selo permanente de simulação. Pontos são estado apenas da sessão, sem banco, conta ou envio de recompensas reais.
+
+O leitor valida o capítulo em foco antes de renderizar, descarta respostas antigas e acompanha sua área com ResizeObserver para reavaliar a confirmação. Consultas de texto têm timeout15s e opção de tentar novamente. Não foi demonstrada ausência de texto em Juízes20: a fonte contém48versículos.
+
+Verificação desta revisão:303testes de aplicação,119testes de engenharia e build aprovados. Navegador percorreu o dia109 inteiro: Juízes20 → panorama no final → Juízes21 → Salmos45 → dia110. XP simulado35 refletiu três leituras e um vídeo. Rankings global/individual exibiram a posição correspondente. Viewport390x844 manteve documento390x844 e mostrou o panorama sobre o leitor, com miniatura carregada no player, sem sair da página. Não é teste de celular físico nem comprovação de reprodução integral de todos os vídeos.

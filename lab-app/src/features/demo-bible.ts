@@ -7,7 +7,7 @@ export async function loadDemoChapter(id:string):Promise<DemoChapter>{
  const [book,chapter]=id.split(':').map(Number),record=CANON[book-1];
  if(!record||!Number.isInteger(chapter)||chapter<1||chapter>record[1])throw Error('Referência inválida');
  const local=(bundled as Record<string,DemoChapter>)[id];if(local)return local;
- if(!cache.has(book))cache.set(book,fetch(`https://raw.githubusercontent.com/damarals/biblias/main/data/canonical/ALM1911/${codes[book-1]}.json`).then(r=>{if(!r.ok)throw Error('Fonte indisponível');return r.json()}).catch(e=>{cache.delete(book);throw e}));
+ if(!cache.has(book))cache.set(book,fetch(`https://raw.githubusercontent.com/damarals/biblias/main/data/canonical/ALM1911/${codes[book-1]}.json`,{signal:AbortSignal.timeout(15000)}).then(r=>{if(!r.ok)throw Error('Fonte indisponível');return r.json()}).catch(e=>{cache.delete(book);throw e}));
  const source=await cache.get(book),data=source?.chapters?.find((c:any)=>c.number===chapter);
  if(source.id!==book||!data||!Array.isArray(data.verses)||!data.verses.length||!data.verses.every((v:any,i:number)=>v.number===i+1&&typeof v.text==='string'&&v.text.trim()))throw Error('Texto indisponível');
  return {book:record[0],chapter,verses:data.verses};
