@@ -1,4 +1,3 @@
-import {BasicJourney} from './BasicJourney';
 import {lazy,Suspense,useCallback,useEffect,useId,useMemo,useRef,useState,type CSSProperties} from 'react';
 import {CHAPTERS} from '../domain/canon';
 import type {GameDay} from '../domain/game-plan';
@@ -79,7 +78,7 @@ function AtlasJourney({stage,completedStages,chapters,plan,onRead,readingAvailab
  const currentLabel=`${chapter.book} ${chapter.chapter}`;
  return <section className="journey-world isometric-journey visual-journey" aria-label="Mapa das etapas da Jornada" aria-busy={moving} data-view-mode={viewMode} style={{'--journey-color':block?.color??'#0072B2'} as AtlasStyle}>
   <header className="journey-world-heading">
-   <div className="atlas-heading-copy"><span className="atlas-eyebrow">ETAPA {current} / {days.length}</span><h2>{viewMode==='world'?'Mundo bíblico':viewMode==='region'?active.place.name:currentLabel}</h2></div>
+   <div className="atlas-heading-copy"><span className="atlas-eyebrow">SEMANA {Math.floor((current-1)/7)+1} · ETAPA {current} / {days.length}</span><h2>{viewMode==='world'?'Mundo bíblico':viewMode==='region'?active.place.name:currentLabel}</h2><small className="atlas-place-caption">{active.place.name}</small></div>
    <button type="button" className="atlas-guide-link" aria-label="Abrir guia da leitura" aria-haspopup="dialog" onClick={()=>setGuideOpened(true)}><span aria-hidden="true">ⓘ</span></button>
   </header>
   <div className="atlas-playfield">
@@ -92,7 +91,8 @@ function AtlasJourney({stage,completedStages,chapters,plan,onRead,readingAvailab
     {nodes.map((node,index)=>{const projection=projected.find(point=>point.day===node.day);if(!projection&&!unavailable)return null;const style={...(projection&&!unavailable?{left:projection.x,top:projection.y}:fallbackPosition(index,nodes.length)),'--block-color':node.color} as AtlasStyle;const reading=week.days.find(item=>item.day===node.day)!;return <button type="button" key={node.day} data-journey-day={node.day} className={`atlas-day-button is-${node.status}`} style={style} aria-current={node.status==='current'?'step':undefined} aria-disabled={moving||node.day!==current||!canRead} aria-label={`Etapa ${node.day}, ${statusName[node.status]}, ${reading.chapters.map(item=>`${item.book} ${item.chapter}`).join(' · ')}`} onClick={()=>choose(node.day)} title={`${node.name} · ${statusName[node.status]}`}><span className="atlas-day-number">{node.day}</span><span className="atlas-day-status" aria-hidden="true">{node.status==='completed'?'✓':node.status==='current'?'LER':'🔒'}</span>{node.status==='current'&&<span className="atlas-current-tag" aria-hidden="true">VOCÊ ESTÁ AQUI</span>}</button>})}
    </div>}
    {viewMode!=='episode'&&<div className="journey-map-invitation"><h3>{active.place.name}</h3><button type="button" className="primary-cta" disabled={moving} onClick={()=>changeView('episode')}>Minha etapa →</button></div>}
-   {viewMode==='episode'&&tutorial&&<div className="journey-first-tip" role="status"><span aria-hidden="true">☝</span><span>Toque na bandeira para ler</span><button type="button" aria-label="Dispensar dica" onClick={dismissTutorial}>✕</button></div>}
+   {viewMode==='episode'&&<button type="button" className="atlas-read-now" disabled={moving||!canRead} onClick={()=>choose(current)}>▶ {readLabel??'Ler agora'}</button>}
+   {viewMode==='episode'&&tutorial&&<div className="journey-first-tip" role="status"><span aria-hidden="true">☝</span><span>Toque na bandeira iluminada</span><button type="button" aria-label="Dispensar dica" onClick={dismissTutorial}>✕</button></div>}
   {viewMode==='episode'&&<div className="journey-week-strip" role="group" aria-label="Sete etapas da semana">{week.days.map(item=><button type="button" key={item.day} data-week-day={item.day} aria-current={item.day===current?'step':undefined} aria-disabled={moving||item.day!==current||!canRead} className={item.day<=completedStages?'is-completed':item.day===current?'is-current':'is-locked'} aria-label={`Etapa ${item.day}, ${item.day<=completedStages?'Concluída':item.day===current?'Atual':'Bloqueada'}, ${item.chapters.map(c=>`${c.book} ${c.chapter}`).join(' · ')}`} onClick={()=>choose(item.day)}><strong>{item.day}</strong><span>{item.day<=completedStages?'✓':item.day===current?'Ler':'🔒'}</span></button>)}</div>}
    {moving&&<div className="atlas-travel" role="status"><span aria-hidden="true">✦</span> Viajando para {active.place.name}…</div>}
   </div>
@@ -106,6 +106,5 @@ function AtlasJourney({stage,completedStages,chapters,plan,onRead,readingAvailab
 }
 
 export function BiblicalWorldMap(props:Props){
- const [exploring,setExploring]=useState(Boolean(props.initialView));
- return exploring?<div className="journey-viewport"><button type="button" className="secondary-cta" onClick={()=>setExploring(false)}>← Voltar à trilha</button><AtlasJourney {...props}/></div>:<BasicJourney {...props} onExplore={()=>setExploring(true)}/>;
+ return <AtlasJourney {...props}/>;
 }

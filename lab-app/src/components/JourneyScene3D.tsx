@@ -101,13 +101,13 @@ export function JourneyScene3D(props:JourneyScene3DProps){
    toTarget.add(pan);toSpan=baseSpan/activeZoom;
    applyCamera(toTarget,toSpan);
    // Same-site flags remain nearby, separated in screen space and visibly tethered to the site.
-   const minGap=Math.min(76,Math.max(58,height/8.3));
+   const minGap=Math.min(104,Math.max(76,height/7.8));
    const slots=(viewMode==='episode'?anchors:[]).map((anchor,index)=>{
     const p=projected(anchor,camera,width,height);
     const siblings=anchors.map((candidate,i)=>candidate.distanceTo(anchor)<.28?i:-1).filter(i=>i>=0),ordinal=siblings.indexOf(index);
     // Repeated chapters in the same city make an ordered serpentine, not a pile of pins.
     const vertical=(ordinal-(siblings.length-1)/2)*minGap*.92;
-    const sideways=siblings.length>1?Math.sin(ordinal*1.32)*minGap*.85:0;
+    const sideways=siblings.length>1?(ordinal%2===0?-1:1)*minGap*.8:0;
     return {x:p.x+sideways,y:p.y-28+vertical,index};
    });
    for(let pass=0;pass<35;pass++){

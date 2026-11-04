@@ -38,3 +38,11 @@ BET: JOURNEY-DEMO-REWARDS-20261104. Responsável: frontend/UX; apoios: weekly_sk
 - QA local:119testes de engenharia,309testes da aplicação e build passaram. Testes novos cobrem bloqueios de livro/mês/Pentateuco, idempotência e cobertura de vídeo sem crédito por salto.
 - QA navegador: semana1→2, biblioteca e estudo livre+20, etapa346 Amós8→Amós9→Obadias1→Apocalipse8; baú Obadias liberado com60XP(3capítulos+livro), outros livros não liberados. Player interno carregou duração4:59. Reprodução integral de todos os vídeos e aparelho físico não foram certificados.
 - Produção principal e revisão humana: BLOQUEADAS para integração; mudanças propostas na DraftPR90. Publicação autorizada apenas no projeto separado labgame-demo. Rollback da demo: promover a implantação anterior `dpl_E1zGGF7EGFWnQb1TFhwUJAvbda4G`.
+
+## Retorno ao mapa moderno — 04/11
+
+BET JOURNEY-MODERN-ATLAS-20261104. Pedido: restaurar a apresentação isométrica moderna, com bandeiras acessíveis, preservando vídeos integrais e estudos. O aplicativo volta a abrir AtlasJourney por padrão. Na demo, DemoAtlasJourney usa o mesmo terreno Three.js, carregado sob demanda, e uma trilha semanal ordenada sobre o cenário regional. Esta trilha é diagrama de progressão do jogo, não reconstrução de rota histórica.
+
+Sete bandeiras maiores, indicação de dia/semana/livro, destaque da etapa atual, ação Ler agora, baús no cabeçalho, zoom, centralização e alternância Mundo/Etapa. Rótulos geográficos ampliados na vista macro; contexto detalhado fica no guia do aplicativo. Eden mantém localização incerta. Menu,365dias de teste, fluxo de leitura, cronômetros, player integral, bônus, ranking e estudos permanecem presentes. A demo continua sem backend e sem XP real.
+
+QA:311testes de aplicação,119de engenharia e build aprovados. Testes adicionais verificam navegação Mundo/Etapa sem iniciar leitura, ação Ler agora, acesso a Baús e última semana parcial. Navegador público confirmou Mundo→Etapa→Gênesis1, abertura de Baús e viewport390×844 sem rolagem externa. Não houve nova execução de vídeo integral nesta revisão; preservados componente e testes de cobertura anteriores. Produção principal não publicada nem banco alterado. Branch e DraftPR90 mantidas; publicação isolada autorizada no projeto labgame-demo. Rollback: deployment dpl_J3tNrHXtvvGAdwVVqsj99vhAMdNs.

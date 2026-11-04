@@ -1,0 +1,32 @@
+import {Component,Suspense,lazy,useCallback,useEffect,useState,type CSSProperties,type ReactNode} from 'react';
+import {BookOpen,Check,Compass,Gift,Globe2,Minus,Plus,RotateCcw} from 'lucide-react';
+import type {GameDay} from '../domain/game-plan';
+import {atlasChapter,atlasPlace,weekWindow} from '../domain/journey-atlas';
+import {literaryBlockFor} from '../domain/literary-blocks';
+import './demo-atlas.css';
+const JourneyScene3D=lazy(()=>import('./JourneyScene3D').then(module=>({default:module.JourneyScene3D})));
+const EMPTY_NODES:readonly never[]=[];
+type MapLabel={id:string;label:string;x:number;y:number};
+type Props={stage:number;plan:ReadonlyArray<GameDay>;completedDays:readonly number[];onPreviewStage:(day:number)=>void;onOpenRewards:()=>void};
+class SceneBoundary extends Component<{children:ReactNode;fallback:ReactNode},{failed:boolean}>{state={failed:false};static getDerivedStateFromError(){return {failed:true}}render(){return this.state.failed?this.props.fallback:this.props.children}}
+/** Geographic terrain, with an ordered game trail rather than a reconstructed historical route. */
+export function DemoAtlasJourney({stage,plan,completedDays,onPreviewStage,onOpenRewards}:Props){
+ const [labels,setLabels]=useState<ReadonlyArray<MapLabel>>([]);
+ const onLabels=useCallback((next:ReadonlyArray<MapLabel>)=>setLabels(previous=>previous.length===next.length&&previous.every((p,i)=>p.id===next[i].id&&Math.abs(p.x-next[i].x)<1&&Math.abs(p.y-next[i].y)<1)?previous:next),[]);
+ const [view,setView]=useState<'episode'|'world'>('episode'),[zoom,setZoom]=useState(1),[reset,setReset]=useState(0),[unavailable,setUnavailable]=useState(false),[reduced,setReduced]=useState(false);
+ useEffect(()=>{const media=window.matchMedia('(prefers-reduced-motion: reduce)'),change=()=>setReduced(media.matches);change();media.addEventListener('change',change);return()=>media.removeEventListener('change',change)},[]);
+ const current=Math.max(1,Math.min(plan.length,stage)),week=weekWindow(plan,current),day=plan[current-1],chapter=day?.old[0]??day?.chapters[0];
+ if(!chapter)return <section className="demo-atlas-empty" role="status">A jornada está sendo preparada.</section>;
+ const location=atlasChapter(chapter),place=atlasPlace(chapter),block=literaryBlockFor(chapter.book),weekNumber=Math.floor(week.start/7)+1;
+ const colors={'--atlas-color':block?.color??'#0072B2','--atlas-ink':['poetry','revelation','history','minor-prophets','major-prophets'].includes(block?.id??'')?'#193640':'#fff'} as CSSProperties;
+ const xs=[27,41,57,66,54,39,25],ys=[72,60,65,49,35,39,25],points=week.days.map((_,i)=>`${xs[i]},${ys[i]}`).join(' ');
+ const fallback=<div className="demo-atlas-fallback" role="status"><Compass size={36}/><strong>{place.name}</strong><span>O mapa 3D está indisponível. A trilha continua disponível.</span></div>;
+ return <section className="demo-atlas" style={colors} aria-label="Jornada no mundo bíblico">
+  <header className="demo-atlas-heading"><div><small>SEMANA {weekNumber} · DIA {current}</small><h2>{chapter.book}</h2></div><button type="button" className="demo-atlas-chest" onClick={onOpenRewards}><Gift size={23}/><span>Baús</span></button></header>
+  <div className="demo-atlas-map"><div className="demo-atlas-scene">{unavailable?fallback:<SceneBoundary fallback={fallback}><Suspense fallback={<div className="demo-atlas-loading" role="status">Preparando mapa 3D…</div>}><JourneyScene3D nodes={EMPTY_NODES} onLabelsProject={onLabels} focus={{lon:place.lon,lat:place.lat}} focusLabel={place.name} viewMode={view} zoom={zoom} resetViewKey={reset} onZoomChange={setZoom} onSelect={()=>{}} reducedMotion={reduced} onUnavailable={()=>setUnavailable(true)}/></Suspense></SceneBoundary>}</div>
+   <div className="demo-atlas-tools" aria-label="Controles do mapa"><button type="button" aria-label="Diminuir zoom" disabled={zoom<=.75} onClick={()=>setZoom(z=>Math.max(.75,z-.25))}><Minus size={19}/></button><output aria-label="Zoom do mapa">{Math.round(zoom*100)}%</output><button type="button" aria-label="Aumentar zoom" disabled={zoom>=3} onClick={()=>setZoom(z=>Math.min(3,z+.25))}><Plus size={19}/></button><button type="button" aria-label="Centralizar mapa" onClick={()=>{setZoom(1);setReset(n=>n+1)}}><RotateCcw size={18}/></button><button type="button" aria-pressed={view==='world'} aria-label={view==='world'?'Voltar à etapa':'Ver mundo'} onClick={()=>{setView(v=>v==='world'?'episode':'world');setZoom(1)}}>{view==='world'?<Compass size={21}/>:<Globe2 size={21}/>}<span>{view==='world'?'Etapa':'Mundo'}</span></button></div>
+   {view==='world'&&<div className="demo-atlas-labels" aria-hidden="true">{labels.map(label=><span key={label.id} style={{left:label.x,top:label.y}}>{label.label}</span>)}</div>}{view==='episode'?<div className="demo-atlas-trail" key={week.start} role="group" aria-label={`Etapas ${week.start+1} a ${week.start+week.days.length}`}><span className="demo-atlas-hint">Dia {current} · toque na bandeira iluminada</span><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polyline points={points} fill="none" stroke="#173e4e" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"/><polyline points={points} fill="none" stroke="#e5f6d7" strokeWidth=".7" strokeDasharray="1.4 1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>{week.days.map((item,i)=>{const active=item.day===current,done=completedDays.includes(item.day);return <div className={`demo-atlas-stop ${active?'is-current':''}`} key={item.day} style={{left:`${xs[i]}%`,top:`${ys[i]}%`}}><button type="button" className={`demo-atlas-flag ${done?'is-done':''}`} data-week-day={item.day} aria-current={active?'step':undefined} aria-label={`Dia ${item.day}${done?', concluído':active?', atual':', disponível para teste'}`} onClick={()=>onPreviewStage(item.day)}><span>{done?<Check size={22}/>:item.day}</span></button></div>})}</div>:<div className="demo-atlas-world-note"><Globe2 size={20}/><span>Mundo bíblico</span></div>}
+   <div className="demo-atlas-place"><Compass size={17}/><span>{place.name}</span>{location.confidence==='uncertain'&&!place.name.toLowerCase().includes('incerta')&&<small>Localização incerta</small>}</div>
+  </div><footer className="demo-atlas-footer"><div><span>{block?.name??'Leitura bíblica'}</span><small>Trilha de jogo · cenário regional</small></div><button type="button" className="demo-primary" onClick={()=>onPreviewStage(current)}><BookOpen size={22}/>Ler agora</button></footer>
+ </section>;
+}
