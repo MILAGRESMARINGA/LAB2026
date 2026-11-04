@@ -24,3 +24,17 @@ Panoramas oficiais abrem em diálogo interno com player Mux incorporado. Os IDs 
 O leitor valida o capítulo em foco antes de renderizar, descarta respostas antigas e acompanha sua área com ResizeObserver para reavaliar a confirmação. Consultas de texto têm timeout15s e opção de tentar novamente. Não foi demonstrada ausência de texto em Juízes20: a fonte contém48versículos.
 
 Verificação desta revisão:303testes de aplicação,119testes de engenharia e build aprovados. Navegador percorreu o dia109 inteiro: Juízes20 → panorama no final → Juízes21 → Salmos45 → dia110. XP simulado35 refletiu três leituras e um vídeo. Rankings global/individual exibiram a posição correspondente. Viewport390x844 manteve documento390x844 e mostrou o panorama sobre o leitor, com miniatura carregada no player, sem sair da página. Não é teste de celular físico nem comprovação de reprodução integral de todos os vídeos.
+
+## Blocos semanais, baús e reprodução integral — revisão de 04/11
+
+BET: JOURNEY-DEMO-REWARDS-20261104. Responsável: frontend/UX; apoios: weekly_skin e video_integral. Escopo: demonstração pública isolada, BasicJourney compartilhado e testes de domínio. Sem migração, chamadas pagas de IA ou alteração de XP real.
+
+- Cinco variações de paisagem por bloco de sete dias, transição com movimento reduzido respeitado, semana/livro/bloco e etapas numeradas. Menu preservado.
+- Cronômetro de leitura ativa visível na demo. Não afirma validação de leitura real pelo relógio local.
+- Livro exige todos os seus capítulos lidos para liberar baú e seus panoramas. Novo baú gera aviso visual. Saltar no seletor de dias não conclui capítulos.
+- MuxPlayer nativo substitui iframe: bônus automático apenas após `ended` e cobertura contígua de toda a duração em1×, visível. Pausa/seek/ocultação não rendem tempo. Botão manual de XP removido. Ao fechar, cobertura parcial é descartada. Guarda local não é antifraude de servidor.
+- Regras locais de teste: capítulo10, dia completo10, bloco completo de7dias50, livro30, ciclo mensal100, estudo20, vídeo5XP. Cada bônus possui chave idempotente. Blocos semanais são posições consecutivas do plano, não sequência de datas reais; ciclos mensais dividem365etapas em12partes. Valores não alteram economia real.
+- Estudos: introdução Como ler a Bíblia livre; Pentateuco exige os cinco livros;12baús mensais liberam roteiro devocional. Roteiros mensais são modelo introdutório repetível, não biblioteca completa de estudos revisados. Textos vinculam referências bíblicas; não houve geração RAG/fine-tuning nem alegação de parecer teológico humano.
+- QA local:119testes de engenharia,309testes da aplicação e build passaram. Testes novos cobrem bloqueios de livro/mês/Pentateuco, idempotência e cobertura de vídeo sem crédito por salto.
+- QA navegador: semana1→2, biblioteca e estudo livre+20, etapa346 Amós8→Amós9→Obadias1→Apocalipse8; baú Obadias liberado com60XP(3capítulos+livro), outros livros não liberados. Player interno carregou duração4:59. Reprodução integral de todos os vídeos e aparelho físico não foram certificados.
+- Produção principal e revisão humana: BLOQUEADAS para integração; mudanças propostas na DraftPR90. Publicação autorizada apenas no projeto separado labgame-demo. Rollback da demo: promover a implantação anterior `dpl_E1zGGF7EGFWnQb1TFhwUJAvbda4G`.

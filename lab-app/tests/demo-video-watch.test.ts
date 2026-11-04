@@ -1,0 +1,7 @@
+import {describe,it,expect} from 'vitest';
+import {newDemoWatch,sampleDemoWatch,demoWatchComplete} from '../src/domain/demo-video-watch';
+describe('Vídeo integral na demonstração',()=>{
+ it('exige reprodução contínua e evento final',()=>{let state=newDemoWatch();for(let i=0;i<=40;i++)state=sampleDemoWatch(state,{position:i/4,clock:i*250},true);expect(state.frontier).toBe(10);expect(demoWatchComplete(state,10,false)).toBe(false);expect(demoWatchComplete(state,10,true)).toBe(true)});
+ it('não credita salto, tempo oculto ou reprodução acelerada',()=>{let state=sampleDemoWatch(newDemoWatch(),{position:0,clock:0},true);state=sampleDemoWatch(state,{position:90,clock:250},true);state=sampleDemoWatch(state,{position:90.25,clock:500},true);expect(state.frontier).toBe(0);expect(demoWatchComplete(state,90.25,true)).toBe(false);state=sampleDemoWatch(state,{position:0,clock:750},false);expect(state.previous).toBe(null);state=sampleDemoWatch(state,{position:0,clock:1000},true);state=sampleDemoWatch(state,{position:2,clock:1250},true);expect(state.frontier).toBe(0)});
+ it('retoma pelo primeiro trecho pendente sem contar pausas',()=>{let state=newDemoWatch();state=sampleDemoWatch(state,{position:0,clock:0},true);state=sampleDemoWatch(state,{position:.25,clock:250},true);state=sampleDemoWatch(state,{position:.25,clock:8000},false);state=sampleDemoWatch(state,{position:.2,clock:9000},true);state=sampleDemoWatch(state,{position:.45,clock:9250},true);expect(state.frontier).toBe(.45);expect(demoWatchComplete(state,NaN,true)).toBe(false)});
+});

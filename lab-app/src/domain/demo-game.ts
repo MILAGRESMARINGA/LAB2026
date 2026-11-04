@@ -1,6 +1,6 @@
 /** Fictional scores exclusively for the public simulation. Never submitted to the backend. */
-export type DemoGame={chapters:string[];videos:string[];xp:number};
-export const emptyDemoGame:DemoGame={chapters:[],videos:[],xp:0};
+export type DemoGame={chapters:string[];videos:string[];bonuses:string[];studies:string[];xp:number};
+export const emptyDemoGame:DemoGame={chapters:[],videos:[],bonuses:[],studies:[],xp:0};
 export function demoReward(state:DemoGame,kind:'chapter'|'video',id:string):DemoGame{
  const key=kind==='chapter'?'chapters':'videos';if(state[key].includes(id))return state;
  return {...state,[key]:[...state[key],id],xp:state.xp+(kind==='chapter'?10:5)};
