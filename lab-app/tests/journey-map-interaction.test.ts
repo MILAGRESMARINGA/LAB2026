@@ -5,25 +5,25 @@ import {describe,it,expect,vi} from 'vitest';
 import {BiblicalWorldMap} from '../src/components/BiblicalWorldMap';
 import {createNextGamePlan} from '../src/domain/game-plan-next';
 import {StudyReadingScreen} from '../src/components/StudyReadingScreen';
+vi.mock('../src/components/JourneyScene3D',()=>({JourneyScene3D:()=>React.createElement('div',{'data-testid':'scene3d-mock'})}));
 describe('Jornada explorável e tela de estudo',()=>{
  it('abre a leitura com um toque, mostra só sete etapas e bloqueia o futuro',async()=>{
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT=true;
+  Object.defineProperty(HTMLDialogElement.prototype,'showModal',{configurable:true,value:function(){this.setAttribute('open','')}});
+  Object.defineProperty(HTMLDialogElement.prototype,'close',{configurable:true,value:function(){this.removeAttribute('open')}});
   const host=document.createElement('div');document.body.append(host);const root=createRoot(host),read=vi.fn();
   try{
-   await act(async()=>root.render(React.createElement(BiblicalWorldMap,{stage:1,completedStages:0,chapters:[],plan:createNextGamePlan(365).stages,onRead:read})));
-   expect(host.querySelectorAll('svg [role="button"]')).toHaveLength(7);
+   await act(async()=>root.render(React.createElement(BiblicalWorldMap,{stage:1,completedStages:0,chapters:[],plan:createNextGamePlan(365).stages,onRead:read,initialView:'episode'})));
+   expect(host.querySelectorAll('button[data-week-day]')).toHaveLength(7);
    expect(host.querySelector('.journey-map-detail')).toBeNull();
-   const current=host.querySelector('svg [aria-label^="Etapa 1,"]')!;
-   await act(async()=>current.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true})));
+   const current=host.querySelector('button[aria-label^="Etapa 1,"]')!;
+   await act(async()=>(current as HTMLButtonElement).click());
+   expect(host.querySelector('dialog[open]')).toBeNull();
    expect(read).toHaveBeenCalledOnce();
-   await act(async()=>host.querySelector('svg [aria-label^="Etapa 2,"]')!.dispatchEvent(new MouseEvent('click',{bubbles:true})));
-   expect(read).toHaveBeenCalledOnce();expect(host.querySelector('[role="status"]')?.textContent).toContain('bloqueada');
-   await act(async()=>{[...host.querySelectorAll('button')].find(b=>b.textContent==='Ver jornada inteira')!.click()});
-   expect(host.querySelectorAll('svg [role="button"]')).toHaveLength(365);
-   await act(async()=>host.querySelector('svg [aria-label^="Etapa 365,"]')!.dispatchEvent(new MouseEvent('click',{bubbles:true})));
-   expect(read).toHaveBeenCalledOnce();
-   await act(async()=>{[...host.querySelectorAll('button')].find(b=>b.textContent==='Ver semana')!.click()});
-   expect(host.querySelectorAll('svg [role="button"]')).toHaveLength(7);
+   await act(async()=>host.querySelector('button[aria-label^="Etapa 2,"]')!.dispatchEvent(new MouseEvent('click',{bubbles:true})));
+   expect(read).toHaveBeenCalledOnce();expect(host.querySelector('button[data-week-day="2"]')?.getAttribute('aria-disabled')).toBe('true');
+   expect(host.textContent).not.toContain('Ver jornada inteira');
+   expect(host.querySelectorAll('button[data-week-day]')).toHaveLength(7);
   }finally{await act(async()=>root.unmount());host.remove()}
  });
  it('monta o conteúdo somente ao abrir e fecha pelo cancelamento nativo',async()=>{

@@ -111,10 +111,10 @@ export function JourneyV2Panel({userId,onState,onVideo}:Props){
   return beginJourneyV2Chapter(game.run_id,game.stage,chapterId);
  },[game?.run_id,game?.stage]);
  if(loading)return <section className="game-panel" aria-live="polite"><p className="muted">Carregando Jornada V2 protegida...</p></section>;
- return <section className="game-panel journey-v2" aria-label="Jornada Bíblica V2">
-  <header className="journey-clean-hud"><div className="journey-clean-title"><h1>Etapa {mapStage}</h1><ConsistencyFlame compact completedDays={game?.completed_stages??0} status={game?.status==="failed"?"failed":game?.status==="completed"?"completed":game?"active":"inactive"} timing={{serverNow:game?.server_at,deadlineAt:game?.normal_deadline_at,graceDeadlineAt:game?.grace_deadline_at}}/></div><p>{todayChapters.map(c=>`${c.book} ${c.chapter}`).join(' · ')}</p><div><span>{canNext?0:confirmedCount}/{todayChapters.length} capítulos</span><span>{stageFinished?'Próxima etapa':'Tempo restante'}: <strong>{canNext?'liberada':countdown??'não iniciado'}</strong></span><span>♥ {game?.remaining_lives_this_month??3} vidas</span></div></header>
-  {!readerOpened&&<><BiblicalWorldMap stage={mapStage} completedStages={game?.completed_stages??0} chapters={chapters} plan={overviewPlan} onRead={()=>{setReaderOpened(true);if(newStage)void process(()=>activateJourneyV2(game!.run_id,1));else if(canNext)next()}} readingAvailable={!game||(game.status==="active"&&(!stageFinished||canNext))} completedMessage="Etapa concluída. Aguarde o relógio para continuar."/>
-  <a className="journey-help-link" href="/?tab=help">Preciso de ajuda</a></>}
+ return <section className={`game-panel journey-v2 journey-viewport${readerOpened?' is-reading':''}`} aria-label="Jornada Bíblica V2">
+  {!readerOpened&&game&&<div className="journey-mini-status" aria-label="Estado da jornada"><span aria-label={`${confirmedCount} de ${todayChapters.length} capítulos confirmados`}>📖 {confirmedCount}/{todayChapters.length}</span><span aria-label={`${game.remaining_lives_this_month} vidas`}>♥ {game.remaining_lives_this_month}</span>{stageFinished&&<span>✓ {canNext?'Liberada':countdown??'Concluída'}</span>}</div>}
+  {!readerOpened&&<><BiblicalWorldMap onVideo={onVideo} stage={mapStage} completedStages={game?.completed_stages??0} chapters={chapters} plan={overviewPlan} onRead={()=>{setReaderOpened(true);if(newStage)void process(()=>activateJourneyV2(game!.run_id,1));else if(canNext)next()}} readingAvailable={!game||(game.status==="active"&&(!stageFinished||canNext))} completedMessage="Etapa concluída. Aguarde o relógio para continuar."/>
+</>}
   {readerOpened&&<button className="secondary-cta" onClick={()=>setReaderOpened(false)}>← Voltar ao mapa</button>}
   {error&&<p role="alert" className="feedback-message">{error}</p>}
   {canChooseLeapPlan&&(!game||game.status!=="active")&&
@@ -150,11 +150,11 @@ export function JourneyV2Panel({userId,onState,onVideo}:Props){
     <p>Seu prazo de 24 horas começará quando você ativar a etapa. Não será possível pular capítulos.</p>
     <button className="primary-cta" type="button" disabled={busy} onClick={()=>void process(()=>activateJourneyV2(game.run_id,1))}>ATIVAR LEITURA DE HOJE</button>
    </div>:<>
-    <div className="v2-stage-head"><h2>Etapa {game.stage} de {game.plan_length}</h2><span>{confirmedCount}/{currentTotal} capítulos</span></div>
+
     <div className="v2-progress" role="progressbar" aria-label="Capítulos confirmados" aria-valuemin={0} aria-valuemax={currentTotal||4} aria-valuenow={confirmedCount}>
      <div style={{width:(currentTotal?confirmedCount/currentTotal*100:0)+"%"}}/>
     </div>
-    <div className="v2-chapters" aria-label="Capítulos obrigatórios desta etapa">
+    <details className="journey-chapter-menu"><summary>Capítulos · {confirmedCount}/{currentTotal}</summary><div className="v2-chapters" aria-label="Capítulos obrigatórios desta etapa">
      {chapters.map(ch=><button key={ch.chapter_id} type="button"
       className={checkedSet.has(ch.chapter_id)?"v2-read":selected===ch.chapter_id?"v2-selected":""}
       disabled={busy||checkedSet.has(ch.chapter_id)}
@@ -162,10 +162,10 @@ export function JourneyV2Panel({userId,onState,onVideo}:Props){
       {checkedSet.has(ch.chapter_id)?<CheckCircle2 size={18}/>:<BookOpen size={18}/>}
       {chapterName(ch.chapter_id)}
      </button>)}
-    </div>
+    </div></details>
     {!stageFinished&&selected&&!checkedSet.has(selected)&&
      <div className="v2-reading" key={selected}>
-      <BibleReader chapterId={selected} onVideo={onVideo} onOpen={beginSelectedChapter} busy={busy} onConfirm={read}/>
+      <BibleReader journeyMode chapterId={selected} onVideo={onVideo} onOpen={beginSelectedChapter} busy={busy} onConfirm={read}/>
      </div>}
     {stageFinished&&<div className="v2-start" role="status">
      <h3><CheckCircle2 size={23}/> Etapa completa!</h3>

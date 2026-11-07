@@ -1,4 +1,5 @@
 import "./help-center.css";
+import "./main-navigation.css";
 import {BookMarked,Compass,HelpCircle,Library,UserRound,Users} from 'lucide-react';
 export const MAIN_TABS=[
  {id:'journey',label:'Jornada',icon:Compass},
@@ -14,8 +15,8 @@ export function navigationTabFromSearch(search:string):NavigationTab{
  return MAIN_TABS.find(tab=>tab.id===candidate)?.id??'journey';
 }
 export function MainNavigation({activeTab,onNavigate}:{activeTab:NavigationTab;onNavigate?:(tab:NavigationTab)=>void}){
- return <nav className="game-bottom-nav" aria-label="Menu LABGAME">{MAIN_TABS.map(tab=>{
+ return <nav className="game-bottom-nav game-main-navigation" aria-label="Menu LABGAME"><div className="main-navigation-brand" aria-hidden="true"><strong>LAB<span>GAME</span></strong><small>LEITURA ANUAL DA BÍBLIA</small></div>{MAIN_TABS.map(tab=>{
   const content=<><tab.icon size={21} aria-hidden="true"/><span>{tab.label}</span></>;
   return onNavigate?<button key={tab.id} type="button" className={activeTab===tab.id?'active':''} aria-current={activeTab===tab.id?'page':undefined} onClick={()=>onNavigate(tab.id)}>{content}</button>:<a key={tab.id} href={`/?tab=${tab.id}`} className={activeTab===tab.id?'active':''} aria-current={activeTab===tab.id?'page':undefined}>{content}</a>;
- })}</nav>;
+ })}<p className="main-navigation-caption">Um encontro diário<br/>com a Palavra.</p></nav>;
 }
