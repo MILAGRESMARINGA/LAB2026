@@ -9,6 +9,8 @@ export type ProjectedJourneyLabel={id:string;label:string;x:number;y:number};
 export type JourneyViewMode='world'|'region'|'episode';
 export type JourneyScene3DProps={
  nodes:readonly JourneySceneNode[];
+ /** Exact geographic projection without displaced flags or connecting route. */
+ anchorOnly?:boolean;
  focus:{lon:number;lat:number};
  focusLabel?:string;
  viewMode?:JourneyViewMode;
@@ -74,7 +76,7 @@ export function JourneyScene3D(props:JourneyScene3DProps){
   const cameraOffset=new THREE.Vector3(24,35,28),raycaster=new THREE.Raycaster();
   const applyCamera=(target:THREE.Vector3,span:number)=>{const aspect=width/height;camera.left=-span*aspect/2;camera.right=span*aspect/2;camera.top=span/2;camera.bottom=-span/2;camera.position.copy(target).add(cameraOffset);camera.lookAt(target);camera.updateProjectionMatrix();camera.updateMatrixWorld()};
   const publish=()=>{
-   latest.current.onProject?.(viewMode==='episode'?flags.map(flag=>({day:flag.node.day,...projected(flag.label,camera,width,height)})).filter(p=>p.x>24&&p.x<width-24&&p.y>36&&p.y<height-36):[]);
+   latest.current.onProject?.(viewMode==='episode'?(latest.current.anchorOnly?activeNodes.map(node=>({day:node.day,...projected(geographicPoint(node.lon,node.lat,1.05),camera,width,height)})):flags.map(flag=>({day:flag.node.day,...projected(flag.label,camera,width,height)}))).filter(p=>p.x>24&&p.x<width-24&&p.y>36&&p.y<height-36):[]);
    const places=viewMode==='world'?[['africa','África',18,22],['europe','Europa',16,46],['asia','Ásia',49,44],['sea','Mar Mediterrâneo',24,35],['egypt','Egito',30,27],['mesopotamia','Mesopotâmia',44,33],['canaan','Canaã',35,31]] as const:[['focus',latest.current.focusLabel??'Região da leitura',activeFocus.lon,activeFocus.lat]] as const;
    const labels:ProjectedJourneyLabel[]=[];
    places.forEach(([id,label,lon,lat])=>{const p=projected(geographicPoint(lon,lat,1.1),camera,width,height);if(p.x<35||p.x>width-35||p.y<28||p.y>height-28)return;if(labels.some(other=>Math.abs(other.x-p.x)<105&&Math.abs(other.y-p.y)<30))return;labels.push({id,label,...p})});latest.current.onLabelsProject?.(labels);
@@ -100,6 +102,7 @@ export function JourneyScene3D(props:JourneyScene3DProps){
    const baseSpan=viewMode==='region'?Math.max(18,13/(width/height)):viewMode==='world'?Math.max(extent.y+5,(extent.x+5)/(width/height)):Math.max(12,extent.y+6,(extent.x+6)/(width/height));
    toTarget.add(pan);toSpan=baseSpan/activeZoom;
    applyCamera(toTarget,toSpan);
+   if(!latest.current.anchorOnly){
    // Same-site flags remain nearby, separated in screen space and visibly tethered to the site.
    const minGap=Math.min(104,Math.max(76,height/7.8));
    const slots=(viewMode==='episode'?anchors:[]).map((anchor,index)=>{
@@ -131,6 +134,7 @@ export function JourneyScene3D(props:JourneyScene3DProps){
    if(flags.length){const first=flags[0].group.position,last=flags.at(-1)!.group.position;
    if(activeNodes[0].day>1){const pastGeometry=new THREE.BufferGeometry().setFromPoints([first.clone().add(new THREE.Vector3(-.6,.1,-1.5)),first.clone().setY(.9)]);route.add(new THREE.Line(pastGeometry,new THREE.LineBasicMaterial({color:'#d7d8b2',transparent:true,opacity:.55})))}
    const fogGeometry=new THREE.SphereGeometry(1.3,10,5);for(let i=0;i<3;i++){const fog=new THREE.Mesh(fogGeometry,new THREE.MeshBasicMaterial({color:'#cde5dd',transparent:true,opacity:.16,depthWrite:false}));fog.position.copy(last).add(new THREE.Vector3(.5+i*.5,.45,1.5+i*.18));fog.scale.set(1,.36,.7);route.add(fog)}}
+   }
    if(!initialized||reduced||(currentTarget.distanceTo(toTarget)<.08&&Math.abs(currentSpan-toSpan)<.08)){cancelAnimationFrame(raf);raf=0;initialized=true;currentTarget.copy(toTarget);currentSpan=toSpan;applyCamera(currentTarget,currentSpan);setMoving(false);render()}else{fromTarget.copy(currentTarget);fromSpan=currentSpan;startedAt=performance.now();setMoving(true);cancelAnimationFrame(raf);raf=requestAnimationFrame(animate)}
   };
   const resize=()=>{const box=element.getBoundingClientRect();width=Math.max(1,box.width);height=Math.max(1,box.height);renderer.setSize(width,height,false);rebuild()};
@@ -152,6 +156,6 @@ export function JourneyScene3D(props:JourneyScene3DProps){
   controller.current=api;resize();
   return()=>{controller.current=null;api.dispose()};
  },[]);
- useEffect(()=>{controller.current?.update(props)},[props.nodes,props.focus.lon,props.focus.lat,props.reducedMotion,props.viewMode,props.zoom,props.resetViewKey,props.focusLabel]);
+ useEffect(()=>{controller.current?.update(props)},[props.nodes,props.anchorOnly,props.focus.lon,props.focus.lat,props.reducedMotion,props.viewMode,props.zoom,props.resetViewKey,props.focusLabel]);
  return <div className="journey-webgl-scene" ref={host} data-renderer="three-scene" style={{position:'absolute',inset:0,touchAction:'none',cursor:'grab'}}/>;
 }
